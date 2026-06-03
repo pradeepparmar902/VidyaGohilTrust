@@ -1640,7 +1640,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="content"   && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
           {tab==="overview"  && <Overview mob={mob} C={C}/>}
           {tab==="donations" && <Donations mob={mob}/>}
-          {tab==="events"    && <AdminEvents mob={mob} C={C}/>}
+          {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="volunteers"&& <Volunteers mob={mob}/>}
           {tab==="gallery"   && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="settings"  && <Settings mob={mob} C={C}/>}
@@ -1743,28 +1743,125 @@ function Donations({ mob }) {
   );
 }
 
-function AdminEvents({ mob, C }) {
+function AdminEvents({ mob, C, setC, auth }) {
+  const [items, setItems] = useState(C.events || []);
+  const [saving, setSaving] = useState(false);
+  const [editIdx, setEditIdx] = useState(null);
+
+  useEffect(() => setItems(C.events || []), [C.events]);
+
+  const saveToFb = async (newC) => {
+    if (!auth?.idToken) { alert("Login required to save"); return; }
+    setSaving(true);
+    try {
+      await fbSave(newC, auth.idToken);
+    } catch(e) {
+      alert("Save failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const upd = (newItems) => {
+    setItems(newItems);
+    const newC = {...C, events: newItems};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const addEvent = () => {
+    const newItem = {
+      title: "New Event",
+      date: "Jun 15",
+      month: "2025",
+      location: "Event Location",
+      tag: "General",
+      color: "#E8F4F8"
+    };
+    const newArr = [newItem, ...items];
+    setItems(newArr);
+    setEditIdx(0);
+  };
+
+  const remove = (idx) => {
+    if (!window.confirm("Delete this event?")) return;
+    const newArr = [...items];
+    newArr.splice(idx, 1);
+    upd(newArr);
+    if (editIdx === idx) setEditIdx(null);
+  };
+
+  const updateItem = (idx, field, val) => {
+    const newArr = [...items];
+    newArr[idx] = { ...newArr[idx], [field]: val };
+    setItems(newArr);
+  };
+
+  const saveEdit = () => {
+    upd(items);
+    setEditIdx(null);
+  };
+
+  const existingTags = [...new Set(items.map(e=>e.tag).filter(Boolean))];
+
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="bs" style={{padding:"9px 16px",borderRadius:8,fontWeight:600,fontSize:".85rem"}}>+ Create Event</button></div>
+      <datalist id="event-tags-list">
+        {existingTags.map(t => <option key={t} value={t}/>)}
+      </datalist>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        <button onClick={addEvent} className="bs" style={{padding:"9px 16px",borderRadius:8,fontWeight:600,fontSize:".85rem",opacity:saving?0.5:1}} disabled={saving}>
+          {saving ? "Saving..." : "+ Create Event"}
+        </button>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:14}}>
-        {C.events.map((ev,i)=>(
-          <div key={i} className="ac" style={{padding:18}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-              <div style={{flex:1,paddingRight:10}}>
-                <span style={{fontSize:".7rem",fontWeight:700,color:"var(--sf)",textTransform:"uppercase"}}>{ev.tag}</span>
-                <h4 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginTop:3}}>{ev.title}</h4>
+        {items.map((ev,i)=>(
+          <div key={i} className="ac" style={{padding:18,borderLeft:editIdx===i?"4px solid var(--sf)":"none"}}>
+            {editIdx === i ? (
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Title</label>
+                  <input type="text" value={ev.title} onChange={e=>updateItem(i,"title",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Date (e.g. Jun 15)</label>
+                  <input type="text" value={ev.date} onChange={e=>updateItem(i,"date",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Year</label>
+                  <input type="text" value={ev.month} onChange={e=>updateItem(i,"month",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Location</label>
+                  <input type="text" value={ev.location} onChange={e=>updateItem(i,"location",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Category / Tag</label>
+                  <input type="text" list="event-tags-list" value={ev.tag} onChange={e=>updateItem(i,"tag",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div style={{gridColumn:"1/-1",display:"flex",justifyContent:"flex-end",gap:7,marginTop:8}}>
+                  <button onClick={saveEdit} className="bt" style={{padding:"6px 14px",borderRadius:6,fontWeight:600,fontSize:".75rem"}}>Save Changes</button>
+                </div>
               </div>
-              <div style={{background:"linear-gradient(135deg,var(--dt),var(--tm))",color:"white",borderRadius:10,padding:"7px 10px",textAlign:"center",flexShrink:0}}>
-                <div style={{fontSize:"1.1rem",fontWeight:700}}>{ev.date.split(" ")[0]}</div>
-                <div style={{fontSize:".62rem",opacity:.8}}>{ev.date.split(" ")[1]}</div>
-              </div>
-            </div>
-            <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{ev.location}</p>
-            <div style={{display:"flex",gap:7}}>
-              <button style={{padding:"5px 11px",borderRadius:6,background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Edit</button>
-              <button style={{padding:"5px 11px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Delete</button>
-            </div>
+            ) : (
+              <>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{flex:1,paddingRight:10}}>
+                    <span style={{fontSize:".7rem",fontWeight:700,color:"var(--sf)",textTransform:"uppercase"}}>{ev.tag}</span>
+                    <h4 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginTop:3}}>{ev.title}</h4>
+                  </div>
+                  <div style={{background:"linear-gradient(135deg,var(--dt),var(--tm))",color:"white",borderRadius:10,padding:"7px 10px",textAlign:"center",flexShrink:0}}>
+                    <div style={{fontSize:"1.1rem",fontWeight:700}}>{ev.date?.split(" ")[0]}</div>
+                    <div style={{fontSize:".62rem",opacity:.8}}>{ev.date?.split(" ")[1]}</div>
+                  </div>
+                </div>
+                <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{ev.location}</p>
+                <div style={{display:"flex",gap:7}}>
+                  <button onClick={()=>setEditIdx(i)} style={{padding:"5px 11px",borderRadius:6,background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Edit</button>
+                  <button onClick={()=>remove(i)} style={{padding:"5px 11px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Delete</button>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
