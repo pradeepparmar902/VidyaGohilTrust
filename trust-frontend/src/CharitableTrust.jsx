@@ -64,6 +64,19 @@ const fbUploadLogo = async (file, idToken) => {
   return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
 };
 
+const fbUploadPhoto = async (file, idToken) => {
+  const ext  = file.name.split(".").pop();
+  const name = encodeURIComponent(`gallery/photo_${Date.now()}.${ext}`);
+  const res  = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+    method: "POST",
+    headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
+    body: file,
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
+};
+
 
 
 function useW() {
@@ -150,6 +163,7 @@ const DC = {
     gallery:true, events:true, donate:true, contact:true,
   },
   customSections:[],
+  galleryItems:[],
 };
 
 const EMOJIS = ["📚","🏥","🌾","🤝","🌊","🌱","🏛️","💡","🎓","🏃","🌍","⭐","❤️","🎯","🔬","🎨"];
@@ -563,10 +577,11 @@ function Events({ C }) {
 }
 
 // ── GALLERY ───────────────────────────────────────────────────────────────────
-function Gallery() {
+function Gallery({ C }) {
   const [active, setActive] = useState("All"); const w = useW();
-  const cats = ["All","Events","Health","Environment","Women","Education","Relief"];
-  const filtered = active==="All" ? GITEMS : GITEMS.filter(g=>g.category===active);
+  const items = C.galleryItems || [];
+  const cats = ["All", ...new Set(items.map(g=>g.category).filter(Boolean))];
+  const filtered = active==="All" ? items : items.filter(g=>g.category===active);
   return (
     <section id="gallery" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
@@ -578,12 +593,12 @@ function Gallery() {
           {cats.map(c=><button key={c} onClick={()=>setActive(c)} style={{padding:"7px 14px",borderRadius:20,fontSize:".78rem",fontWeight:600,cursor:"pointer",background:active===c?"var(--dt)":"white",color:active===c?"white":"var(--tm2)",border:`1px solid ${active===c?"var(--dt)":"var(--bd)"}`}}>{c}</button>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:w<640?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
+          {filtered.length === 0 && <div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--mu)"}}>No photos uploaded yet.</div>}
           {filtered.map(g=>(
-            <div key={g.id} className="gi ch" style={{aspectRatio:"4/3",background:`linear-gradient(135deg,${g.color}CC,${g.color}66)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative"}}>
-              <div style={{fontSize:w<640?"2rem":"2.5rem"}}>{g.emoji}</div>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.65),transparent)",padding:"16px 12px 10px",color:"white",borderRadius:"0 0 12px 12px"}}>
-                <div style={{fontSize:".78rem",fontWeight:600}}>{g.label}</div>
-                <div style={{fontSize:".68rem",opacity:.8}}>{g.category}</div>
+            <div key={g.id} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden"}}>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white"}}>
+                <div style={{fontSize:".85rem",fontWeight:600}}>{g.title}</div>
+                <div style={{fontSize:".7rem",opacity:.9}}>{g.category}</div>
               </div>
             </div>
           ))}
@@ -1627,7 +1642,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="donations" && <Donations mob={mob}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C}/>}
           {tab==="volunteers"&& <Volunteers mob={mob}/>}
-          {tab==="gallery"   && <AdminGallery mob={mob}/>}
+          {tab==="gallery"   && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="settings"  && <Settings mob={mob} C={C}/>}
         </div>
       </div>
@@ -1793,27 +1808,75 @@ function Volunteers({ mob }) {
   );
 }
 
-function AdminGallery({ mob }) {
+function AdminGallery({ mob, C, setC, auth }) {
+  const [loading, setLoading] = useState(false);
+  const items = C.galleryItems || [];
+
+  const saveToFb = async (newC) => {
+    if (!auth?.idToken) { alert("Login required to save"); return; }
+    try {
+      await fbSave(newC, auth.idToken);
+    } catch(e) {
+      alert("Save failed: " + e.message);
+    }
+  };
+
+  const upd = (newItems) => {
+    const newC = {...C, galleryItems: newItems};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!auth?.idToken) { alert("Please login to upload images."); return; }
+    setLoading(true);
+    try {
+      const url = await fbUploadPhoto(file, auth.idToken);
+      const newItem = { id: Date.now().toString(), url, title: "New Photo", category: "General" };
+      upd([newItem, ...items]);
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = (id) => {
+    if (!window.confirm("Delete this photo?")) return;
+    upd(items.filter(g => g.id !== id));
+  };
+
+  const updateItem = (id, field, val) => {
+    upd(items.map(g => g.id === id ? {...g, [field]: val} : g));
+  };
+
   return (
     <div>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}><button className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem"}}>Upload Photo</button></div>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        <label className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",cursor:"pointer",opacity:loading?0.5:1}}>
+          {loading ? "Uploading..." : "Upload Photo"}
+          <input type="file" accept="image/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+        </label>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:14}}>
-        {GITEMS.map(g=>(
+        {items.map(g=>(
           <div key={g.id} className="ac" style={{overflow:"hidden",padding:0}}>
-            <div style={{height:110,background:`linear-gradient(135deg,${g.color}99,${g.color}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>{g.emoji}</div>
+            <div style={{height:140,background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center"}}/>
             <div style={{padding:"12px"}}>
-              <div style={{fontWeight:600,fontSize:".82rem",marginBottom:3}}>{g.label}</div>
-              <div style={{fontSize:".72rem",color:"var(--mu)",marginBottom:10}}>{g.category}</div>
-              <div style={{display:"flex",gap:5}}>
-                <button style={{padding:"4px 9px",borderRadius:6,background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Edit</button>
-                <button style={{padding:"4px 9px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Delete</button>
+              <input type="text" value={g.title} onChange={e=>updateItem(g.id,"title",e.target.value)} placeholder="Photo Title" style={{width:"100%",padding:"4px 8px",marginBottom:6,border:"1px solid var(--bd)",borderRadius:6,fontSize:".82rem",fontFamily:"inherit"}}/>
+              <input type="text" value={g.category} onChange={e=>updateItem(g.id,"category",e.target.value)} placeholder="Category (e.g. Events)" style={{width:"100%",padding:"4px 8px",marginBottom:10,border:"1px solid var(--bd)",borderRadius:6,fontSize:".75rem",fontFamily:"inherit",color:"var(--mu)"}}/>
+              <div style={{display:"flex",justifyContent:"flex-end"}}>
+                <button onClick={()=>remove(g.id)} style={{padding:"4px 9px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Delete</button>
               </div>
             </div>
           </div>
         ))}
-        <div style={{border:"2px dashed var(--bd)",borderRadius:12,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:180,cursor:"pointer",color:"var(--mu)",gap:7,transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--mu)"}}>
+        <label style={{border:"2px dashed var(--bd)",borderRadius:12,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:180,cursor:"pointer",color:"var(--mu)",gap:7,transition:"all .2s",opacity:loading?0.5:1}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--mu)"}}>
           <span style={{fontSize:"1.8rem"}}>📤</span><span style={{fontSize:".82rem",fontWeight:600}}>Upload Photos</span>
-        </div>
+          <input type="file" accept="image/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+        </label>
       </div>
     </div>
   );
@@ -1849,7 +1912,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       <Hero C={C} lang={lang}/>
       {bs.about    !== false && <About C={C} lang={lang}/>}
       {bs.programs !== false && <Programs C={C}/>}
-      {bs.gallery  !== false && <Gallery/>}
+      {bs.gallery  !== false && <Gallery C={C}/>}
       {bs.events   !== false && <Events C={C}/>}
       {bs.donate   !== false && <Donate C={C} lang={lang}/>}
       {/* Custom sections render here — before Contact */}
