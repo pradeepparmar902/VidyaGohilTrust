@@ -1811,7 +1811,7 @@ function AdminEvents({ mob, C, setC, auth }) {
       </datalist>
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
         <button onClick={addEvent} className="bs" style={{padding:"9px 16px",borderRadius:8,fontWeight:600,fontSize:".85rem",opacity:saving?0.5:1}} disabled={saving}>
-          {saving ? "Saving..." : "+ Create Event"}
+          {saving ? "Saving..." : "➕ Create Event"}
         </button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:14}}>
