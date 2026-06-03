@@ -1852,8 +1852,13 @@ function AdminGallery({ mob, C, setC, auth }) {
     upd(items.map(g => g.id === id ? {...g, [field]: val} : g));
   };
 
+  const existingCats = [...new Set(items.map(g=>g.category).filter(Boolean))];
+
   return (
     <div>
+      <datalist id="gallery-categories">
+        {existingCats.map(c => <option key={c} value={c}/>)}
+      </datalist>
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
         <label className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",cursor:"pointer",opacity:loading?0.5:1}}>
           {loading ? "Uploading..." : "Upload Photo"}
@@ -1866,7 +1871,7 @@ function AdminGallery({ mob, C, setC, auth }) {
             <div style={{height:140,background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center"}}/>
             <div style={{padding:"12px"}}>
               <input type="text" value={g.title} onChange={e=>updateItem(g.id,"title",e.target.value)} placeholder="Photo Title" style={{width:"100%",padding:"4px 8px",marginBottom:6,border:"1px solid var(--bd)",borderRadius:6,fontSize:".82rem",fontFamily:"inherit"}}/>
-              <input type="text" value={g.category} onChange={e=>updateItem(g.id,"category",e.target.value)} placeholder="Category (e.g. Events)" style={{width:"100%",padding:"4px 8px",marginBottom:10,border:"1px solid var(--bd)",borderRadius:6,fontSize:".75rem",fontFamily:"inherit",color:"var(--mu)"}}/>
+              <input type="text" list="gallery-categories" value={g.category} onChange={e=>updateItem(g.id,"category",e.target.value)} placeholder="Category (e.g. Events)" style={{width:"100%",padding:"4px 8px",marginBottom:10,border:"1px solid var(--bd)",borderRadius:6,fontSize:".75rem",fontFamily:"inherit",color:"var(--mu)"}}/>
               <div style={{display:"flex",justifyContent:"flex-end"}}>
                 <button onClick={()=>remove(g.id)} style={{padding:"4px 9px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Delete</button>
               </div>
