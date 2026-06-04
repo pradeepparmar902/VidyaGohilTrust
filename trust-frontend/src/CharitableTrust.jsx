@@ -657,13 +657,15 @@ function Events({ C }) {
                 ) : (
                   <form onSubmit={submitForm} style={{display:"flex",flexDirection:"column",gap:12}}>
                     {getForm(selectedEvent.event.formId).fields.length === 0 && <p style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields. You can still register to send a blank confirmation.</p>}
-                    {getForm(selectedEvent.event.formId).fields.map((f, idx) => (
+                    {getForm(selectedEvent.event.formId).fields.map((f, idx) => {
+                      const fKey = f.label?.trim() || `Field ${idx + 1}`;
+                      return (
                       <div key={idx}>
-                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>{f.label} {f.required&&<span style={{color:"red"}}>*</span>}</label>
+                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>{fKey} {f.required&&<span style={{color:"red"}}>*</span>}</label>
                         {f.type === 'address' ? (
-                          <textarea required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",minHeight:80,resize:"vertical"}}/>
+                          <textarea required={f.required} value={formData[fKey]||""} onChange={e=>setFormData({...formData, [fKey]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",minHeight:80,resize:"vertical"}}/>
                         ) : f.type === 'gender' ? (
-                          <select required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}>
+                          <select required={f.required} value={formData[fKey]||""} onChange={e=>setFormData({...formData, [fKey]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}>
                             <option value="">-- Select Gender --</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
@@ -671,21 +673,21 @@ function Events({ C }) {
                           </select>
                         ) : f.type === 'fullname' ? (
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                            <input placeholder="First" required={f.required} value={(formData[f.label]?.split("|")[0])||""} onChange={e=>{
-                              const parts = (formData[f.label]||"||").split("|"); parts[0] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            <input placeholder="First" required={f.required} value={(formData[fKey]?.split("|")[0])||""} onChange={e=>{
+                              const parts = (formData[fKey]||"||").split("|"); parts[0] = e.target.value; setFormData({...formData, [fKey]:parts.join("|")});
                             }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
-                            <input placeholder="Middle" value={(formData[f.label]?.split("|")[1])||""} onChange={e=>{
-                              const parts = (formData[f.label]||"||").split("|"); parts[1] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            <input placeholder="Middle" value={(formData[fKey]?.split("|")[1])||""} onChange={e=>{
+                              const parts = (formData[fKey]||"||").split("|"); parts[1] = e.target.value; setFormData({...formData, [fKey]:parts.join("|")});
                             }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
-                            <input placeholder="Last" required={f.required} value={(formData[f.label]?.split("|")[2])||""} onChange={e=>{
-                              const parts = (formData[f.label]||"||").split("|"); parts[2] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            <input placeholder="Last" required={f.required} value={(formData[fKey]?.split("|")[2])||""} onChange={e=>{
+                              const parts = (formData[fKey]||"||").split("|"); parts[2] = e.target.value; setFormData({...formData, [fKey]:parts.join("|")});
                             }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
                           </div>
                         ) : (
-                          <input type={f.type} required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                          <input type={f.type} required={f.required} value={formData[fKey]||""} onChange={e=>setFormData({...formData, [fKey]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
                         )}
                       </div>
-                    ))}
+                    )})}
                     <button type="submit" className="bs" style={{padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
                       {submitting ? "Submitting..." : "Submit Registration"}
                     </button>
