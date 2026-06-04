@@ -40,11 +40,13 @@ const fbSave = async (content, idToken) => {
   return true;
 };
 
-const fbSubmitRegistration = async (registrationData) => {
+const fbSubmitRegistration = async (registrationData, idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.proj}/databases/(default)/documents/registrations`;
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify({
       fields: {
         data: { stringValue: JSON.stringify(registrationData) },
@@ -57,6 +59,18 @@ const fbSubmitRegistration = async (registrationData) => {
     throw new Error(e?.error?.message || "Submission failed");
   }
   return true;
+};
+
+const fbSignUp = async (email, password) => {
+  const SIGNUP_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.apiKey}`;
+  const res = await fetch(SIGNUP_URL, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message.replace(/_/g," "));
+  return { idToken: data.idToken, email: data.email, expiresIn: data.expiresIn };
 };
 
 const fbLogin = async (email, password) => {
@@ -564,8 +578,42 @@ function Events({ C }) {
   const [formData, setFormData] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  
+  // Auth State
+  const [authStep, setAuthStep] = useState(0); // 0 = login/register, 1 = form
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authToken, setAuthToken] = useState("");
 
   const getForm = (id) => C.forms?.find(f => f.id === id) || { fields: [] };
+
+  const handleAuth = async (e, isRegister) => {
+    e.preventDefault();
+    if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
+    setSubmitting(true); setAuthError("");
+    try {
+      const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
+      const res = isRegister ? await fbSignUp(email, password) : await fbLogin(email, password);
+      setAuthToken(res.idToken);
+      setAuthStep(1);
+      
+      // Auto-fill mobile number if field exists
+      const newForm = {...formData};
+      const formSpec = getForm(selectedEvent?.event?.formId);
+      formSpec.fields.forEach(f => {
+        const fKey = f.label?.trim() || "Field";
+        if (f.type === 'tel' || fKey.toLowerCase().includes('mobile') || fKey.toLowerCase().includes('phone')) {
+          newForm[fKey] = mobile;
+        }
+      });
+      setFormData(newForm);
+    } catch(err) {
+      setAuthError(err.message.includes("INVALID") ? "Invalid mobile or password." : err.message.includes("EXISTS") ? "Account exists. Please click Login." : err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const submitForm = async (e) => {
     e.preventDefault();
@@ -577,7 +625,7 @@ function Events({ C }) {
           eventId: selectedEvent.event.title,
           eventTitle: selectedEvent.event.title,
           formData: formData
-        });
+        }, authToken);
       } catch (fbErr) {
         console.warn("Firebase save skipped (Update Security Rules to enable database logging). Proceeding to WhatsApp.");
       }
@@ -635,7 +683,7 @@ function Events({ C }) {
       {selectedEvent && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
           <div className="ac" style={{background:"white",width:"100%",maxWidth:500,padding:24,borderRadius:12,maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
-            <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
+            <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});setAuthStep(0);setMobile("");setPassword("");setAuthError("");}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
             
             {selectedEvent.type === 'details' && (
               <div>
@@ -658,6 +706,27 @@ function Events({ C }) {
                     <h4 style={{color:"#1A7A3E",fontWeight:700,marginBottom:6}}>Registration Successful!</h4>
                     <p style={{fontSize:".85rem",color:"var(--mu)"}}>Redirecting to WhatsApp to send your confirmation...</p>
                   </div>
+                ) : authStep === 0 ? (
+                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:10}}>Please log in or create an account to register for this event.</p>
+                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
+                      <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="e.g. 9876543210"/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Password <span style={{color:"red"}}>*</span></label>
+                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Enter or create a password"/>
+                    </div>
+                    <div style={{display:"flex",gap:10,marginTop:10}}>
+                      <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{flex:1,padding:"12px",borderRadius:8,fontWeight:700,opacity:submitting?0.5:1}} disabled={submitting}>
+                        {submitting ? "..." : "Login"}
+                      </button>
+                      <button type="button" onClick={e=>handleAuth(e, true)} style={{flex:1,padding:"12px",borderRadius:8,fontWeight:700,background:"#F5F5F5",color:"var(--dt)",border:"1px solid var(--bd)",cursor:"pointer",opacity:submitting?0.5:1}} disabled={submitting}>
+                        {submitting ? "..." : "Create Account"}
+                      </button>
+                    </div>
+                  </form>
                 ) : (
                   <form onSubmit={submitForm} style={{display:"flex",flexDirection:"column",gap:12}}>
                     {getForm(selectedEvent.event.formId).fields.length === 0 && <p style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields. You can still register to send a blank confirmation.</p>}
