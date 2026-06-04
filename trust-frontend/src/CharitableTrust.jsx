@@ -708,7 +708,7 @@ function Events({ C }) {
                   </div>
                 ) : authStep === 0 ? (
                   <form style={{display:"flex",flexDirection:"column",gap:12}}>
-                    <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:10}}>Please log in or create an account to register for this event.</p>
+                    <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:10}}>Please log in to register for this event.</p>
                     {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
                     <div>
                       <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
@@ -716,16 +716,33 @@ function Events({ C }) {
                     </div>
                     <div>
                       <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Password <span style={{color:"red"}}>*</span></label>
-                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Enter or create a password"/>
+                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Enter your password"/>
                     </div>
-                    <div style={{display:"flex",gap:10,marginTop:10}}>
-                      <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{flex:1,padding:"12px",borderRadius:8,fontWeight:700,opacity:submitting?0.5:1}} disabled={submitting}>
-                        {submitting ? "..." : "Login"}
-                      </button>
-                      <button type="button" onClick={e=>handleAuth(e, true)} style={{flex:1,padding:"12px",borderRadius:8,fontWeight:700,background:"#F5F5F5",color:"var(--dt)",border:"1px solid var(--bd)",cursor:"pointer",opacity:submitting?0.5:1}} disabled={submitting}>
-                        {submitting ? "..." : "Create Account"}
-                      </button>
+                    <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
+                      {submitting ? "Logging in..." : "Login"}
+                    </button>
+                    <p style={{textAlign:"center",fontSize:".8rem",color:"var(--mu)",marginTop:5}}>
+                      Don't have an account? <span onClick={()=>{setAuthStep('register');setAuthError("");}} style={{color:"var(--dt)",fontWeight:700,cursor:"pointer",textDecoration:"underline"}}>Create one</span>
+                    </p>
+                  </form>
+                ) : authStep === 'register' ? (
+                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:10}}>Create a new account to register for events.</p>
+                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
+                      <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="e.g. 9876543210"/>
                     </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Create Password <span style={{color:"red"}}>*</span></label>
+                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Create a secure password"/>
+                    </div>
+                    <button type="button" onClick={e=>handleAuth(e, true)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
+                      {submitting ? "Creating Account..." : "Create Account"}
+                    </button>
+                    <p style={{textAlign:"center",fontSize:".8rem",color:"var(--mu)",marginTop:5}}>
+                      Already have an account? <span onClick={()=>{setAuthStep(0);setAuthError("");}} style={{color:"var(--dt)",fontWeight:700,cursor:"pointer",textDecoration:"underline"}}>Login</span>
+                    </p>
                   </form>
                 ) : (
                   <form onSubmit={submitForm} style={{display:"flex",flexDirection:"column",gap:12}}>
