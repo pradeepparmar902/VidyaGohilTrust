@@ -1960,10 +1960,42 @@ function Donations({ mob }) {
 }
 
 function AdminForms({ C, setC, saveToFb, mob }) {
+  const defaultFields = [
+    { id: "fl_1", label: "Mobile Number", type: "tel" },
+    { id: "fl_2", label: "Full Name", type: "fullname" },
+    { id: "fl_3", label: "Email Address", type: "email" },
+    { id: "fl_4", label: "Age", type: "number" },
+    { id: "fl_5", label: "Gender", type: "gender" },
+    { id: "fl_6", label: "Address", type: "address" },
+    { id: "fl_7", label: "Blood Group", type: "text" }
+  ];
+
   const [forms, setForms] = useState(C.forms || []);
   const [editingId, setEditingId] = useState(null);
+  const [fieldLib, setFieldLib] = useState(C.fieldLibrary || defaultFields);
+  const [isAddingLib, setIsAddingLib] = useState(false);
+  const [newLibLabel, setNewLibLabel] = useState("");
+  const [newLibType, setNewLibType] = useState("text");
 
-  useEffect(() => setForms(C.forms || []), [C.forms]);
+  useEffect(() => {
+    setForms(C.forms || []);
+    setFieldLib(C.fieldLibrary || defaultFields);
+  }, [C.forms, C.fieldLibrary]);
+
+  const saveLib = (newLib) => {
+    setFieldLib(newLib);
+    const newC = {...C, fieldLibrary: newLib};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const handleCreateStandardField = () => {
+    if(!newLibLabel.trim()) return;
+    const nf = { id: "fl_"+Date.now(), label: newLibLabel.trim(), type: newLibType };
+    saveLib([...fieldLib, nf]);
+    setNewLibLabel("");
+    setIsAddingLib(false);
+  };
 
   const upd = (newForms) => {
     setForms(newForms);
@@ -2002,37 +2034,56 @@ function AdminForms({ C, setC, saveToFb, mob }) {
                  <input value={f.name} onChange={e=>updateForm(f.id, {...f, name: e.target.value})} style={{padding:"6px",border:"1px solid var(--bd)",borderRadius:6,marginBottom:10,fontWeight:600}} placeholder="Form Name"/>
                  <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
                    {f.fields.map((field, idx) => (
-                     <div key={idx} style={{display:"flex",gap:8,alignItems:"center"}}>
-                       <input value={field.label} onChange={e=>{
-                         const newF = [...f.fields]; newF[idx].label = e.target.value; updateForm(f.id, {...f, fields:newF});
-                       }} style={{padding:"4px 8px",border:"1px solid var(--bd)",borderRadius:4,flex:1}} placeholder="Field Name (e.g. Blood Group)"/>
-                       <select value={field.type} onChange={e=>{
-                         const newF = [...f.fields]; newF[idx].type = e.target.value; updateForm(f.id, {...f, fields:newF});
-                       }} style={{padding:"4px",border:"1px solid var(--bd)",borderRadius:4}}>
-                         <option value="text">Text</option>
-                         <option value="number">Number</option>
-                         <option value="email">Email</option>
-                         <option value="tel">Phone</option>
-                         <option value="date">Date</option>
-                         <option value="fullname">Full Name (First, Middle, Last)</option>
-                         <option value="address">Address (Textarea)</option>
-                         <option value="gender">Gender (M/F)</option>
-                       </select>
-                       <label style={{fontSize:".75rem",display:"flex",alignItems:"center",gap:4}}><input type="checkbox" checked={field.required} onChange={e=>{
+                     <div key={idx} style={{display:"flex",gap:8,alignItems:"center",background:"#F5F5F5",padding:"8px 12px",borderRadius:6}}>
+                       <div style={{flex:1,fontWeight:700,fontSize:".85rem",color:"var(--dt)"}}>{field.label}</div>
+                       <div style={{fontSize:".75rem",color:"var(--mu)",background:"#E0E0E0",padding:"2px 8px",borderRadius:12,fontWeight:600}}>{field.type}</div>
+                       <label style={{fontSize:".75rem",display:"flex",alignItems:"center",gap:4,marginLeft:10,fontWeight:600,color:"var(--dt)",cursor:"pointer"}}><input type="checkbox" checked={field.required} onChange={e=>{
                          const newF = [...f.fields]; newF[idx].required = e.target.checked; updateForm(f.id, {...f, fields:newF});
                        }}/> Req</label>
                        <button onClick={()=>{
                          const newF = [...f.fields]; newF.splice(idx, 1); updateForm(f.id, {...f, fields:newF});
-                       }} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:"1rem"}}>×</button>
+                       }} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:"1.2rem",marginLeft:10,lineHeight:1}}>×</button>
                      </div>
                    ))}
                  </div>
+                 <div style={{background:"#F9F9F9",padding:12,borderRadius:8,border:"1px solid var(--bd)",marginBottom:12}}>
+                    <p style={{fontSize:".8rem",fontWeight:700,marginBottom:8,color:"var(--dt)"}}>Add a Standard Field</p>
+                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
+                      <select id={`sel_${f.id}`} style={{flex:1,padding:"8px",border:"1px solid var(--bd)",borderRadius:6,fontSize:".85rem"}}>
+                        <option value="">-- Choose from Library --</option>
+                        {fieldLib.map(fl => <option key={fl.id} value={fl.id}>{fl.label} ({fl.type})</option>)}
+                      </select>
+                      <button onClick={()=>{
+                        const sel = document.getElementById(`sel_${f.id}`);
+                        if(!sel.value) return;
+                        const target = fieldLib.find(fl => fl.id === sel.value);
+                        if(target) updateForm(f.id, {...f, fields: [...f.fields, {label:target.label, type:target.type, required:false}]});
+                        sel.value = "";
+                      }} className="bt" style={{padding:"8px 16px",borderRadius:6,fontSize:".8rem",fontWeight:700}}>Add</button>
+                    </div>
+                    {!isAddingLib ? (
+                      <button onClick={()=>setIsAddingLib(true)} style={{fontSize:".75rem",background:"none",border:"none",color:"var(--tl)",cursor:"pointer",textDecoration:"underline",padding:0,fontWeight:600}}>+ Create New Standard Field in Library</button>
+                    ) : (
+                      <div style={{display:"flex",gap:6,alignItems:"center",marginTop:6,background:"white",padding:10,borderRadius:6,border:"1px dashed var(--tl)"}}>
+                        <input value={newLibLabel} onChange={e=>setNewLibLabel(e.target.value)} placeholder="Field Label (e.g. T-Shirt Size)" style={{flex:1,padding:"6px",fontSize:".8rem",border:"1px solid var(--bd)",borderRadius:4}}/>
+                        <select value={newLibType} onChange={e=>setNewLibType(e.target.value)} style={{padding:"6px",fontSize:".8rem",border:"1px solid var(--bd)",borderRadius:4}}>
+                          <option value="text">Text</option>
+                          <option value="number">Number</option>
+                          <option value="email">Email</option>
+                          <option value="tel">Phone</option>
+                          <option value="date">Date</option>
+                          <option value="fullname">Full Name</option>
+                          <option value="address">Address</option>
+                          <option value="gender">Gender</option>
+                        </select>
+                        <button onClick={handleCreateStandardField} style={{padding:"6px 12px",background:"#1A7A3E",color:"white",border:"none",borderRadius:4,fontSize:".75rem",cursor:"pointer",fontWeight:700}}>Save</button>
+                        <button onClick={()=>setIsAddingLib(false)} style={{padding:"6px 12px",background:"#EEE",border:"none",borderRadius:4,fontSize:".75rem",cursor:"pointer",fontWeight:600}}>Cancel</button>
+                      </div>
+                    )}
+                 </div>
                  <div style={{display:"flex",gap:8}}>
-                   <button onClick={()=>{
-                     updateForm(f.id, {...f, fields: [...f.fields, {label:"", type:"text", required:false}]});
-                   }} style={{padding:"4px 10px",background:"var(--ww)",border:"1px dashed var(--bd)",borderRadius:6,cursor:"pointer",fontSize:".75rem"}}>+ Add Field</button>
                    <div style={{flex:1}}/>
-                   <button onClick={()=>setEditingId(null)} className="bt" style={{padding:"4px 12px",borderRadius:6,fontWeight:600,fontSize:".75rem"}}>Done</button>
+                   <button onClick={()=>setEditingId(null)} className="bt" style={{padding:"6px 16px",borderRadius:6,fontWeight:700,fontSize:".85rem"}}>Done</button>
                  </div>
                </div>
              ) : (
