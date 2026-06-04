@@ -40,6 +40,25 @@ const fbSave = async (content, idToken) => {
   return true;
 };
 
+const fbSubmitRegistration = async (registrationData) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.proj}/databases/(default)/documents/registrations`;
+  const res = await fetch(REG_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(registrationData) },
+        submittedAt: { timestampValue: new Date().toISOString() }
+      }
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error(e?.error?.message || "Submission failed");
+  }
+  return true;
+};
+
 const fbLogin = async (email, password) => {
   const res = await fetch(AUTH_URL, {
     method: "POST",
@@ -539,11 +558,42 @@ function Donate({ C, lang }) {
   );
 }
 
-// ── EVENTS ────────────────────────────────────────────────────────────────────
 function Events({ C }) {
   const w = useW(); const mob = w<700;
+  const [selectedEvent, setSelectedEvent] = useState(null); // { type: 'register' | 'details', event }
+  const [formData, setFormData] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const getForm = (id) => C.forms?.find(f => f.id === id) || { fields: [] };
+
+  const submitForm = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      // Option B: Save to Firebase
+      await fbSubmitRegistration({
+        eventId: selectedEvent.event.title,
+        eventTitle: selectedEvent.event.title,
+        formData: formData
+      });
+      // Option A: WhatsApp redirection
+      let msg = `*New Registration: ${selectedEvent.event.title}*\n\n`;
+      Object.entries(formData).forEach(([k,v]) => {
+        msg += `*${k}:* ${v}\n`;
+      });
+      const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(waLink, '_blank');
+      setDone(true);
+    } catch(err) {
+      alert("Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <section id="events" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
+    <section id="events" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)",position:"relative"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:mob?"flex-start":"flex-end",flexDirection:mob?"column":"row",gap:16,marginBottom:36}}>
           <div><span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Calendar</span>
@@ -555,8 +605,8 @@ function Events({ C }) {
           {C.events.map((ev,i)=>(
             <div key={i} className="ch" style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",display:"flex"}}>
               <div style={{background:"linear-gradient(180deg,var(--dt),var(--tm))",color:"white",padding:"18px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:72,flexShrink:0}}>
-                <div style={{fontSize:"1.6rem",fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1}}>{ev.date.split(" ")[0]}</div>
-                <div style={{fontSize:".7rem",opacity:.8,marginTop:3}}>{ev.date.split(" ")[1]}</div>
+                <div style={{fontSize:"1.6rem",fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1}}>{ev.date?.split(" ")[0]}</div>
+                <div style={{fontSize:".7rem",opacity:.8,marginTop:3}}>{ev.date?.split(" ")[1]}</div>
                 <div style={{fontSize:".65rem",opacity:.6}}>{ev.month}</div>
               </div>
               <div style={{padding:"16px",flex:1,minWidth:0}}>
@@ -564,14 +614,64 @@ function Events({ C }) {
                 <h4 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:5}}>{ev.title}</h4>
                 <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{ev.location}</p>
                 <div style={{display:"flex",gap:7}}>
-                  <button className="bs" style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>Register</button>
-                  <button style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer"}}>Details</button>
+                  {ev.formId ? (
+                    <button onClick={()=>setSelectedEvent({type:'register', event:ev})} className="bs" style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>Register</button>
+                  ) : (
+                    <button disabled style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600,background:"#F5F5F5",color:"#CCC",border:"none"}}>No Registration</button>
+                  )}
+                  <button onClick={()=>setSelectedEvent({type:'details', event:ev})} style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontWeight:600}}>Details</button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {selectedEvent && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div className="ac" style={{background:"white",width:"100%",maxWidth:500,padding:24,borderRadius:12,maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
+            <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
+            
+            {selectedEvent.type === 'details' && (
+              <div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:10,fontWeight:700,paddingRight:30}}>{selectedEvent.event.title}</h3>
+                <div style={{display:"flex",gap:10,marginBottom:16}}>
+                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:selectedEvent.event.color||"var(--tl)",color:"var(--dt)"}}>{selectedEvent.event.tag}</span>
+                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:"#F5F5F5",color:"var(--mu)"}}>{selectedEvent.event.date} {selectedEvent.event.month}</span>
+                </div>
+                <p style={{fontSize:".9rem",color:"var(--tm2)",lineHeight:1.6}}>Join us at <strong>{selectedEvent.event.location}</strong> for this incredible event. We look forward to seeing you there!</p>
+              </div>
+            )}
+
+            {selectedEvent.type === 'register' && (
+              <div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:4,fontWeight:700,paddingRight:30}}>Register</h3>
+                <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:20}}>{selectedEvent.event.title}</p>
+                {done ? (
+                  <div style={{textAlign:"center",padding:"30px 0"}}>
+                    <div style={{fontSize:"3rem",marginBottom:10}}>✅</div>
+                    <h4 style={{color:"#1A7A3E",fontWeight:700,marginBottom:6}}>Registration Successful!</h4>
+                    <p style={{fontSize:".85rem",color:"var(--mu)"}}>Redirecting to WhatsApp to send your confirmation...</p>
+                  </div>
+                ) : (
+                  <form onSubmit={submitForm} style={{display:"flex",flexDirection:"column",gap:12}}>
+                    {getForm(selectedEvent.event.formId).fields.length === 0 && <p style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields. You can still register to send a blank confirmation.</p>}
+                    {getForm(selectedEvent.event.formId).fields.map((f, idx) => (
+                      <div key={idx}>
+                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>{f.label} {f.required&&<span style={{color:"red"}}>*</span>}</label>
+                        <input type={f.type} required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                      </div>
+                    ))}
+                    <button type="submit" className="bs" style={{padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
+                      {submitting ? "Submitting..." : "Submit Registration"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1743,6 +1843,98 @@ function Donations({ mob }) {
   );
 }
 
+function AdminForms({ C, setC, saveToFb, mob }) {
+  const [forms, setForms] = useState(C.forms || []);
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => setForms(C.forms || []), [C.forms]);
+
+  const upd = (newForms) => {
+    setForms(newForms);
+    const newC = {...C, forms: newForms};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const createForm = () => {
+    const newForm = { id: "form_"+Date.now(), name: "New Form", fields: [] };
+    upd([...forms, newForm]);
+    setEditingId(newForm.id);
+  };
+  
+  const updateForm = (id, newForm) => {
+    upd(forms.map(f => f.id === id ? newForm : f));
+  };
+
+  const removeForm = (id) => {
+    if (!window.confirm("Delete this form template?")) return;
+    upd(forms.filter(f => f.id !== id));
+  };
+
+  return (
+    <div style={{marginBottom: 30}}>
+       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+         <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",color:"var(--dt)",fontWeight:700}}>Registration Form Templates</h3>
+         <button onClick={createForm} className="bs" style={{padding:"6px 12px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>+ New Form</button>
+       </div>
+       {forms.length === 0 && <div style={{color:"var(--mu)",fontSize:".85rem",fontStyle:"italic"}}>No form templates created yet.</div>}
+       <div style={{display:"flex",flexDirection:"column",gap:10}}>
+         {forms.map(f => (
+           <div key={f.id} className="ac" style={{padding: 14}}>
+             {editingId === f.id ? (
+               <div>
+                 <input value={f.name} onChange={e=>updateForm(f.id, {...f, name: e.target.value})} style={{padding:"6px",border:"1px solid var(--bd)",borderRadius:6,marginBottom:10,fontWeight:600}} placeholder="Form Name"/>
+                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+                   {f.fields.map((field, idx) => (
+                     <div key={idx} style={{display:"flex",gap:8,alignItems:"center"}}>
+                       <input value={field.label} onChange={e=>{
+                         const newF = [...f.fields]; newF[idx].label = e.target.value; updateForm(f.id, {...f, fields:newF});
+                       }} style={{padding:"4px 8px",border:"1px solid var(--bd)",borderRadius:4,flex:1}} placeholder="Field Name (e.g. Blood Group)"/>
+                       <select value={field.type} onChange={e=>{
+                         const newF = [...f.fields]; newF[idx].type = e.target.value; updateForm(f.id, {...f, fields:newF});
+                       }} style={{padding:"4px",border:"1px solid var(--bd)",borderRadius:4}}>
+                         <option value="text">Text</option>
+                         <option value="number">Number</option>
+                         <option value="email">Email</option>
+                         <option value="tel">Phone</option>
+                       </select>
+                       <label style={{fontSize:".75rem",display:"flex",alignItems:"center",gap:4}}><input type="checkbox" checked={field.required} onChange={e=>{
+                         const newF = [...f.fields]; newF[idx].required = e.target.checked; updateForm(f.id, {...f, fields:newF});
+                       }}/> Req</label>
+                       <button onClick={()=>{
+                         const newF = [...f.fields]; newF.splice(idx, 1); updateForm(f.id, {...f, fields:newF});
+                       }} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:"1rem"}}>×</button>
+                     </div>
+                   ))}
+                 </div>
+                 <div style={{display:"flex",gap:8}}>
+                   <button onClick={()=>{
+                     updateForm(f.id, {...f, fields: [...f.fields, {label:"", type:"text", required:false}]});
+                   }} style={{padding:"4px 10px",background:"var(--ww)",border:"1px dashed var(--bd)",borderRadius:6,cursor:"pointer",fontSize:".75rem"}}>+ Add Field</button>
+                   <div style={{flex:1}}/>
+                   <button onClick={()=>setEditingId(null)} className="bt" style={{padding:"4px 12px",borderRadius:6,fontWeight:600,fontSize:".75rem"}}>Done</button>
+                 </div>
+               </div>
+             ) : (
+               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                 <div>
+                   <div style={{fontWeight:600,fontSize:".9rem",color:"var(--dt)"}}>{f.name}</div>
+                   <div style={{fontSize:".75rem",color:"var(--mu)"}}>{f.fields.length} fields</div>
+                 </div>
+                 <div style={{display:"flex",gap:6}}>
+                   <button onClick={()=>setEditingId(f.id)} style={{padding:"4px 10px",background:"var(--tl)",border:"none",borderRadius:6,color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Edit</button>
+                   <button onClick={()=>removeForm(f.id)} style={{padding:"4px 10px",background:"#FEF0EF",border:"none",borderRadius:6,color:"#C0392B",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Delete</button>
+                 </div>
+               </div>
+             )}
+           </div>
+         ))}
+       </div>
+       <hr style={{margin:"30px 0",border:"none",borderTop:"1px dashed var(--bd)"}}/>
+    </div>
+  );
+}
+
 function AdminEvents({ mob, C, setC, auth }) {
   const [items, setItems] = useState(C.events || []);
   const [saving, setSaving] = useState(false);
@@ -1776,7 +1968,8 @@ function AdminEvents({ mob, C, setC, auth }) {
       month: "2025",
       location: "Event Location",
       tag: "General",
-      color: "#E8F4F8"
+      color: "#E8F4F8",
+      formId: ""
     };
     const newArr = [newItem, ...items];
     setItems(newArr);
@@ -1806,10 +1999,12 @@ function AdminEvents({ mob, C, setC, auth }) {
 
   return (
     <div>
+      <AdminForms C={C} setC={setC} saveToFb={saveToFb} mob={mob} />
       <datalist id="event-tags-list">
         {existingTags.map(t => <option key={t} value={t}/>)}
       </datalist>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",color:"var(--dt)",fontWeight:700}}>Events</h3>
         <button onClick={addEvent} className="bs" style={{padding:"9px 16px",borderRadius:8,fontWeight:600,fontSize:".85rem",opacity:saving?0.5:1}} disabled={saving}>
           {saving ? "Saving..." : "➕ Create Event"}
         </button>
@@ -1838,6 +2033,13 @@ function AdminEvents({ mob, C, setC, auth }) {
                 <div style={{gridColumn:"1/-1"}}>
                   <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Category / Tag</label>
                   <input type="text" list="event-tags-list" value={ev.tag} onChange={e=>updateItem(i,"tag",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600}}>Registration Form</label>
+                  <select value={ev.formId || ""} onChange={e=>updateItem(i,"formId",e.target.value)} style={{width:"100%",padding:"6px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit"}}>
+                    <option value="">-- No Form (Disabled) --</option>
+                    {(C.forms||[]).map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
                 </div>
                 <div style={{gridColumn:"1/-1",display:"flex",justifyContent:"flex-end",gap:7,marginTop:8}}>
                   <button onClick={saveEdit} className="bt" style={{padding:"6px 14px",borderRadius:6,fontWeight:600,fontSize:".75rem"}}>Save Changes</button>
