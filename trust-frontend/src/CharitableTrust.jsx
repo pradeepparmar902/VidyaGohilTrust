@@ -571,12 +571,16 @@ function Events({ C }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Option B: Save to Firebase
-      await fbSubmitRegistration({
-        eventId: selectedEvent.event.title,
-        eventTitle: selectedEvent.event.title,
-        formData: formData
-      });
+      // Option B: Save to Firebase (fails gracefully if Security Rules aren't set)
+      try {
+        await fbSubmitRegistration({
+          eventId: selectedEvent.event.title,
+          eventTitle: selectedEvent.event.title,
+          formData: formData
+        });
+      } catch (fbErr) {
+        console.warn("Firebase save skipped (Update Security Rules to enable database logging). Proceeding to WhatsApp.");
+      }
       // Option A: WhatsApp redirection
       let msg = `*New Registration: ${selectedEvent.event.title}*\n\n`;
       Object.entries(formData).forEach(([k,v]) => {
