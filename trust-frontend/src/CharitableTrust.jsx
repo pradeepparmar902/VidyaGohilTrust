@@ -580,7 +580,8 @@ function Events({ C }) {
       // Option A: WhatsApp redirection
       let msg = `*New Registration: ${selectedEvent.event.title}*\n\n`;
       Object.entries(formData).forEach(([k,v]) => {
-        msg += `*${k}:* ${v}\n`;
+        const displayV = typeof v === 'string' ? v.replace(/\|/g, ' ').replace(/\s+/g, ' ').trim() : v;
+        msg += `*${k}:* ${displayV}\n`;
       });
       const waLink = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       window.open(waLink, '_blank');
@@ -659,7 +660,30 @@ function Events({ C }) {
                     {getForm(selectedEvent.event.formId).fields.map((f, idx) => (
                       <div key={idx}>
                         <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>{f.label} {f.required&&<span style={{color:"red"}}>*</span>}</label>
-                        <input type={f.type} required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                        {f.type === 'address' ? (
+                          <textarea required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",minHeight:80,resize:"vertical"}}/>
+                        ) : f.type === 'gender' ? (
+                          <select required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}>
+                            <option value="">-- Select Gender --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        ) : f.type === 'fullname' ? (
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                            <input placeholder="First" required={f.required} value={(formData[f.label]?.split("|")[0])||""} onChange={e=>{
+                              const parts = (formData[f.label]||"||").split("|"); parts[0] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                            <input placeholder="Middle" value={(formData[f.label]?.split("|")[1])||""} onChange={e=>{
+                              const parts = (formData[f.label]||"||").split("|"); parts[1] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                            <input placeholder="Last" required={f.required} value={(formData[f.label]?.split("|")[2])||""} onChange={e=>{
+                              const parts = (formData[f.label]||"||").split("|"); parts[2] = e.target.value; setFormData({...formData, [f.label]:parts.join("|")});
+                            }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                          </div>
+                        ) : (
+                          <input type={f.type} required={f.required} value={formData[f.label]||""} onChange={e=>setFormData({...formData, [f.label]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                        )}
                       </div>
                     ))}
                     <button type="submit" className="bs" style={{padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
@@ -1897,6 +1921,10 @@ function AdminForms({ C, setC, saveToFb, mob }) {
                          <option value="number">Number</option>
                          <option value="email">Email</option>
                          <option value="tel">Phone</option>
+                         <option value="date">Date</option>
+                         <option value="fullname">Full Name (First, Middle, Last)</option>
+                         <option value="address">Address (Textarea)</option>
+                         <option value="gender">Gender (M/F)</option>
                        </select>
                        <label style={{fontSize:".75rem",display:"flex",alignItems:"center",gap:4}}><input type="checkbox" checked={field.required} onChange={e=>{
                          const newF = [...f.fields]; newF[idx].required = e.target.checked; updateForm(f.id, {...f, fields:newF});
