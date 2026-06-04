@@ -41,7 +41,7 @@ const fbSave = async (content, idToken) => {
 };
 
 const fbSubmitRegistration = async (registrationData, idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.proj}/databases/(default)/documents/registrations`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, {
