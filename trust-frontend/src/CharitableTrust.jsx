@@ -61,6 +61,23 @@ const fbSubmitRegistration = async (registrationData, idToken) => {
   return true;
 };
 
+const fbFetchRegistrations = async (idToken) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations?pageSize=300`;
+  const headers = {};
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(REG_URL, { headers });
+  if (!res.ok) throw new Error("Failed to fetch registrations");
+  const data = await res.json();
+  if (!data.documents) return [];
+  return data.documents.map(doc => {
+    try {
+      const parsed = JSON.parse(doc.fields.data.stringValue);
+      const submittedAt = doc.fields.submittedAt?.timestampValue;
+      return { id: doc.name.split("/").pop(), ...parsed, _submittedAt: submittedAt };
+    } catch(e) { return null; }
+  }).filter(Boolean).sort((a,b) => new Date(b._submittedAt || 0).getTime() - new Date(a._submittedAt || 0).getTime());
+};
+
 const fbSignUp = async (email, password) => {
   const SIGNUP_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.apiKey}`;
   const res = await fetch(SIGNUP_URL, {
@@ -1850,6 +1867,7 @@ const ANAV = [
   {id:"overview",icon:"📊",label:"Overview"},
   {id:"donations",icon:"💰",label:"Donations"},
   {id:"events",icon:"📅",label:"Events"},
+  {id:"registrations",icon:"📋",label:"Registrations"},
   {id:"volunteers",icon:"🤝",label:"Volunteers"},
   {id:"gallery",icon:"🖼️",label:"Gallery"},
   {id:"settings",icon:"⚙️",label:"Settings"},
@@ -1948,6 +1966,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="overview"  && <Overview mob={mob} C={C}/>}
           {tab==="donations" && <Donations mob={mob}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
+          {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
           {tab==="volunteers"&& <Volunteers mob={mob}/>}
           {tab==="gallery"   && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="settings"  && <Settings mob={mob} C={C}/>}
