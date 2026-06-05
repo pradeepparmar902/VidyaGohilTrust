@@ -2044,7 +2044,25 @@ function AdminForms({ C, setC, saveToFb, mob }) {
   const handleCreateStandardField = () => {
     if(!newLibLabel.trim()) return;
     const nf = { id: "fl_"+Date.now(), label: newLibLabel.trim(), type: newLibType };
-    saveLib([...fieldLib, nf]);
+    
+    const newLib = [...fieldLib, nf];
+    let newForms = forms;
+    
+    if (editingId) {
+      newForms = forms.map(f => {
+        if (f.id === editingId) {
+          return {...f, fields: [...f.fields, { label: nf.label, type: nf.type, required: false }]};
+        }
+        return f;
+      });
+      setForms(newForms);
+    }
+    
+    setFieldLib(newLib);
+    const newC = {...C, fieldLibrary: newLib, forms: newForms};
+    setC(newC);
+    saveToFb(newC);
+    
     setNewLibLabel("");
     setIsAddingLib(false);
   };
