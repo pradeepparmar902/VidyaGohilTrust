@@ -2635,6 +2635,15 @@ function AdminRegistrations({ mob, C, auth }) {
   const [viewing, setViewing] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [error, setError] = useState(null);
+  const [activeEventId, setActiveEventId] = useState("");
+
+  const events = C?.events || [];
+
+  useEffect(() => {
+    if(events.length > 0 && !activeEventId) {
+      setActiveEventId(events[0].id || events[0].title);
+    }
+  }, [events, activeEventId]);
 
   useEffect(() => {
     try {
@@ -2650,51 +2659,67 @@ function AdminRegistrations({ mob, C, auth }) {
 
   let evMap = {};
   try {
-    (C?.events||[]).forEach(e => { if(e) evMap[e.id || e.title] = e.title; });
+    events.forEach(e => { if(e) evMap[e.id || e.title] = e; });
   } catch(e) { console.error("Error building evMap", e); }
 
   if (error) return <div style={{padding:30}}>Error loading registrations: {error}</div>;
 
+  const activeEvent = evMap[activeEventId];
+  const formFields = activeEvent?.form || [];
+  const filteredRegs = regs.filter(r => (r.eventId === activeEventId) || (r.eventName === activeEvent?.title));
+
   return (
-    <div style={{padding:mob?"16px":"32px",maxWidth:1000,margin:"0 auto"}}>
-      <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",marginBottom:20}}>Event Registrations</h2>
+    <div style={{padding:mob?"16px":"32px",maxWidth:1200,margin:"0 auto"}}>
+      <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
+        <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Event Registrations</h2>
+        <select 
+          value={activeEventId} 
+          onChange={e=>setActiveEventId(e.target.value)}
+          style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",minWidth:250,fontFamily:"inherit"}}
+        >
+          {events.length === 0 && <option value="">No events available</option>}
+          {events.map((e,i) => (
+            <option key={i} value={e.id || e.title}>{e.title}</option>
+          ))}
+        </select>
+      </div>
+
       {loading ? <p>Loading registrations...</p> : (
         <div className="ac" style={{overflowX:"auto"}}>
-          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:600}}>
+          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
             <thead>
               <tr style={{background:"#F5F5F5"}}>
-                {["Date", "Event", "Name", "Mobile", "Actions"].map(h=><th key={h} style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>{h}</th>)}
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Date</th>
+                {formFields.map(f => (
+                  <th key={f.id || f.label} style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>{f.label}</th>
+                ))}
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {regs.map((r, i) => {
+              {filteredRegs.map((r, i) => {
                 if(!r) return null;
-                let name = r.fullName || r.name || r["Full Name"] || r["Name"] || "-";
-                if(typeof name === 'string') name = name.replace(/\|/g,' ');
-                else name = String(name);
-                
-                let mobNum = r.mobile || r.phone || r["Mobile Number"] || r["Phone"] || "-";
-                if(typeof mobNum !== 'string') mobNum = String(mobNum);
-
-                let evName = r.eventName || evMap[r.eventId] || "Unknown Event";
-                if(typeof evName !== 'string') evName = String(evName);
-
                 let date = "-";
                 try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
 
                 return (
                   <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
-                    <td style={{padding:"12px"}}>{date}</td>
-                    <td style={{padding:"12px"}}>{evName}</td>
-                    <td style={{padding:"12px"}}>{name}</td>
-                    <td style={{padding:"12px"}}>{mobNum}</td>
+                    <td style={{padding:"12px",whiteSpace:"nowrap"}}>{date}</td>
+                    {formFields.map(f => {
+                      let val = r[f.label] || r[f.id] || "-";
+                      if (typeof val === 'string' && val.startsWith('http')) val = "📎 Attached File";
+                      else if (typeof val === 'string') val = val.replace(/\|/g, ' ');
+                      else val = String(val);
+                      if (val.length > 50) val = val.substring(0, 47) + "...";
+                      return <td key={f.id || f.label} style={{padding:"12px"}}>{val}</td>;
+                    })}
                     <td style={{padding:"12px"}}>
                       <button onClick={()=>setViewing(r)} className="bt" style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem"}}>View</button>
                     </td>
                   </tr>
                 );
               })}
-              {regs.length === 0 && <tr><td colSpan={5} style={{padding:20,textAlign:"center"}}>No registrations found.</td></tr>}
+              {filteredRegs.length === 0 && <tr><td colSpan={formFields.length + 2} style={{padding:20,textAlign:"center"}}>No registrations found for this event.</td></tr>}
             </tbody>
           </table>
         </div>
