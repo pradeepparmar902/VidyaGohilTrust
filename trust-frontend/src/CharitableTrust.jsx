@@ -851,13 +851,20 @@ function Events({ C }) {
           <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
             <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <h3 style={{fontSize:"1rem",fontWeight:600}}>{previewFile.type === 'image' ? 'Photo Preview' : 'Document Preview'}</h3>
-              <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                {previewFile.type !== 'image' && (
+                  <a href={previewFile.url} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+                )}
+                <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+              </div>
             </div>
             <div style={{flex:1,overflow:"auto",padding:20,display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
                {previewFile.type === 'image' ? (
                  <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
                ) : (
-                 <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewFile.url)}&embedded=true`} style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} title="Document Preview" />
+                 <object data={previewFile.url} type="application/pdf" style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+                   <iframe src={previewFile.url} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+                 </object>
                )}
             </div>
           </div>
