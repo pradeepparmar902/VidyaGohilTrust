@@ -2624,6 +2624,136 @@ function LoginScreen({ onLogin, onSkip }) {
   );
 }
 
+// ── ADMIN REGISTRATIONS ────────────────────────────────────────────────────────
+function AdminRegistrations({ mob, C, auth }) {
+  const [regs, setRegs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    try {
+      fbFetchRegistrations(auth?.idToken).then(d => {
+        setRegs(d || []); setLoading(false);
+      }).catch(e => {
+        console.error(e); setError(e.message); setLoading(false);
+      });
+    } catch (e) {
+      setError(e.message); setLoading(false);
+    }
+  }, [auth]);
+
+  let evMap = {};
+  try {
+    (C?.events||[]).forEach(e => { if(e) evMap[e.id || e.title] = e.title; });
+  } catch(e) { console.error("Error building evMap", e); }
+
+  if (error) return <div style={{padding:30}}>Error loading registrations: {error}</div>;
+
+  return (
+    <div style={{padding:mob?"16px":"32px",maxWidth:1000,margin:"0 auto"}}>
+      <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",marginBottom:20}}>Event Registrations</h2>
+      {loading ? <p>Loading registrations...</p> : (
+        <div className="ac" style={{overflowX:"auto"}}>
+          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:600}}>
+            <thead>
+              <tr style={{background:"#F5F5F5"}}>
+                {["Date", "Event", "Name", "Mobile", "Actions"].map(h=><th key={h} style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {regs.map((r, i) => {
+                if(!r) return null;
+                let name = r.fullName || r.name || r["Full Name"] || r["Name"] || "-";
+                if(typeof name === 'string') name = name.replace(/\|/g,' ');
+                else name = String(name);
+                
+                let mobNum = r.mobile || r.phone || r["Mobile Number"] || r["Phone"] || "-";
+                if(typeof mobNum !== 'string') mobNum = String(mobNum);
+
+                let evName = r.eventName || evMap[r.eventId] || "Unknown Event";
+                if(typeof evName !== 'string') evName = String(evName);
+
+                let date = "-";
+                try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
+
+                return (
+                  <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
+                    <td style={{padding:"12px"}}>{date}</td>
+                    <td style={{padding:"12px"}}>{evName}</td>
+                    <td style={{padding:"12px"}}>{name}</td>
+                    <td style={{padding:"12px"}}>{mobNum}</td>
+                    <td style={{padding:"12px"}}>
+                      <button onClick={()=>setViewing(r)} className="bt" style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem"}}>View</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {regs.length === 0 && <tr><td colSpan={5} style={{padding:20,textAlign:"center"}}>No registrations found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {viewing && (
+        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",width:"100%",maxWidth:600,borderRadius:12,display:"flex",flexDirection:"column",maxHeight:"90vh"}}>
+            <div style={{padding:"16px 20px",borderBottom:"1px solid var(--bd)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1.1rem",fontWeight:700,color:"var(--dt)"}}>Registration Details</h3>
+              <button onClick={()=>setViewing(null)} style={{background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"20px",overflowY:"auto",flex:1}}>
+              {Object.keys(viewing).filter(k => !k.startsWith('_') && k !== 'id' && k !== 'eventId' && k !== 'eventName').map(k => {
+                const val = viewing[k];
+                const displayVal = typeof val === 'string' ? val.replace(/\|/g, ' ') : String(val);
+                const isUrl = typeof val === 'string' && val.startsWith('http');
+                return (
+                  <div key={k} style={{marginBottom:16,borderBottom:"1px solid #EEE",paddingBottom:10}}>
+                    <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,textTransform:"uppercase",marginBottom:4}}>{k}</div>
+                    {isUrl ? (
+                      <button type="button" onClick={()=>setPreviewFile({url:val, type:val.includes('.pdf')?'file':'image'})} style={{background:"none",border:"none",fontSize:".85rem",color:"var(--dt)",textDecoration:"underline",cursor:"pointer",padding:0}}>
+                        View Uploaded File
+                      </button>
+                    ) : (
+                      <div style={{fontSize:".95rem",color:"var(--tx)"}}>{displayVal}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewFile && (
+        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1rem",fontWeight:600}}>File Preview</h3>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                {previewFile.type !== 'image' && (
+                  <a href={previewFile.url} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+                )}
+                <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+              </div>
+            </div>
+            <div style={{flex:1,overflow:"auto",padding:20,display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
+               {previewFile.type === 'image' ? (
+                 <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
+               ) : (
+                 <object data={previewFile.url} type="application/pdf" style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+                   <iframe src={previewFile.url} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+                 </object>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page,    setPage]    = useState("public");
