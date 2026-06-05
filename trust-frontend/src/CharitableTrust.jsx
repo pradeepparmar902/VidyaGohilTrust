@@ -110,6 +110,19 @@ const fbUploadPhoto = async (file, idToken) => {
   return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
 };
 
+const fbUploadPublicFile = async (file, idToken) => {
+  const ext  = file.name.split(".").pop();
+  const name = encodeURIComponent(`public_uploads/file_${Date.now()}_${Math.random().toString(36).substr(2,5)}.${ext}`);
+  const res  = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+    method: "POST",
+    headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
+    body: file,
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
+};
+
 
 
 function useW() {
@@ -585,6 +598,21 @@ function Events({ C }) {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authToken, setAuthToken] = useState("");
+  const [uploadingFields, setUploadingFields] = useState({});
+
+  const handleFileUpload = async (e, fKey) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingFields(prev => ({...prev, [fKey]: true}));
+    try {
+      const url = await fbUploadPublicFile(file, authToken);
+      setFormData(prev => ({...prev, [fKey]: url}));
+    } catch (err) {
+      alert("Failed to upload. Please try again.");
+    } finally {
+      setUploadingFields(prev => ({...prev, [fKey]: false}));
+    }
+  };
 
   const getForm = (id) => C.forms?.find(f => f.id === id) || { fields: [] };
 
@@ -772,6 +800,28 @@ function Events({ C }) {
                             <input placeholder="Last" required={f.required} value={(formData[fKey]?.split("|")[2])||""} onChange={e=>{
                               const parts = (formData[fKey]||"||").split("|"); parts[2] = e.target.value; setFormData({...formData, [fKey]:parts.join("|")});
                             }} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
+                          </div>
+                        ) : f.type === 'image' || f.type === 'file' ? (
+                          <div style={{padding:"12px",borderRadius:8,border:"1px dashed var(--bd)",background:"#FAFAFA"}}>
+                            {formData[fKey] ? (
+                              <div style={{display:"flex",alignItems:"center",gap:10,background:"white",padding:"8px",borderRadius:6,border:"1px solid var(--bd)"}}>
+                                {f.type === 'image' ? (
+                                  <img src={formData[fKey]} alt="preview" style={{width:40,height:40,objectFit:"cover",borderRadius:4}}/>
+                                ) : (
+                                  <div style={{width:40,height:40,background:"#F0F0F0",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem",fontWeight:700,color:"var(--dt)"}}>FILE</div>
+                                )}
+                                <div style={{flex:1,overflow:"hidden"}}>
+                                  <a href={formData[fKey]} target="_blank" rel="noreferrer" style={{fontSize:".8rem",color:"var(--dt)",textDecoration:"underline",whiteSpace:"nowrap",textOverflow:"ellipsis",display:"block"}}>View Uploaded {f.type==='image'?'Photo':'Document'}</a>
+                                </div>
+                                <button type="button" onClick={()=>setFormData({...formData, [fKey]:""})} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:"1.2rem",padding:"0 8px"}}>×</button>
+                              </div>
+                            ) : uploadingFields[fKey] ? (
+                              <div style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic",display:"flex",alignItems:"center",gap:8}}>
+                                <div style={{width:14,height:14,border:"2px solid var(--bd)",borderTopColor:"var(--dt)",borderRadius:"50%",animation:"spin 1s linear infinite"}}/> Uploading...
+                              </div>
+                            ) : (
+                              <input type="file" required={f.required} accept={f.type==='image'?"image/*":".pdf,.doc,.docx,.jpg,.png"} onChange={e=>handleFileUpload(e, fKey)} style={{fontSize:".85rem",color:"var(--tx)"}}/>
+                            )}
                           </div>
                         ) : (
                           <input type={f.type} required={f.required} value={formData[fKey]||""} onChange={e=>setFormData({...formData, [fKey]:e.target.value})} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}/>
@@ -1967,7 +2017,9 @@ function AdminForms({ C, setC, saveToFb, mob }) {
     { id: "fl_4", label: "Age", type: "number" },
     { id: "fl_5", label: "Gender", type: "gender" },
     { id: "fl_6", label: "Address", type: "address" },
-    { id: "fl_7", label: "Blood Group", type: "text" }
+    { id: "fl_7", label: "Blood Group", type: "text" },
+    { id: "fl_8", label: "Passport Size Photo", type: "image" },
+    { id: "fl_9", label: "Supporting Document", type: "file" }
   ];
 
   const [forms, setForms] = useState(C.forms || []);
@@ -2075,6 +2127,8 @@ function AdminForms({ C, setC, saveToFb, mob }) {
                           <option value="fullname">Full Name</option>
                           <option value="address">Address</option>
                           <option value="gender">Gender</option>
+                          <option value="image">Photo Upload (Image)</option>
+                          <option value="file">Document Upload (PDF/Word)</option>
                         </select>
                         <button onClick={handleCreateStandardField} style={{padding:"6px 12px",background:"#1A7A3E",color:"white",border:"none",borderRadius:4,fontSize:".75rem",cursor:"pointer",fontWeight:700}}>Save</button>
                         <button onClick={()=>setIsAddingLib(false)} style={{padding:"6px 12px",background:"#EEE",border:"none",borderRadius:4,fontSize:".75rem",cursor:"pointer",fontWeight:600}}>Cancel</button>
