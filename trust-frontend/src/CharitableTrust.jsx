@@ -2062,7 +2062,7 @@ function AdminForms({ C, setC, saveToFb, mob }) {
                       }} className="bt" style={{padding:"8px 16px",borderRadius:6,fontSize:".8rem",fontWeight:700}}>Add</button>
                     </div>
                     {!isAddingLib ? (
-                      <button onClick={()=>setIsAddingLib(true)} style={{fontSize:".75rem",background:"none",border:"none",color:"var(--tl)",cursor:"pointer",textDecoration:"underline",padding:0,fontWeight:600}}>+ Create New Standard Field in Library</button>
+                      <button onClick={()=>setIsAddingLib(true)} style={{fontSize:".8rem",background:"var(--dt)",color:"white",border:"none",padding:"6px 12px",borderRadius:6,cursor:"pointer",fontWeight:600,marginTop:4}}>+ Create New Standard Field</button>
                     ) : (
                       <div style={{display:"flex",gap:6,alignItems:"center",marginTop:6,background:"white",padding:10,borderRadius:6,border:"1px dashed var(--tl)"}}>
                         <input value={newLibLabel} onChange={e=>setNewLibLabel(e.target.value)} placeholder="Field Label (e.g. T-Shirt Size)" style={{flex:1,padding:"6px",fontSize:".8rem",border:"1px solid var(--bd)",borderRadius:4}}/>
