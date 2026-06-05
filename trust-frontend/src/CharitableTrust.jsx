@@ -599,6 +599,7 @@ function Events({ C }) {
   const [authError, setAuthError] = useState("");
   const [authToken, setAuthToken] = useState("");
   const [uploadingFields, setUploadingFields] = useState({});
+  const [previewFile, setPreviewFile] = useState(null);
 
   const handleFileUpload = async (e, fKey) => {
     const file = e.target.files[0];
@@ -811,7 +812,7 @@ function Events({ C }) {
                                   <div style={{width:40,height:40,background:"#F0F0F0",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem",fontWeight:700,color:"var(--dt)"}}>FILE</div>
                                 )}
                                 <div style={{flex:1,overflow:"hidden"}}>
-                                  <a href={formData[fKey]} target="_blank" rel="noreferrer" style={{fontSize:".8rem",color:"var(--dt)",textDecoration:"underline",whiteSpace:"nowrap",textOverflow:"ellipsis",display:"block"}}>View Uploaded {f.type==='image'?'Photo':'Document'}</a>
+                                  <button type="button" onClick={()=>setPreviewFile({url:formData[fKey], type:f.type})} style={{background:"none",border:"none",fontSize:".8rem",color:"var(--dt)",textDecoration:"underline",cursor:"pointer",whiteSpace:"nowrap",textOverflow:"ellipsis",display:"block",padding:0}}>View Uploaded {f.type==='image'?'Photo':'Document'}</button>
                                 </div>
                                 <button type="button" onClick={()=>setFormData({...formData, [fKey]:""})} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:"1.2rem",padding:"0 8px"}}>×</button>
                               </div>
@@ -835,6 +836,24 @@ function Events({ C }) {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {previewFile && (
+        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1rem",fontWeight:600}}>{previewFile.type === 'image' ? 'Photo Preview' : 'Document Preview'}</h3>
+              <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+            <div style={{flex:1,overflow:"auto",padding:20,display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
+               {previewFile.type === 'image' ? (
+                 <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
+               ) : (
+                 <iframe src={previewFile.url} style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} title="Document Preview" />
+               )}
+            </div>
           </div>
         </div>
       )}
