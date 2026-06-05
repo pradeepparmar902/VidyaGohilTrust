@@ -72,8 +72,12 @@ const fbFetchRegistrations = async (idToken) => {
   return data.documents.map(doc => {
     try {
       const parsed = JSON.parse(doc.fields.data.stringValue);
+      let flatData = parsed.formData ? { ...parsed, ...parsed.formData } : parsed;
+      delete flatData.formData;
+      if (!flatData.eventName && flatData.eventTitle) flatData.eventName = flatData.eventTitle;
+
       const submittedAt = doc.fields.submittedAt?.timestampValue;
-      return { id: doc.name.split("/").pop(), ...parsed, _submittedAt: submittedAt };
+      return { id: doc.name.split("/").pop(), ...flatData, _submittedAt: submittedAt };
     } catch(e) { return null; }
   }).filter(Boolean).sort((a,b) => new Date(b._submittedAt || 0).getTime() - new Date(a._submittedAt || 0).getTime());
 };
