@@ -857,7 +857,7 @@ function Events({ C }) {
                {previewFile.type === 'image' ? (
                  <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
                ) : (
-                 <iframe src={previewFile.url} style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} title="Document Preview" />
+                 <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewFile.url)}&embedded=true`} style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} title="Document Preview" />
                )}
             </div>
           </div>
