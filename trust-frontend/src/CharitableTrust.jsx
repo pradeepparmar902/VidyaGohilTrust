@@ -111,11 +111,20 @@ const fbUploadPhoto = async (file, idToken) => {
 };
 
 const fbUploadPublicFile = async (file, idToken) => {
-  const ext  = file.name.split(".").pop();
+  const ext = file.name.split(".").pop().toLowerCase();
   const name = encodeURIComponent(`public_uploads/file_${Date.now()}_${Math.random().toString(36).substr(2,5)}.${ext}`);
-  const res  = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+  
+  let cType = file.type;
+  if (!cType) {
+    if (ext === 'pdf') cType = 'application/pdf';
+    else if (ext === 'png') cType = 'image/png';
+    else if (ext === 'jpg' || ext === 'jpeg') cType = 'image/jpeg';
+    else cType = 'application/octet-stream';
+  }
+
+  const res = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
     method: "POST",
-    headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
+    headers: { "Content-Type": cType, "Authorization": `Bearer ${idToken}` },
     body: file,
   });
   if (!res.ok) throw new Error("Upload failed");
