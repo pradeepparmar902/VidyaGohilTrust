@@ -821,7 +821,13 @@ function Events({ C }) {
                                 <div style={{width:14,height:14,border:"2px solid var(--bd)",borderTopColor:"var(--dt)",borderRadius:"50%",animation:"spin 1s linear infinite"}}/> Uploading...
                               </div>
                             ) : (
-                              <input type="file" required={f.required} accept={f.type==='image'?"image/*":".pdf,.doc,.docx,.jpg,.png"} onChange={e=>handleFileUpload(e, fKey)} style={{fontSize:".85rem",color:"var(--tx)"}}/>
+                              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                <label style={{padding:"8px 16px",background:"var(--dt)",color:"white",borderRadius:6,fontSize:".8rem",fontWeight:600,cursor:"pointer",display:"inline-block"}}>
+                                  {f.type === 'image' ? '📸 Choose Photo' : '📎 Choose Document'}
+                                  <input type="file" required={f.required} accept={f.type==='image'?"image/*":".pdf,.doc,.docx"} onChange={e=>handleFileUpload(e, fKey)} style={{display:"none"}}/>
+                                </label>
+                                <span style={{fontSize:".75rem",color:"var(--mu)"}}>{f.type === 'image' ? 'JPG, PNG, etc.' : 'PDF, DOC, etc.'}</span>
+                              </div>
                             )}
                           </div>
                         ) : (
