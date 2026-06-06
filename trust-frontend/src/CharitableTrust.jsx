@@ -2775,7 +2775,7 @@ function Donations({ mob, auth, C }) {
       ];
       csvRows.push(csvRow.join(","));
     });
-    const blob = new Blob([csvRows.join("\\n")], { type: "text/csv" });
+    const blob = new Blob([csvRows.join("\r\n")], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
