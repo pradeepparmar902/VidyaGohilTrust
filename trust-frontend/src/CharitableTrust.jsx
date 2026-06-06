@@ -3552,23 +3552,23 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   };
 
   const [showDashboard, setShowDashboard] = useState(false);
-  const [showUserLogin, setShowUserLogin] = useState(false);
+  const [showUserLogin, setShowUserLogin] = useState("");
 
   return (
     <div>
-      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin(true)}/>
+      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin("nav")}/>
       <Hero C={C} lang={lang}/>
       {bs.about    !== false && <About C={C} lang={lang}/>}
       {bs.programs !== false && <Programs C={C}/>}
       {bs.gallery  !== false && <Gallery C={C}/>}
       {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
-      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin(true)}/>}
+      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
       {/* Custom sections render here — before Contact */}
       {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
       {bs.contact  !== false && <Contact C={C}/>}
       <Footer C={C}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
-      {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin(false)} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); setShowUserLogin(false); setShowDashboard(true);}}/>}
+      {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin("")} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); const intent = showUserLogin; setShowUserLogin(""); if(intent === "nav") setShowDashboard(true);}}/>}
       {showDashboard && <UserDashboard C={C} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
     </div>
   );
