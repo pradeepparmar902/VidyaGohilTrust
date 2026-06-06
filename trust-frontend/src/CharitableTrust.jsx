@@ -118,7 +118,7 @@ const fbSignUp = async (email, password) => {
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message.replace(/_/g," "));
-  return { idToken: data.idToken, email: data.email, expiresIn: data.expiresIn };
+  return { idToken: data.idToken, email: data.email, expiresIn: data.expiresIn, localId: data.localId };
 };
 
 const fbLogin = async (email, password) => {
@@ -129,7 +129,25 @@ const fbLogin = async (email, password) => {
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message.replace(/_/g," "));
-  return { idToken: data.idToken, email: data.email, expiresIn: data.expiresIn };
+  return { idToken: data.idToken, email: data.email, expiresIn: data.expiresIn, localId: data.localId };
+};
+
+const fbUpdateProfile = async (idToken, displayName, photoUrl) => {
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FB.apiKey}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken, displayName, photoUrl, returnSecureToken: true })
+  });
+  if (!res.ok) throw new Error("Failed to update profile");
+  return await res.json();
+};
+
+const fbSaveUserProfile = async (localId, data, idToken) => {
+  const res = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${localId}.json?auth=${idToken}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error("Failed to save user profile");
+  return await res.json();
 };
 
 const fbUploadLogo = async (file, idToken) => {
@@ -653,6 +671,10 @@ function Events({ C }) {
   const [authStep, setAuthStep] = useState(0); // 0 = login/register, 1 = form
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [regName, setRegName] = useState("");
+  const [regAddress, setRegAddress] = useState("");
+  const [regGender, setRegGender] = useState("");
+  const [regImageFile, setRegImageFile] = useState(null);
   const [authError, setAuthError] = useState("");
   const [authToken, setAuthToken] = useState("");
   const [uploadingFields, setUploadingFields] = useState({});
@@ -677,21 +699,41 @@ function Events({ C }) {
   const handleAuth = async (e, isRegister) => {
     e.preventDefault();
     if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
+    if (isRegister && (!regName || !regAddress || !regGender)) { setAuthError("Please fill out Name, Address, and Gender."); return; }
     setSubmitting(true); setAuthError("");
     try {
       const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
       const res = isRegister ? await fbSignUp(email, password) : await fbLogin(email, password);
+      
+      let profileData = { name: regName, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
+      
+      if (isRegister) {
+        if (regImageFile) {
+          profileData.photoUrl = await fbUploadPublicFile(regImageFile, res.idToken).catch(()=>"");
+        }
+        await fbUpdateProfile(res.idToken, regName, profileData.photoUrl).catch(()=>null);
+        await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
+      } else {
+        const pref = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${res.localId}.json?auth=${res.idToken}`);
+        if (pref.ok) {
+          const pData = await pref.json();
+          if (pData) profileData = { ...profileData, ...pData };
+        }
+      }
+
       setAuthToken(res.idToken);
       setAuthStep(1);
       
-      // Auto-fill mobile number if field exists
-      const newForm = {...formData};
+      // Auto-fill form
+      const newForm = {...formData, "Submitted By": profileData.name || mobile};
       const formSpec = getForm(selectedEvent?.event?.formId);
       formSpec.fields.forEach(f => {
         const fKey = f.label?.trim() || "Field";
-        if (f.type === 'tel' || fKey.toLowerCase().includes('mobile') || fKey.toLowerCase().includes('phone')) {
-          newForm[fKey] = mobile;
-        }
+        const kLow = fKey.toLowerCase();
+        if (f.type === 'tel' || kLow.includes('mobile') || kLow.includes('phone')) newForm[fKey] = profileData.mobile;
+        if (kLow.includes('name') && !kLow.includes('event')) newForm[fKey] = profileData.name || "";
+        if (kLow.includes('address')) newForm[fKey] = profileData.address || "";
+        if (kLow.includes('gender') || kLow === 'sex') newForm[fKey] = profileData.gender || "";
       });
       setFormData(newForm);
     } catch(err) {
@@ -816,15 +858,36 @@ function Events({ C }) {
                     <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:10}}>Create a new account to register for events.</p>
                     {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
                     <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Full Name <span style={{color:"red"}}>*</span></label>
+                      <input type="text" required value={regName} onChange={e=>setRegName(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Enter your full name"/>
+                    </div>
+                    <div>
                       <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
                       <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="e.g. 9876543210"/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Address <span style={{color:"red"}}>*</span></label>
+                      <textarea required value={regAddress} onChange={e=>setRegAddress(e.target.value)} rows={2} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Enter your address"></textarea>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Gender <span style={{color:"red"}}>*</span></label>
+                      <select required value={regGender} onChange={e=>setRegGender(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",background:"white"}}>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Profile Image (Optional)</label>
+                      <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{width:"100%",padding:"8px",fontSize:".8rem",background:"#F5F5F5",borderRadius:8,border:"1px dashed var(--bd)",cursor:"pointer"}}/>
                     </div>
                     <div>
                       <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>Create Password <span style={{color:"red"}}>*</span></label>
                       <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}} placeholder="Create a secure password"/>
                     </div>
                     <button type="button" onClick={e=>handleAuth(e, true)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
-                      {submitting ? "Creating Account..." : "Create Account"}
+                      {submitting ? "Creating Profile..." : "Create Account"}
                     </button>
                     <p style={{textAlign:"center",fontSize:".8rem",color:"var(--mu)",marginTop:5}}>
                       Already have an account? <span onClick={()=>{setAuthStep(0);setAuthError("");}} style={{color:"var(--dt)",fontWeight:700,cursor:"pointer",textDecoration:"underline"}}>Login</span>
