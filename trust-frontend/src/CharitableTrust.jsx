@@ -1502,9 +1502,10 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
   };
   
   const handleFontSizeChange = (e) => {
-    const val = parseInt(e.target.value);
-    setFSize(val);
-    onChange(fields, val);
+    setFSize(parseInt(e.target.value));
+  };
+  const handleFontSizeSave = () => {
+    onChange(fields, fSize);
   };
 
   return (
@@ -1547,7 +1548,13 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
         <div style={{fontWeight: 600, fontSize: ".85rem", color: "var(--dt)", minWidth: 140}}>
           Global Font Size: <span style={{color: "var(--sf)", fontSize: "1rem", marginLeft: 4}}>{fSize}px</span>
         </div>
-        <input type="range" min="8" max="48" value={fSize} onChange={handleFontSizeChange} style={{flex: 1, minWidth: 200, cursor: "pointer"}} />
+        <input 
+          type="range" min="8" max="48" value={fSize} 
+          onChange={handleFontSizeChange} 
+          onPointerUp={handleFontSizeSave}
+          onBlur={handleFontSizeSave}
+          style={{flex: 1, minWidth: 200, cursor: "pointer"}} 
+        />
       </div>
     </div>
   );
