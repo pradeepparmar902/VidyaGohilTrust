@@ -810,7 +810,7 @@ function Events({ C }) {
 
       {selectedEvent && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div className="ac" style={{background:"white",width:"100%",maxWidth:500,padding:24,borderRadius:12,maxHeight:"90vh",overflowY:"auto",position:"relative"}}>
+          <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight:"95vh",overflowY:"auto",position:"relative", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
             <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});setAuthStep(0);setMobile("");setPassword("");setAuthError("");}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
             
             {selectedEvent.type === 'details' && (
@@ -835,53 +835,53 @@ function Events({ C }) {
                     <p style={{fontSize:".85rem",color:"var(--mu)"}}>Redirecting to WhatsApp to send your confirmation...</p>
                   </div>
                 ) : authStep === 0 ? (
-                  <form style={{display:"flex",flexDirection:"column",gap:16}}>
-                    <p style={{fontSize:".95rem",color:"var(--dt)",marginBottom:10, fontWeight:500}}>Please log in to continue.</p>
-                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
+                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <p style={{fontSize:".9rem",color:"var(--dt)",marginBottom:8, fontWeight:500}}>Please log in to continue.</p>
+                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"8px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>{authError}</div>}
                     <div>
-                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Mobile Number <span style={{color:"red"}}>*</span></label>
-                      <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".95rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
+                      <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                     </div>
                     <div>
-                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Password <span style={{color:"red"}}>*</span></label>
-                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".95rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="Enter your password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Password <span style={{color:"red"}}>*</span></label>
+                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="Enter your password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                     </div>
-                    <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{width:"100%",padding:"14px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.7:1, fontSize:"1rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
+                    <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
                       {submitting ? "Logging in..." : "Login"}
                     </button>
                     <div style={{textAlign:"center", marginTop: 4}}>
-                      <span onClick={()=>{setAuthStep('register');setAuthError("");}} style={{color:"var(--mu)",fontSize:".85rem",cursor:"pointer"}}>
+                      <span onClick={()=>{setAuthStep('register');setAuthError("");}} style={{color:"var(--mu)",fontSize:".8rem",cursor:"pointer"}}>
                         Don't have an account? <strong style={{color:"var(--dt)"}}>Create one</strong>
                       </span>
                     </div>
                   </form>
                 ) : authStep === 'register' ? (
-                  <form style={{display:"flex",flexDirection:"column",gap:16}}>
-                    <div style={{background:"#f4f9ff", border:"1px solid #d0e3ff", padding: "12px 16px", borderRadius:8}}>
-                      <p style={{fontSize:".85rem",color:"#0056b3",margin:0, fontWeight: 500}}>Create a complete profile to speed up future registrations.</p>
+                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <div style={{background:"#f4f9ff", border:"1px solid #d0e3ff", padding: "10px 14px", borderRadius:8}}>
+                      <p style={{fontSize:".8rem",color:"#0056b3",margin:0, fontWeight: 500}}>Create a complete profile to speed up future registrations.</p>
                     </div>
-                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"10px",borderRadius:6,fontSize:".8rem",fontWeight:600}}>{authError}</div>}
+                    {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"8px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>{authError}</div>}
                     
-                    <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16}}>
+                    <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12}}>
                       <div>
-                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Full Name <span style={{color:"red"}}>*</span></label>
-                        <input type="text" required value={regName} onChange={e=>setRegName(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".9rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full name" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Full Name <span style={{color:"red"}}>*</span></label>
+                        <input type="text" required value={regName} onChange={e=>setRegName(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full name" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                       </div>
                       <div>
-                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Mobile Number <span style={{color:"red"}}>*</span></label>
-                        <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".9rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
+                        <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                       </div>
                     </div>
 
                     <div>
-                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Address <span style={{color:"red"}}>*</span></label>
-                      <input type="text" required value={regAddress} onChange={e=>setRegAddress(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".9rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full address" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Address <span style={{color:"red"}}>*</span></label>
+                      <input type="text" required value={regAddress} onChange={e=>setRegAddress(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full address" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                     </div>
 
-                    <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16}}>
+                    <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12}}>
                       <div>
-                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Gender <span style={{color:"red"}}>*</span></label>
-                        <select required value={regGender} onChange={e=>setRegGender(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".9rem",background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box", cursor:"pointer"}} onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Gender <span style={{color:"red"}}>*</span></label>
+                        <select required value={regGender} onChange={e=>setRegGender(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem",background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box", cursor:"pointer"}} onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}>
                           <option value="">Select Gender</option>
                           <option value="Male">Male</option>
                           <option value="Female">Female</option>
@@ -889,24 +889,24 @@ function Events({ C }) {
                         </select>
                       </div>
                       <div>
-                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Create Password <span style={{color:"red"}}>*</span></label>
-                        <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".9rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Secure password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Create Password <span style={{color:"red"}}>*</span></label>
+                        <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Secure password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
                       </div>
                     </div>
 
                     <div>
-                      <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Profile Image <span style={{fontWeight:"normal",color:"#888"}}>(Optional)</span></label>
+                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Profile Image <span style={{fontWeight:"normal",color:"#888"}}>(Optional)</span></label>
                       <div style={{position:"relative", display:"flex", alignItems:"center"}}>
-                        <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{width:"100%",padding:"10px 14px",fontSize:".85rem",background:"white",borderRadius:8,border:"2px dashed #CCC",cursor:"pointer", color:"var(--mu)", boxSizing:"border-box"}}/>
+                        <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{width:"100%",padding:"6px 10px",fontSize:".8rem",background:"white",borderRadius:8,border:"2px dashed #CCC",cursor:"pointer", color:"var(--mu)", boxSizing:"border-box"}}/>
                       </div>
                     </div>
 
-                    <button type="button" onClick={e=>handleAuth(e, true)} className="bs" style={{width:"100%",padding:"14px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.7:1, fontSize:"1rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
+                    <button type="button" onClick={e=>handleAuth(e, true)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
                       {submitting ? "Creating Profile..." : "Create Account"}
                     </button>
                     
-                    <div style={{textAlign:"center", marginTop: 4}}>
-                      <span onClick={()=>{setAuthStep(0);setAuthError("");}} style={{color:"var(--mu)",fontSize:".85rem",cursor:"pointer"}}>
+                    <div style={{textAlign:"center", marginTop: 2}}>
+                      <span onClick={()=>{setAuthStep(0);setAuthError("");}} style={{color:"var(--mu)",fontSize:".8rem",cursor:"pointer"}}>
                         Already have an account? <strong style={{color:"var(--dt)"}}>Log In</strong>
                       </span>
                     </div>
