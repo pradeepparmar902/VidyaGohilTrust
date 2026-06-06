@@ -176,10 +176,26 @@ const fbUpdateProfile = async (idToken, displayName, photoUrl) => {
   return await res.json();
 };
 
+const fbFetchUserProfile = async (localId, idToken) => {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users/${localId}`, {
+    headers: { "Authorization": `Bearer ${idToken}` }
+  });
+  if (!res.ok) return null;
+  const doc = await res.json();
+  if (!doc || !doc.fields) return null;
+  const obj = {};
+  for(const [k,v] of Object.entries(doc.fields)) obj[k] = v.stringValue || "";
+  return obj;
+};
+
 const fbSaveUserProfile = async (localId, data, idToken) => {
-  const res = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${localId}.json?auth=${idToken}`, {
-    method: "PUT", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+  const fields = {};
+  for(const [k,v] of Object.entries(data)) {
+    if (v !== undefined && v !== null) fields[k] = { stringValue: String(v) };
+  }
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users/${localId}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+    body: JSON.stringify({ fields })
   });
   if (!res.ok) throw new Error("Failed to save user profile");
   return await res.json();
@@ -841,11 +857,8 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
         await fbUpdateProfile(res.idToken, regName, profileData.photoUrl).catch(()=>null);
         await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
       } else {
-        const pref = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${res.localId}.json?auth=${res.idToken}`);
-        if (pref.ok) {
-          const pData = await pref.json();
-          if (pData) profileData = { ...profileData, ...pData };
-        }
+        const pData = await fbFetchUserProfile(res.localId, res.idToken);
+        if (pData) profileData = { ...profileData, ...pData };
       }
 
       setAuthToken(res.idToken);
@@ -2868,11 +2881,8 @@ function UserLoginModal({ onClose, onPublicLogin }) {
         await fbUpdateProfile(res.idToken, regName, profileData.photoUrl || "").catch(()=>null);
         await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
       } else {
-        const pref = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${res.localId}.json?auth=${res.idToken}`);
-        if (pref.ok) {
-          const pData = await pref.json();
-          if (pData) profileData = { ...profileData, ...pData };
-        }
+        const pData = await fbFetchUserProfile(res.localId, res.idToken);
+        if (pData) profileData = { ...profileData, ...pData };
       }
       if (onPublicLogin) onPublicLogin(res.idToken, profileData);
       onClose();
