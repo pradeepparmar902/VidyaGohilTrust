@@ -2971,12 +2971,16 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                   {r.status || r.Status || "Pending"}
                                 </span>
                               </td>
-                              <td style={{padding:"14px 16px",minWidth:200,color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks || "-"}</td>
+                              <td style={{padding:"14px 16px",minWidth:200,color:"var(--tm2)"}}>
+                                <div style={{maxWidth:250,maxHeight:60,overflowY:"auto",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4}}>
+                                  {r.AdminRemarks || r.remarks || r.Remarks || "-"}
+                                </div>
+                              </td>
                               {rowKeys.map(k => {
                                 const val = r[k] || "-";
                                 const isLink = typeof val === 'string' && val.startsWith('http');
                                 return (
-                                  <td key={k} style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--mu)"}}>
+                                  <td key={k} style={{padding:"14px 16px",color:"var(--mu)"}}>
                                     {isLink ? (
                                       <button 
                                         type="button" 
@@ -2986,7 +2990,9 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                         📎 View Document
                                       </button>
                                     ) : (
-                                      val
+                                      <div style={{maxWidth:250,maxHeight:60,overflowY:"auto",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4}}>
+                                        {val}
+                                      </div>
                                     )}
                                   </td>
                                 );
