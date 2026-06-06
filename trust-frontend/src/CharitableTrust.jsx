@@ -2650,11 +2650,17 @@ function Donations({ mob, auth, C }) {
     if ((r.pan || "") === newPan) return;
     try {
       const updated = { ...r, pan: newPan };
-      if (r._docId) {
-        await fbUpdateDonation(r._docId, updated, auth?.idToken);
-      } else if (!r.id.startsWith("DON")) {
-        await fbUpdateDonation(r.id, updated, auth?.idToken);
+      
+      if (r.receiptUrl) {
+        alert("PAN modified locally. You MUST click 'Regenerate' to permanently save this PAN and update the frozen PDF receipt!");
+      } else {
+        if (r._docId) {
+          await fbUpdateDonation(r._docId, updated, auth?.idToken);
+        } else if (!r.id.startsWith("DON")) {
+          await fbUpdateDonation(r.id, updated, auth?.idToken);
+        }
       }
+      
       setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
     } catch(e) {
       console.error(e);
