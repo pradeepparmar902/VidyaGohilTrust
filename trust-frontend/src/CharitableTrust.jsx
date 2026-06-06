@@ -44,6 +44,16 @@ const fbSubmitRegistration = async (registrationData, idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  
+  // Inject Transaction ID and default status
+  const txId = "VG-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  registrationData = { 
+    "Transaction ID": txId, 
+    "Status": "Pending",
+    "Remarks": "",
+    ...registrationData 
+  };
+
   const res = await fetch(REG_URL, {
     method: "POST",
     headers: headers,
@@ -58,6 +68,23 @@ const fbSubmitRegistration = async (registrationData, idToken) => {
     const e = await res.json();
     throw new Error(e?.error?.message || "Submission failed");
   }
+  return true;
+};
+
+const fbUpdateRegistration = async (docId, newData, idToken) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations/${docId}?updateMask.fieldPaths=data`;
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(REG_URL, {
+    method: "PATCH",
+    headers: headers,
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(newData) }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("Update failed");
   return true;
 };
 
@@ -2635,6 +2662,7 @@ function AdminRegistrations({ mob, C, auth }) {
   const [viewing, setViewing] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     try {
@@ -2650,8 +2678,32 @@ function AdminRegistrations({ mob, C, auth }) {
 
   if (error) return <div style={{padding:30}}>Error loading registrations: {error}</div>;
 
-  // 1. Gather all unique field keys across ALL registrations
-  const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt'];
+  const handleStatusChange = async (r, newStatus) => {
+    let newRemarks = r['Remarks'] || "";
+    if (newStatus === "Disapproved" || newStatus === "Needs Info") {
+      const reason = prompt(`Please enter the reason/remarks for '${newStatus}':`, newRemarks);
+      if (reason === null) return; // User cancelled
+      newRemarks = reason;
+    }
+    
+    // Optimistic UI update
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Status: newStatus, Remarks: newRemarks } : x));
+    
+    try {
+      const cleanData = { ...r, Status: newStatus, Remarks: newRemarks };
+      delete cleanData.id;
+      delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update status: " + e.message);
+      // Revert on failure
+      const d = await fbFetchRegistrations(auth?.idToken);
+      setRegs(d || []);
+    }
+  };
+
+  // 1. Gather all unique dynamic field keys
+  const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt', 'Transaction ID', 'Status', 'Remarks'];
   const allKeysSet = new Set();
   regs.forEach(r => {
     if(!r) return;
@@ -2662,7 +2714,6 @@ function AdminRegistrations({ mob, C, auth }) {
     });
   });
   
-  // Try to sort keys so "Full Name" or "Name" is first, "Mobile" second, etc.
   let allKeys = Array.from(allKeysSet);
   const priority = ["Full Name", "Name", "Mobile Number", "Mobile", "Phone", "Email Address", "Email"];
   allKeys.sort((a, b) => {
@@ -2674,10 +2725,21 @@ function AdminRegistrations({ mob, C, auth }) {
     return a.localeCompare(b);
   });
 
+  // 2. Filter registrations based on search query
+  const filteredRegs = regs.filter(r => {
+    if(!r) return false;
+    if(!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    // Search across all values in the registration
+    return Object.values(r).some(val => 
+      String(val).toLowerCase().includes(q)
+    );
+  });
+
   const handleExportCSV = () => {
-    if(regs.length === 0) return;
-    const headers = ["Date", "Event", ...allKeys];
-    const rows = regs.map(r => {
+    if(filteredRegs.length === 0) return;
+    const headers = ["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys];
+    const rows = filteredRegs.map(r => {
       let date = "-";
       try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
       const evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
@@ -2685,6 +2747,9 @@ function AdminRegistrations({ mob, C, auth }) {
       const rowData = [
         `"${date}"`,
         `"${evName}"`,
+        `"${r['Transaction ID'] || '-'}"`,
+        `"${r['Status'] || 'Pending'}"`,
+        `"${r['Remarks'] || ''}"`,
         ...allKeys.map(k => {
           let val = r[k] || "";
           if (typeof val === 'string') val = val.replace(/"/g, '""');
@@ -2707,20 +2772,32 @@ function AdminRegistrations({ mob, C, auth }) {
 
   return (
     <div style={{padding:mob?"16px":"32px",maxWidth:1400,margin:"0 auto"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+      <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
         <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Event Registrations</h2>
-        <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
-          <span>📥</span> Export to CSV
-        </button>
+        <div style={{display:"flex",gap:12,width:mob?"100%":"auto"}}>
+          <input 
+            type="text" 
+            placeholder="Search registrations..." 
+            value={searchQuery}
+            onChange={e=>setSearchQuery(e.target.value)}
+            style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}}
+          />
+          <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap"}}>
+            <span>📥</span> Export to CSV
+          </button>
+        </div>
       </div>
 
       {loading ? <p>Loading registrations...</p> : (
         <div className="ac" style={{overflowX:"auto"}}>
-          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
+          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:1200}}>
             <thead>
               <tr style={{background:"#F5F5F5"}}>
                 <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Date</th>
                 <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Event</th>
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Txn ID</th>
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Status</th>
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Remarks</th>
                 {allKeys.map(k => (
                   <th key={k} style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>{k}</th>
                 ))}
@@ -2728,7 +2805,7 @@ function AdminRegistrations({ mob, C, auth }) {
               </tr>
             </thead>
             <tbody>
-              {regs.map((r, i) => {
+              {filteredRegs.map((r, i) => {
                 if(!r) return null;
                 let date = "-";
                 try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
@@ -2738,6 +2815,27 @@ function AdminRegistrations({ mob, C, auth }) {
                   <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{date}</td>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{evName}</td>
+                    <td style={{padding:"12px",whiteSpace:"nowrap",fontWeight:600}}>{r['Transaction ID'] || "-"}</td>
+                    <td style={{padding:"12px",whiteSpace:"nowrap"}}>
+                      <select 
+                        value={r['Status'] || "Pending"} 
+                        onChange={(e) => handleStatusChange(r, e.target.value)}
+                        style={{
+                          padding:"4px 8px", borderRadius:4, border:"1px solid var(--bd)", fontSize:".8rem", outline:"none",
+                          background: (r['Status']==="Approved")?"#E8F5E9":(r['Status']==="Disapproved")?"#FFEBEE":(r['Status']==="Needs Info")?"#FFF3E0":"#F5F5F5",
+                          color: (r['Status']==="Approved")?"#2E7D32":(r['Status']==="Disapproved")?"#C62828":(r['Status']==="Needs Info")?"#EF6C00":"#424242",
+                          fontWeight: 600, fontFamily: "inherit"
+                        }}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Disapproved">Disapproved</option>
+                        <option value="Needs Info">Needs Info</option>
+                      </select>
+                    </td>
+                    <td style={{padding:"12px",maxWidth:200,whiteSpace:"normal",fontSize:".8rem",color:"var(--mu)"}}>
+                      {r['Remarks'] || "-"}
+                    </td>
                     {allKeys.map(k => {
                       let val = r[k] || "-";
                       if (typeof val === 'string' && val.startsWith('http')) {
@@ -2780,7 +2878,7 @@ function AdminRegistrations({ mob, C, auth }) {
                   </tr>
                 );
               })}
-              {regs.length === 0 && <tr><td colSpan={allKeys.length + 3} style={{padding:20,textAlign:"center"}}>No registrations found.</td></tr>}
+              {filteredRegs.length === 0 && <tr><td colSpan={allKeys.length + 6} style={{padding:20,textAlign:"center"}}>No registrations found matching your search.</td></tr>}
             </tbody>
           </table>
         </div>
