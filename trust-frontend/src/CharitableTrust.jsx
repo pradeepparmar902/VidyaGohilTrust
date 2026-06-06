@@ -2847,6 +2847,7 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Registrations");
   const [previewFile, setPreviewFile] = useState(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const w = useW(); const mob = w < 768;
 
   const tabs = [
@@ -2908,21 +2909,31 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
 
         <div style={{display:"flex",flexDirection:mob?"column":"row",flex:1,minHeight:0}}>
           {/* Sidebar Tabs */}
-          <div style={{width:mob?"100%":260,background:"white",borderRight:mob?"none":"1px solid var(--bd)",borderBottom:mob?"1px solid var(--bd)":"none",display:"flex",flexDirection:mob?"row":"column",overflowX:mob?"auto":"visible",flexShrink:0}}>
+          <div style={{width:mob?"100%":(isSidebarCollapsed ? 80 : 260),background:"white",borderRight:mob?"none":"1px solid var(--bd)",borderBottom:mob?"1px solid var(--bd)":"none",display:"flex",flexDirection:mob?"row":"column",overflowX:mob?"auto":"hidden",flexShrink:0,transition:"width 0.3s ease"}}>
+            {!mob && (
+              <button 
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                style={{display:"flex",alignItems:"center",justifyContent:isSidebarCollapsed?"center":"flex-end",padding:"12px 20px",background:"transparent",border:"none",color:"var(--mu)",cursor:"pointer",fontSize:".85rem",borderBottom:"1px solid var(--ww)",fontWeight:600}}
+              >
+                {isSidebarCollapsed ? "▶" : "◀ Collapse"}
+              </button>
+            )}
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
+                title={isSidebarCollapsed && !mob ? t.label : ""}
                 style={{
                   display:"flex",alignItems:"center",gap:12,padding:"16px 20px",border:"none",background:activeTab===t.id?"#FFF4EC":"transparent",
                   color:activeTab===t.id?"var(--sf)":"var(--tm2)",fontWeight:activeTab===t.id?700:500,fontSize:".95rem",cursor:"pointer",
                   borderLeft:mob?"none":`4px solid ${activeTab===t.id?"var(--sf)":"transparent"}`,
                   borderBottom:mob?`4px solid ${activeTab===t.id?"var(--sf)":"transparent"}`:"none",
-                  textAlign:"left",whiteSpace:mob?"nowrap":"normal",transition:"all .2s"
+                  textAlign:"left",whiteSpace:mob?"nowrap":"normal",transition:"all .2s",
+                  justifyContent: isSidebarCollapsed && !mob ? "center" : "flex-start"
                 }}
                 onMouseEnter={e=>{ if(activeTab!==t.id) { e.currentTarget.style.background="#f9f9f9"; e.currentTarget.style.color="var(--dt)"; } }}
                 onMouseLeave={e=>{ if(activeTab!==t.id) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="var(--tm2)"; } }}
               >
                 <span style={{fontSize:"1.2rem"}}>{t.icon}</span>
-                {t.label}
+                {(!isSidebarCollapsed || mob) && <span>{t.label}</span>}
               </button>
             ))}
           </div>
