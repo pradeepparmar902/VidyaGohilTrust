@@ -2579,9 +2579,37 @@ function Overview({ mob, C }) {
   );
 }
 
+const MultiSelect = ({ options, value, onChange, width = 100 }) => {
+  const [open, setOpen] = useState(false);
+  const toggle = (opt) => {
+    if (value.includes(opt)) onChange(value.filter(v => v !== opt));
+    else onChange([...value, opt]);
+  };
+  return (
+    <div style={{position:"relative", width, marginBottom: 4}} onMouseLeave={() => setOpen(false)}>
+      <div onClick={() => setOpen(!open)} style={{padding:"2px 4px", border:"1px solid var(--bd)", borderRadius:4, cursor:"pointer", fontSize:".7rem", background:"white", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+        <span style={{overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1}}>
+          {value.length === 0 ? "All" : value.length === 1 ? value[0] : value.length + " selected"}
+        </span>
+        <span style={{fontSize:".5rem", marginLeft:4}}>▼</span>
+      </div>
+      {open && (
+        <div style={{position:"absolute", top:"100%", left:0, minWidth:"100%", background:"white", border:"1px solid var(--bd)", zIndex:100, maxHeight:180, overflowY:"auto", boxShadow:"0 4px 6px rgba(0,0,0,0.1)", borderRadius:4}}>
+          {options.map(opt => (
+            <div key={opt} onClick={() => toggle(opt)} style={{padding:"4px 8px", fontSize:".7rem", cursor:"pointer", display:"flex", alignItems:"center", gap:6, background: value.includes(opt) ? "var(--tl)" : "transparent", borderBottom:"1px solid #f0f0f0"}}>
+              <input type="checkbox" checked={value.includes(opt)} readOnly style={{margin:0}}/>
+              <span style={{whiteSpace:"nowrap"}}>{opt}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function Donations({ mob, auth, C }) {
   const [q,setQ]=useState(""); 
-  const [colF, setColF] = useState({ id: "", donor: "All", amountOp: ">=", amountVal: "", program: "All", date: "All", pan: "", status: "All" });
+  const [colF, setColF] = useState({ id: [], donor: [], amountOp: ">=", amountVal: "", program: [], date: [], pan: [], status: [], statusBtns: "All" });
   const [data, setData] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2694,16 +2722,18 @@ function Donations({ mob, auth, C }) {
   };
 
   const allData = data.length > 0 ? data : DDATA;
-  const uniqueDonors = ["All", ...new Set(allData.map(d => d.name).filter(Boolean))];
-  const uniquePrograms = ["All", ...new Set(allData.map(d => d.program).filter(Boolean))];
-  const uniqueDates = ["All", ...new Set(allData.map(d => d.date).filter(Boolean))];
-  const uniqueStatuses = ["All", "Verified", "Pending", "Pending (Payment Link)"];
+  const uniqueIds = [...new Set(allData.map(d => d.id).filter(Boolean))];
+  const uniqueDonors = [...new Set(allData.map(d => d.name).filter(Boolean))];
+  const uniquePrograms = [...new Set(allData.map(d => d.program).filter(Boolean))];
+  const uniqueDates = [...new Set(allData.map(d => d.date).filter(Boolean))];
+  const uniquePans = [...new Set(allData.map(d => d.pan).filter(Boolean))];
+  const uniqueStatuses = ["Verified", "Pending", "Pending (Payment Link)"];
 
   const rows = allData.filter(d => {
     const matchQ = d.name?.toLowerCase().includes(q.toLowerCase()) || d.id?.toLowerCase().includes(q.toLowerCase());
     
-    const matchId = !colF.id || d.id?.toLowerCase().includes(colF.id.toLowerCase());
-    const matchDonor = colF.donor === "All" || d.name === colF.donor;
+    const matchId = colF.id.length === 0 || colF.id.includes(d.id);
+    const matchDonor = colF.donor.length === 0 || colF.donor.includes(d.name);
     
     let matchAmount = true;
     if (colF.amountVal !== "") {
@@ -2718,14 +2748,15 @@ function Donations({ mob, auth, C }) {
       }
     }
 
-    const matchProgram = colF.program === "All" || d.program === colF.program;
-    const matchDate = colF.date === "All" || d.date === colF.date;
-    const matchPan = !colF.pan || (d.pan || "").toLowerCase().includes(colF.pan.toLowerCase());
+    const matchProgram = colF.program.length === 0 || colF.program.includes(d.program);
+    const matchDate = colF.date.length === 0 || colF.date.includes(d.date);
+    const matchPan = colF.pan.length === 0 || colF.pan.includes(d.pan);
     
     const currentStatus = d.status || "Pending";
-    const matchStatus = colF.status === "All" || currentStatus === colF.status;
+    const matchStatus = colF.status.length === 0 || colF.status.includes(currentStatus);
+    const matchStatusBtn = colF.statusBtns === "All" || currentStatus === colF.statusBtns;
     
-    return matchQ && matchId && matchDonor && matchAmount && matchProgram && matchDate && matchPan && matchStatus;
+    return matchQ && matchId && matchDonor && matchAmount && matchProgram && matchDate && matchPan && matchStatus && matchStatusBtn;
   });
 
   const downloadCSV = () => {
@@ -2757,7 +2788,7 @@ function Donations({ mob, auth, C }) {
     <div>
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search ID or Name..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1,minWidth:140}}/>
-        <div style={{display:"flex",gap:6}}>{["All","Verified","Pending"].map(v=><button key={v} onClick={()=>setColF({...colF, status: v})} style={{padding:"8px 14px",borderRadius:8,background:colF.status===v?"var(--dt)":"white",color:colF.status===v?"white":"var(--tm2)",border:`1px solid ${colF.status===v?"var(--dt)":"var(--bd)"}`,cursor:"pointer",fontWeight:600,fontSize:".8rem"}}>{v}</button>)}</div>
+        <div style={{display:"flex",gap:6}}>{["All","Verified","Pending"].map(v=><button key={v} onClick={()=>setColF({...colF, statusBtns: v})} style={{padding:"8px 14px",borderRadius:8,background:colF.statusBtns===v?"var(--dt)":"white",color:colF.statusBtns===v?"white":"var(--tm2)",border:`1px solid ${colF.statusBtns===v?"var(--dt)":"var(--bd)"}`,cursor:"pointer",fontWeight:600,fontSize:".8rem"}}>{v}</button>)}</div>
         <button onClick={downloadCSV} className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem", background:"var(--sf)", color:"white", border:"none", cursor:"pointer"}}>Download CSV</button>
         <button className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem"}}>+ Add</button>
       </div>
@@ -2767,13 +2798,11 @@ function Donations({ mob, auth, C }) {
             <tr>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>ID</div>
-                <input value={colF.id} onChange={e=>setColF({...colF, id: e.target.value})} placeholder="Filter..." style={{fontSize:".7rem",padding:"2px 4px",maxWidth:70,borderRadius:4,border:"1px solid var(--bd)",outline:"none"}}/>
+                <MultiSelect options={uniqueIds} value={colF.id} onChange={v=>setColF({...colF, id: v})} width={90} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>DONOR</div>
-                <select value={colF.donor} onChange={e=>setColF({...colF, donor: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
-                  {uniqueDonors.map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
+                <MultiSelect options={uniqueDonors} value={colF.donor} onChange={v=>setColF({...colF, donor: v})} width={100} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>AMOUNT</div>
@@ -2790,25 +2819,19 @@ function Donations({ mob, auth, C }) {
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>PROGRAM</div>
-                <select value={colF.program} onChange={e=>setColF({...colF, program: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
-                  {uniquePrograms.map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
+                <MultiSelect options={uniquePrograms} value={colF.program} onChange={v=>setColF({...colF, program: v})} width={100} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>DATE</div>
-                <select value={colF.date} onChange={e=>setColF({...colF, date: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:90,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
-                  {uniqueDates.map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
+                <MultiSelect options={uniqueDates} value={colF.date} onChange={v=>setColF({...colF, date: v})} width={90} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>PAN</div>
-                <input value={colF.pan} onChange={e=>setColF({...colF, pan: e.target.value})} placeholder="Filter..." style={{fontSize:".7rem",padding:"2px 4px",maxWidth:80,borderRadius:4,border:"1px solid var(--bd)",outline:"none"}}/>
+                <MultiSelect options={uniquePans} value={colF.pan} onChange={v=>setColF({...colF, pan: v})} width={90} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>STATUS</div>
-                <select value={colF.status} onChange={e=>setColF({...colF, status: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
-                  {uniqueStatuses.map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
+                <MultiSelect options={uniqueStatuses} value={colF.status} onChange={v=>setColF({...colF, status: v})} width={100} />
               </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>RECEIPT</th>
             </tr>
