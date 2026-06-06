@@ -2663,6 +2663,7 @@ function AdminRegistrations({ mob, C, auth }) {
   const [previewFile, setPreviewFile] = useState(null);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [columnFilters, setColumnFilters] = useState({});
 
   useEffect(() => {
     try {
@@ -2702,6 +2703,21 @@ function AdminRegistrations({ mob, C, auth }) {
     }
   };
 
+  const handleEditRemarks = async (r) => {
+    const reason = prompt(`Edit remarks for this registration:`, r['Remarks'] || "");
+    if (reason === null) return;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Remarks: reason } : x));
+    try {
+      const cleanData = { ...r, Remarks: reason };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update remarks: " + e.message);
+      const d = await fbFetchRegistrations(auth?.idToken);
+      setRegs(d || []);
+    }
+  };
+
   // 1. Gather all unique dynamic field keys
   const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt', 'Transaction ID', 'Status', 'Remarks'];
   const allKeysSet = new Set();
@@ -2728,12 +2744,26 @@ function AdminRegistrations({ mob, C, auth }) {
   // 2. Filter registrations based on search query
   const filteredRegs = regs.filter(r => {
     if(!r) return false;
-    if(!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    // Search across all values in the registration
-    return Object.values(r).some(val => 
-      String(val).toLowerCase().includes(q)
-    );
+    
+    // 1. Global search
+    if(searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!Object.values(r).some(val => String(val).toLowerCase().includes(q))) return false;
+    }
+    
+    // 2. Column filters
+    for (const [colKey, filterVal] of Object.entries(columnFilters)) {
+      if(!filterVal) continue;
+      
+      let rVal = "";
+      if(colKey === "Date") { try { if(r._submittedAt) rVal = new Date(r._submittedAt).toLocaleString(); } catch(e){} }
+      else if(colKey === "Event") rVal = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+      else rVal = r[colKey] || "";
+      
+      if(!String(rVal).toLowerCase().includes(filterVal.toLowerCase())) return false;
+    }
+    
+    return true;
   });
 
   const handleExportCSV = () => {
@@ -2803,6 +2833,20 @@ function AdminRegistrations({ mob, C, auth }) {
                 ))}
                 <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Actions</th>
               </tr>
+              <tr style={{background:"#FAFAFA", borderBottom:"2px solid #E0E0E0"}}>
+                {["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys].map(k => (
+                  <th key={`filter-${k}`} style={{padding:"6px 12px", fontWeight:"normal"}}>
+                    <input 
+                      type="text" 
+                      placeholder="Filter..." 
+                      value={columnFilters[k] || ""}
+                      onChange={(e) => setColumnFilters({...columnFilters, [k]: e.target.value})}
+                      style={{width:"100%", padding:"4px 6px", fontSize:".75rem", border:"1px solid #CCC", borderRadius:4, boxSizing:"border-box", minWidth: 80}}
+                    />
+                  </th>
+                ))}
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {filteredRegs.map((r, i) => {
@@ -2834,7 +2878,10 @@ function AdminRegistrations({ mob, C, auth }) {
                       </select>
                     </td>
                     <td style={{padding:"12px",maxWidth:200,whiteSpace:"normal",fontSize:".8rem",color:"var(--mu)"}}>
-                      {r['Remarks'] || "-"}
+                      <div style={{display:"flex", alignItems:"flex-start", gap: 6}}>
+                        <span>{r['Remarks'] || "-"}</span>
+                        <button onClick={() => handleEditRemarks(r)} style={{background:"none",border:"none",cursor:"pointer",fontSize:".8rem",opacity:0.6}} title="Edit Remarks">✏️</button>
+                      </div>
                     </td>
                     {allKeys.map(k => {
                       let val = r[k] || "-";
