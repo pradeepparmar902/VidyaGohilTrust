@@ -348,7 +348,7 @@ function LogoMark({ logo, mob }) {
 }
 
 // ── NAVBAR ────────────────────────────────────────────────────────────────────
-function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout, onShowDashboard }) {
+function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout, onShowDashboard, onShowUserLogin }) {
   const [scrolled, setScrolled] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const w = useW(); const mob = w < 900;
@@ -374,16 +374,22 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                 <button onClick={onPublicLogout} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"white",fontWeight:600,fontSize:".7rem",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>Logout</button>
                 <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
               </div>
-            ) : null}
-
-            {auth?.email ? (
-              <button onClick={()=>setPage("admin")} style={{background:"transparent",border:"none",color:"white",fontWeight:700,fontSize:".75rem",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:18,height:18,borderRadius:"50%",background:"var(--sf)",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem"}}>{auth.email[0].toUpperCase()}</span> Admin Panel
-              </button>
             ) : (
-              <button onClick={onShowLogin} style={{background:"transparent",border:"none",color:"rgba(255,255,255,.8)",fontWeight:600,fontSize:".75rem",cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.color="white"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}>
-                Admin Login
-              </button>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <button onClick={onShowUserLogin} style={{background:"var(--sf)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",cursor:"pointer",padding:"5px 12px",borderRadius:6,transition:"all .2s"}}>
+                  User Login
+                </button>
+                <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
+                {auth?.email ? (
+                  <button onClick={()=>setPage("admin")} style={{background:"transparent",border:"none",color:"white",fontWeight:700,fontSize:".75rem",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{width:18,height:18,borderRadius:"50%",background:"var(--sf)",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem"}}>{auth.email[0].toUpperCase()}</span> Admin Panel
+                  </button>
+                ) : (
+                  <button onClick={onShowLogin} style={{background:"transparent",border:"none",color:"rgba(255,255,255,.8)",fontWeight:600,fontSize:".75rem",cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.color="white"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}>
+                    Admin Login
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -469,34 +475,34 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                     <button onClick={onPublicLogout} style={{background:"none",border:"1px solid #B8E8CC",color:"#1A7A3E",fontWeight:600,fontSize:".75rem",padding:"4px 10px",borderRadius:6,cursor:"pointer"}}>Logout</button>
                   </div>
                 </div>
-              ) : null}
-
-              {auth?.email ? (
-                <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,flexShrink:0}}>
-                    {auth.email[0].toUpperCase()}
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:".8rem",fontWeight:700,color:"#1A7A3E"}}>Admin Logged In</div>
-                    <div style={{fontSize:".72rem",color:"#4A7A5E",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.email}</div>
-                  </div>
-                  <button onClick={()=>{setDrawer(false);setPage("admin");}} style={{padding:"6px 12px",borderRadius:8,background:"var(--dt)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",cursor:"pointer",flexShrink:0}}>
-                    Admin
-                  </button>
-                </div>
               ) : (
-                <button onClick={()=>{setDrawer(false); onShowLogin();}}
-                  style={{padding:"12px",borderRadius:10,background:"white",border:"2px solid var(--bd)",color:"var(--dt)",fontWeight:700,fontSize:".9rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",transition:"all .2s"}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--dt)"}}>
-                  Admin Login
-                </button>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <button onClick={()=>{setDrawer(false); onShowUserLogin();}} style={{padding:"12px",borderRadius:10,background:"var(--sf)",border:"none",color:"white",fontWeight:700,fontSize:".85rem",cursor:"pointer"}}>
+                    User Login / Sign Up
+                  </button>
+                  {auth?.email ? (
+                    <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,flexShrink:0}}>
+                        {auth.email[0].toUpperCase()}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:".8rem",fontWeight:700,color:"#1A7A3E"}}>Admin Logged In</div>
+                        <div style={{fontSize:".72rem",color:"#4A7A5E",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.email}</div>
+                      </div>
+                      <button onClick={()=>{setDrawer(false);setPage("admin");}} style={{padding:"6px 12px",borderRadius:8,background:"var(--dt)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",cursor:"pointer",flexShrink:0}}>
+                        Admin
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={()=>{setDrawer(false); onShowLogin();}}
+                      style={{padding:"12px",borderRadius:10,background:"white",border:"2px solid var(--bd)",color:"var(--dt)",fontWeight:700,fontSize:".9rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",transition:"all .2s"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--dt)"}}>
+                      Admin Login
+                    </button>
+                  )}
+                </div>
               )}
-
-              <button onClick={()=>{setDrawer(false);setPage("admin");}}
-                style={{padding:"11px",borderRadius:10,background:"var(--tl)",border:"1px solid #B8D8E8",color:"var(--dt)",fontWeight:600,fontSize:".88rem",cursor:"pointer",fontFamily:"inherit"}}>
-                ⚙️ Admin Panel
-              </button>
             </div>
           </div>
         </div>
@@ -2698,10 +2704,11 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   };
 
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showUserLogin, setShowUserLogin] = useState(false);
 
   return (
     <div>
-      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)}/>
+      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin(true)}/>
       <Hero C={C} lang={lang}/>
       {bs.about    !== false && <About C={C} lang={lang}/>}
       {bs.programs !== false && <Programs C={C}/>}
@@ -2713,7 +2720,108 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       {bs.contact  !== false && <Contact C={C}/>}
       <Footer C={C}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
+      {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin(false)} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); setShowUserLogin(false); setShowDashboard(true);}}/>}
       {showDashboard && <UserDashboard globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
+    </div>
+  );
+}
+
+// ── PUBLIC USER LOGIN MODAL ───────────────────────────────────────────────────
+function UserLoginModal({ onClose, onPublicLogin }) {
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [regName, setRegName] = useState("");
+  const [regAddress, setRegAddress] = useState("");
+  const [regGender, setRegGender] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const w = useW(); const mob = w < 640;
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
+    if (!isLoginMode && (!regName || !regAddress || !regGender)) { setAuthError("Please fill out Name, Address, and Gender."); return; }
+    setSubmitting(true); setAuthError("");
+    try {
+      const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
+      const res = !isLoginMode ? await fbSignUp(email, password) : await fbLogin(email, password);
+      
+      let profileData = { name: regName, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
+      
+      if (!isLoginMode) {
+        await fbUpdateProfile(res.idToken, regName, "").catch(()=>null);
+        await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
+      } else {
+        const pref = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${res.localId}.json?auth=${res.idToken}`);
+        if (pref.ok) {
+          const pData = await pref.json();
+          if (pData) profileData = { ...profileData, ...pData };
+        }
+      }
+      if (onPublicLogin) onPublicLogin(res.idToken, profileData);
+      onClose();
+    } catch(err) {
+      setAuthError(err.message.includes("INVALID") ? "Invalid mobile or password." : err.message.includes("EXISTS") ? "Account exists. Please click Login." : err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:24,zIndex:9999,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"white",borderRadius:24,width:"100%",maxWidth:480,padding:"32px",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative"}}>
+        <button onClick={onClose} style={{position:"absolute",top:24,right:24,background:"#F5F5F5",border:"none",borderRadius:"50%",width:36,height:36,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:"var(--dt)"}}>✕</button>
+        <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",color:"var(--dt)",marginBottom:8,fontWeight:700}}>{isLoginMode ? "Welcome Back" : "Create Profile"}</h2>
+        <p style={{color:"var(--mu)",fontSize:".9rem",marginBottom:24}}>{isLoginMode ? "Login to access your dashboard and event registrations." : "Register once to easily apply for events and awards."}</p>
+        
+        {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"12px 16px",borderRadius:12,fontSize:".85rem",marginBottom:20,fontWeight:600}}>{authError}</div>}
+        
+        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div>
+            <label style={{fontSize:".8rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>Mobile Number *</label>
+            <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".95rem",outline:"none"}} placeholder="Enter your 10-digit mobile number"/>
+          </div>
+          <div>
+            <label style={{fontSize:".8rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>Password *</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".95rem",outline:"none"}} placeholder="Enter password"/>
+          </div>
+          
+          {!isLoginMode && (
+            <div style={{background:"#F8F9FA",padding:16,borderRadius:16,display:"flex",flexDirection:"column",gap:16,border:"1px solid var(--bd)",marginTop:8}}>
+              <div style={{fontWeight:700,color:"var(--dt)",fontSize:".85rem",textTransform:"uppercase",letterSpacing:1}}>New Profile Details</div>
+              <div>
+                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Full Name *</label>
+                <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem"}}/>
+              </div>
+              <div>
+                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Address *</label>
+                <input value={regAddress} onChange={e=>setRegAddress(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem"}}/>
+              </div>
+              <div>
+                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Gender *</label>
+                <select value={regGender} onChange={e=>setRegGender(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}}>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          <button type="submit" disabled={submitting} style={{background:"var(--sf)",color:"white",padding:"14px",borderRadius:12,fontWeight:700,fontSize:"1rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:8}}>
+            {submitting ? "Processing..." : isLoginMode ? "Login" : "Create Profile & Login"}
+          </button>
+        </form>
+        
+        <div style={{textAlign:"center",marginTop:24,fontSize:".9rem",color:"var(--mu)"}}>
+          {isLoginMode ? "Don't have an account? " : "Already have an account? "}
+          <button onClick={()=>{setIsLoginMode(!isLoginMode);setAuthError("");}} style={{background:"none",border:"none",color:"var(--sf)",fontWeight:700,cursor:"pointer",fontSize:".9rem"}}>
+            {isLoginMode ? "Create Profile" : "Login Instead"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
