@@ -2580,7 +2580,8 @@ function Overview({ mob, C }) {
 }
 
 function Donations({ mob, auth, C }) {
-  const [q,setQ]=useState(""); const [f,setF]=useState("All");
+  const [q,setQ]=useState(""); 
+  const [colF, setColF] = useState({ donor: "All", program: "All", date: "All", status: "All" });
   const [data, setData] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2686,17 +2687,63 @@ function Donations({ mob, auth, C }) {
     setLoading(false);
   };
 
-  const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
+  const allData = data.length > 0 ? data : DDATA;
+  const uniqueDonors = ["All", ...new Set(allData.map(d => d.name).filter(Boolean))];
+  const uniquePrograms = ["All", ...new Set(allData.map(d => d.program).filter(Boolean))];
+  const uniqueDates = ["All", ...new Set(allData.map(d => d.date).filter(Boolean))];
+  const uniqueStatuses = ["All", "Verified", "Pending", "Pending (Payment Link)"];
+
+  const rows = allData.filter(d => {
+    const matchQ = d.name?.toLowerCase().includes(q.toLowerCase()) || d.id?.toLowerCase().includes(q.toLowerCase());
+    const matchDonor = colF.donor === "All" || d.name === colF.donor;
+    const matchProgram = colF.program === "All" || d.program === colF.program;
+    const matchDate = colF.date === "All" || d.date === colF.date;
+    const currentStatus = d.status || "Pending";
+    const matchStatus = colF.status === "All" || currentStatus === colF.status;
+    return matchQ && matchDonor && matchProgram && matchDate && matchStatus;
+  });
+
   return (
     <div>
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1,minWidth:140}}/>
-        <div style={{display:"flex",gap:6}}>{["All","Verified","Pending"].map(v=><button key={v} onClick={()=>setF(v)} style={{padding:"8px 14px",borderRadius:8,background:f===v?"var(--dt)":"white",color:f===v?"white":"var(--tm2)",border:`1px solid ${f===v?"var(--dt)":"var(--bd)"}`,cursor:"pointer",fontWeight:600,fontSize:".8rem"}}>{v}</button>)}</div>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search ID or Name..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1,minWidth:140}}/>
+        <div style={{display:"flex",gap:6}}>{["All","Verified","Pending"].map(v=><button key={v} onClick={()=>setColF({...colF, status: v})} style={{padding:"8px 14px",borderRadius:8,background:colF.status===v?"var(--dt)":"white",color:colF.status===v?"white":"var(--tm2)",border:`1px solid ${colF.status===v?"var(--dt)":"var(--bd)"}`,cursor:"pointer",fontWeight:600,fontSize:".8rem"}}>{v}</button>)}</div>
         <button className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem"}}>+ Add</button>
       </div>
       <div className="ac" style={{padding:16,overflowX:"auto"}}>
         <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:500}}>
-          <thead><tr>{["ID","Donor","Amount","Program","Date","PAN","Status","Receipt"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <thead>
+            <tr>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>ID</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>DONOR</div>
+                <select value={colF.donor} onChange={e=>setColF({...colF, donor: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
+                  {uniqueDonors.map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>AMOUNT</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>PROGRAM</div>
+                <select value={colF.program} onChange={e=>setColF({...colF, program: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
+                  {uniquePrograms.map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>DATE</div>
+                <select value={colF.date} onChange={e=>setColF({...colF, date: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:90,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
+                  {uniqueDates.map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>PAN</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>STATUS</div>
+                <select value={colF.status} onChange={e=>setColF({...colF, status: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
+                  {uniqueStatuses.map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>RECEIPT</th>
+            </tr>
+          </thead>
           <tbody>{rows.map((r,i)=>(
             <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
               <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>{r.id}</td>
