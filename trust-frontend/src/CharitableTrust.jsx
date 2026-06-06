@@ -2846,6 +2846,7 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Registrations");
+  const [previewFile, setPreviewFile] = useState(null);
   const w = useW(); const mob = w < 768;
 
   const tabs = [
@@ -2977,9 +2978,13 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                 return (
                                   <td key={k} style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--mu)"}}>
                                     {isLink ? (
-                                      <a href={val} target="_blank" rel="noopener noreferrer" style={{color:"var(--sf)",fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,border:"1px solid var(--bd)",padding:"6px 12px",borderRadius:8,background:"white",boxShadow:"0 2px 4px rgba(0,0,0,.02)"}}>
+                                      <button 
+                                        type="button" 
+                                        onClick={() => setPreviewFile({url: val, type: val.match(/\.(pdf|doc|docx)/i) ? 'file' : 'image'})}
+                                        style={{color:"var(--sf)",fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,border:"1px solid var(--bd)",padding:"6px 12px",borderRadius:8,background:"white",boxShadow:"0 2px 4px rgba(0,0,0,.02)",cursor:"pointer"}}
+                                      >
                                         📎 View Document
-                                      </a>
+                                      </button>
                                     ) : (
                                       val
                                     )}
@@ -3006,6 +3011,30 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
           </div>
         </div>
       </div>
+      {previewFile && (
+        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1rem",fontWeight:600}}>File Preview</h3>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                {previewFile.type !== 'image' && (
+                  <a href={previewFile.url} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+                )}
+                <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+              </div>
+            </div>
+            <div style={{flex:1,overflow:"auto",padding:20,display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
+               {previewFile.type === 'image' ? (
+                 <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
+               ) : (
+                 <object data={previewFile.url} type="application/pdf" style={{width:"100%",height:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+                   <iframe src={previewFile.url} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+                 </object>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
