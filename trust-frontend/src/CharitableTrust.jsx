@@ -2672,14 +2672,35 @@ function Settings({ mob, C }) {
 function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   const bs = C.builtinSections || {};
   const custom = (C.customSections || []).filter(s => s.visible);
+
+  const [globalAuthToken, setGlobalAuthToken] = useState(() => localStorage.getItem("trustPublicAuthToken") || "");
+  const [globalProfile, setGlobalProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("trustPublicProfile")) || null; }
+    catch(e) { return null; }
+  });
+
+  const handlePublicLogin = (token, profile) => {
+    setGlobalAuthToken(token);
+    setGlobalProfile(profile);
+    localStorage.setItem("trustPublicAuthToken", token);
+    localStorage.setItem("trustPublicProfile", JSON.stringify(profile));
+  };
+
+  const handlePublicLogout = () => {
+    setGlobalAuthToken("");
+    setGlobalProfile(null);
+    localStorage.removeItem("trustPublicAuthToken");
+    localStorage.removeItem("trustPublicProfile");
+  };
+
   return (
     <div>
-      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin}/>
+      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout}/>
       <Hero C={C} lang={lang}/>
       {bs.about    !== false && <About C={C} lang={lang}/>}
       {bs.programs !== false && <Programs C={C}/>}
       {bs.gallery  !== false && <Gallery C={C}/>}
-      {bs.events   !== false && <Events C={C}/>}
+      {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
       {bs.donate   !== false && <Donate C={C} lang={lang}/>}
       {/* Custom sections render here — before Contact */}
       {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
