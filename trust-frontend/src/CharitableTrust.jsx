@@ -2766,10 +2766,10 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?0:24,zIndex:9999,backdropFilter:"blur(6px)"}}
+    <div style={{position:"fixed",inset:0,background:"#F8F9FA",display:"flex",alignItems:"center",justifyContent:"center",padding:0,zIndex:9999}}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       
-      <div style={{background:"#F8F9FA",borderRadius:mob?0:24,width:"100%",maxWidth:1000,height:mob?"100%":"auto",maxHeight:mob?"100%":"90vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden"}}
+      <div style={{background:"#F8F9FA",borderRadius:0,width:"100%",maxWidth:"100%",height:"100%",maxHeight:"100%",display:"flex",flexDirection:"column",boxShadow:"none",position:"relative",overflow:"hidden"}}
         onClick={e=>e.stopPropagation()}>
         
         {/* Header */}
