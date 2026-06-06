@@ -2858,18 +2858,17 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
   useEffect(() => {
     const fetchMyRegs = async () => {
       try {
-        const res = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/registrations.json?auth=${globalAuthToken}`);
-        if (res.ok) {
-          const data = await res.json();
-          const allRegs = data ? Object.entries(data).map(([id, val]) => ({id, ...val})) : [];
-          // Filter by matching mobile number or name
-          const myRegs = allRegs.filter(r => 
-            (r["Mobile Number"] && r["Mobile Number"] === (globalProfile.mobile || globalProfile['Mobile Number'])) || 
-            (r["Submitted By"] && r["Submitted By"] === (globalProfile.name || globalProfile['Full Name']))
-          );
-          myRegs.sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-          setRegs(myRegs);
-        }
+        const allRegs = await fbFetchRegistrations(globalAuthToken);
+        const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+        const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+        
+        const myRegs = allRegs.filter(r => {
+          const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
+          const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
+          return (mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch);
+        });
+        
+        setRegs(myRegs);
       } catch(e) { console.error(e); }
       setLoading(false);
     };
