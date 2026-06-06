@@ -1406,7 +1406,64 @@ const numberToWords = (num) => {
   return str.trim() ? str.trim() + ' Rupees Only' : '';
 };
 
-function TemplateMapper({ imgUrl, mapData, onChange }) {
+// Global Receipt PDF Generator
+export const generateReceiptPDF = async (r, C) => {
+  try {
+    const template = C?.donate?.receiptTemplate;
+    if (!template) {
+      alert("No Receipt Template found. Please contact the administrator.");
+      return;
+    }
+    
+    const map = C?.donate?.receiptMap || {
+      donorName: { x: 50, y: 50, visible: true },
+      amount: { x: 50, y: 60, visible: true },
+      amountWords: { x: 50, y: 70, visible: true },
+      date: { x: 80, y: 20, visible: true },
+      receiptNo: { x: 80, y: 15, visible: true },
+      pan: { x: 50, y: 80, visible: true }
+    };
+    
+    const baseFontSize = C?.donate?.receiptFontSize || 14;
+    
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = template;
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Failed to load template image."));
+    });
+
+    const doc = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
+    doc.addImage(img, 'PNG', 0, 0, img.width, img.height);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont("helvetica", "bold");
+
+    const drawText = (key, text, sizeMultiplier=1) => {
+      if (!map[key] || !map[key].visible || !text) return;
+      doc.setFontSize(baseFontSize * sizeMultiplier);
+      const px = (map[key].x / 100) * img.width;
+      const py = (map[key].y / 100) * img.height;
+      doc.text(text, px, py, { align: 'center' });
+    };
+
+    drawText("donorName", r.name || "Donor", 1.15);
+    drawText("amount", `Rs. ${r.amount.toLocaleString()}`, 1.15);
+    drawText("amountWords", numberToWords(r.amount), 1);
+    drawText("date", r.date, 1);
+    drawText("receiptNo", r.id, 1);
+    drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
+
+    doc.save(`Receipt_${r.id}.pdf`);
+
+  } catch (e) {
+    console.error(e);
+    alert("Failed to generate PDF: " + e.message);
+  }
+};
+
+function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
   const [fields, setFields] = useState(mapData || {
     donorName: { x: 50, y: 50, visible: true },
     amount: { x: 50, y: 60, visible: true },
@@ -1415,6 +1472,8 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
     receiptNo: { x: 80, y: 15, visible: true },
     pan: { x: 50, y: 80, visible: true }
   });
+
+  const [fSize, setFSize] = useState(fontSize || 14);
 
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null);
@@ -1432,14 +1491,20 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
     if (dragging) {
       e.target.releasePointerCapture(e.pointerId);
       setDragging(null); 
-      onChange(fields); // Save to parent only when dragging stops!
+      onChange(fields, fSize); // Save to parent only when dragging stops!
     }
   };
 
   const toggleVisibility = (key) => {
     const nextFields = { ...fields, [key]: { ...fields[key], visible: !fields[key].visible } };
     setFields(nextFields);
-    onChange(nextFields);
+    onChange(nextFields, fSize);
+  };
+  
+  const handleFontSizeChange = (e) => {
+    const val = parseInt(e.target.value);
+    setFSize(val);
+    onChange(fields, val);
   };
 
   return (
@@ -1476,6 +1541,13 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
             {pos.visible ? "✓ " : "+ "}{key}
           </button>
         ))}
+      </div>
+      
+      <div style={{marginTop: 20, padding: 16, background: "#f9f9f9", borderRadius: 8, border: "1px solid var(--bd)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap"}}>
+        <div style={{fontWeight: 600, fontSize: ".85rem", color: "var(--dt)", minWidth: 140}}>
+          Global Font Size: <span style={{color: "var(--sf)", fontSize: "1rem", marginLeft: 4}}>{fSize}px</span>
+        </div>
+        <input type="range" min="8" max="48" value={fSize} onChange={handleFontSizeChange} style={{flex: 1, minWidth: 200, cursor: "pointer"}} />
       </div>
     </div>
   );
@@ -2249,7 +2321,11 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <TemplateMapper 
             imgUrl={draft.donate.receiptTemplate} 
             mapData={draft.donate.receiptMap} 
-            onChange={(map) => upd("donate.receiptMap", map)} 
+            fontSize={draft.donate.receiptFontSize}
+            onChange={(map, size) => { 
+               upd("donate.receiptMap", map); 
+               upd("donate.receiptFontSize", size); 
+            }} 
           />
         )}
       </Sec>
@@ -2492,57 +2568,7 @@ function Donations({ mob, auth, C }) {
   }, [auth]);
 
   const generateReceipt = async (r) => {
-    try {
-      const template = C?.donate?.receiptTemplate;
-      if (!template) {
-        alert("Please upload an 80G Receipt Template Image in the Content Editor (Donation Section) first!");
-        return;
-      }
-      
-      const map = C?.donate?.receiptMap || {
-        donorName: { x: 50, y: 50, visible: true },
-        amount: { x: 50, y: 60, visible: true },
-        amountWords: { x: 50, y: 70, visible: true },
-        date: { x: 80, y: 20, visible: true },
-        receiptNo: { x: 80, y: 15, visible: true },
-        pan: { x: 50, y: 80, visible: true }
-      };
-      
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.src = template;
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("Failed to load template image."));
-      });
-
-      const doc = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
-      doc.addImage(img, 'PNG', 0, 0, img.width, img.height);
-      doc.setTextColor(40, 40, 40);
-      doc.setFont("helvetica", "bold");
-
-      const drawText = (key, text, size=14) => {
-        if (!map[key] || !map[key].visible || !text) return;
-        doc.setFontSize(size);
-        const px = (map[key].x / 100) * img.width;
-        const py = (map[key].y / 100) * img.height;
-        doc.text(text, px, py, { align: 'center' });
-      };
-
-      drawText("donorName", r.name || "Donor", 16);
-      drawText("amount", `Rs. ${r.amount.toLocaleString()}`, 16);
-      drawText("amountWords", numberToWords(r.amount), 14);
-      drawText("date", r.date, 14);
-      drawText("receiptNo", r.id, 14);
-      drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 14);
-
-      doc.save(`Receipt_${r.id}.pdf`);
-
-    } catch (e) {
-      console.error(e);
-      alert("Failed to generate PDF: " + e.message);
-    }
+    await generateReceiptPDF(r, C);
   };
 
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
@@ -3057,7 +3083,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       <Footer C={C}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
       {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin(false)} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); setShowUserLogin(false); setShowDashboard(true);}}/>}
-      {showDashboard && <UserDashboard globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
+      {showDashboard && <UserDashboard C={C} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
     </div>
   );
 }
@@ -3181,8 +3207,9 @@ function UserLoginModal({ onClose, onPublicLogin }) {
 }
 
 // ── USER DASHBOARD ────────────────────────────────────────────────────────────
-function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
+function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
   const [regs, setRegs] = useState([]);
+  const [myDonations, setMyDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Registrations");
   const [previewFile, setPreviewFile] = useState(null);
@@ -3213,9 +3240,27 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
       } catch(e) { console.error(e); }
       setLoading(false);
     };
-    if (globalAuthToken && globalProfile && activeTab === "Registrations") {
-      setLoading(true);
-      fetchMyRegs();
+    
+    const fetchMyDonations = async () => {
+      try {
+        const allDons = await fbFetchDonations(globalAuthToken);
+        const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+        const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+        
+        const mine = allDons.filter(r => {
+          const rMobile = String(r.mobile || r.phone || "").trim();
+          const rName = String(r.name || r.donor || "").trim().toLowerCase();
+          return (mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch);
+        });
+        
+        setMyDonations(mine);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+
+    if (globalAuthToken && globalProfile) {
+      if (activeTab === "Registrations") { setLoading(true); fetchMyRegs(); }
+      else if (activeTab === "Receipts") { setLoading(true); fetchMyDonations(); }
     }
   }, [globalAuthToken, globalProfile, activeTab]);
 
@@ -3357,7 +3402,62 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
               </>
             )}
 
-            {activeTab !== "Registrations" && (
+            {activeTab === "Receipts" && (
+              <>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Donations & Receipts</h3>
+                {loading ? (
+                  <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your donations...</div>
+                ) : myDonations.length === 0 ? (
+                  <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
+                    <div style={{fontSize:"3rem",marginBottom:12}}>🧾</div>
+                    <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Donations Found</div>
+                    <div style={{color:"var(--mu)",fontSize:".85rem"}}>We couldn't find any verified donations linked to your profile.</div>
+                  </div>
+                ) : (
+                  <div style={{background:"white",borderRadius:12,border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)",overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:600}}>
+                      <thead style={{background:"var(--dt)",color:"white"}}>
+                        <tr>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Date</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Amount</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Program</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Status</th>
+                          <th style={{padding:"14px 16px",textAlign:"right",whiteSpace:"nowrap",fontWeight:600}}>Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {myDonations.map((r, i) => {
+                          const sc = getStatusColor(r.status || r.Status || "Pending");
+                          const isVerified = (r.status || r.Status || "").toLowerCase().includes("verifi") || (r.status || r.Status || "").toLowerCase().includes("approv") || (r.status || r.Status || "").toLowerCase().includes("success") || r.status === "Verified";
+                          
+                          return (
+                            <tr key={r.id || i} style={{borderBottom:"1px solid var(--ww)",background:i%2===0?"white":"#FAFAFA"}}>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap"}}>{r.date || new Date(r.timestamp || r._submittedAt).toLocaleString()}</td>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap",fontWeight:700,color:"var(--dt)"}}>Rs. {Number(r.amount).toLocaleString()}</td>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--tm2)"}}>{r.program || r["Program"] || "-"}</td>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap"}}>
+                                <span style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
+                                  {r.status || r.Status || "Pending"}
+                                </span>
+                              </td>
+                              <td style={{padding:"14px 16px",textAlign:"right"}}>
+                                {isVerified ? (
+                                  <button onClick={() => generateReceiptPDF(r, C)} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download 80G Receipt</button>
+                                ) : (
+                                  <span style={{fontSize:".75rem",color:"var(--mu)"}}>Pending Verification</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab !== "Registrations" && activeTab !== "Receipts" && (
               <div style={{background:"white",padding:"60px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
                 <div style={{fontSize:"3.5rem",marginBottom:16}}>{tabs.find(t=>t.id===activeTab)?.icon}</div>
                 <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.3rem",marginBottom:8,fontFamily:"'Playfair Display',serif"}}>No New {tabs.find(t=>t.id===activeTab)?.label}</div>
