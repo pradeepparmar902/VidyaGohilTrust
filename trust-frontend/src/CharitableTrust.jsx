@@ -348,7 +348,7 @@ function LogoMark({ logo, mob }) {
 }
 
 // ── NAVBAR ────────────────────────────────────────────────────────────────────
-function Navbar({ C, lang, setLang, setPage, auth, onShowLogin }) {
+function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout }) {
   const [scrolled, setScrolled] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const w = useW(); const mob = w < 900;
@@ -367,13 +367,21 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin }) {
             <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
             <button onClick={()=>setLang(lang==="en"?"gu":"en")} style={{background:"transparent",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:700}}>{lang==="en"?"ગુજરાતી":"English"}</button>
             
+            {globalProfile ? (
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:".75rem",fontWeight:600,color:"white"}}>Welcome, {globalProfile.name?.split(' ')[0] || globalProfile['Full Name']?.split(' ')[0] || "User"}</span>
+                <button onClick={onPublicLogout} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"white",fontWeight:600,fontSize:".7rem",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>Logout</button>
+                <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
+              </div>
+            ) : null}
+
             {auth?.email ? (
               <button onClick={()=>setPage("admin")} style={{background:"transparent",border:"none",color:"white",fontWeight:700,fontSize:".75rem",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                 <span style={{width:18,height:18,borderRadius:"50%",background:"var(--sf)",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem"}}>{auth.email[0].toUpperCase()}</span> Admin Panel
               </button>
             ) : (
               <button onClick={onShowLogin} style={{background:"transparent",border:"none",color:"rgba(255,255,255,.8)",fontWeight:600,fontSize:".75rem",cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.color="white"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}>
-                🔑 Login
+                Admin Login
               </button>
             )}
           </div>
@@ -444,13 +452,28 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin }) {
               </button>
 
               {/* Login / Account row */}
+              {globalProfile ? (
+                <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700}}>
+                      {(globalProfile.name || globalProfile['Full Name'] || "U")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{fontSize:".85rem",fontWeight:700,color:"var(--dt)"}}>{globalProfile.name || globalProfile['Full Name'] || "User"}</div>
+                      <div style={{fontSize:".7rem",color:"var(--mu)"}}>Logged In</div>
+                    </div>
+                  </div>
+                  <button onClick={onPublicLogout} style={{background:"none",border:"1px solid #B8E8CC",color:"#1A7A3E",fontWeight:600,fontSize:".75rem",padding:"4px 10px",borderRadius:6,cursor:"pointer"}}>Logout</button>
+                </div>
+              ) : null}
+
               {auth?.email ? (
                 <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
                   <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,flexShrink:0}}>
                     {auth.email[0].toUpperCase()}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:".8rem",fontWeight:700,color:"#1A7A3E"}}>Logged in</div>
+                    <div style={{fontSize:".8rem",fontWeight:700,color:"#1A7A3E"}}>Admin Logged In</div>
                     <div style={{fontSize:".72rem",color:"#4A7A5E",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.email}</div>
                   </div>
                   <button onClick={()=>{setDrawer(false);setPage("admin");}} style={{padding:"6px 12px",borderRadius:8,background:"var(--dt)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",cursor:"pointer",flexShrink:0}}>
@@ -462,7 +485,7 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin }) {
                   style={{padding:"12px",borderRadius:10,background:"white",border:"2px solid var(--bd)",color:"var(--dt)",fontWeight:700,fontSize:".9rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",transition:"all .2s"}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}}
                   onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--dt)"}}>
-                  🔑 Login to Firebase
+                  Admin Login
                 </button>
               )}
 
@@ -660,7 +683,7 @@ function Donate({ C, lang }) {
   );
 }
 
-function Events({ C }) {
+function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
   const w = useW(); const mob = w<700;
   const [selectedEvent, setSelectedEvent] = useState(null); // { type: 'register' | 'details', event }
   const [formData, setFormData] = useState({});
@@ -722,6 +745,7 @@ function Events({ C }) {
       }
 
       setAuthToken(res.idToken);
+      if (onPublicLogin) onPublicLogin(res.idToken, profileData);
       setAuthStep(1);
       
       // Auto-fill form
@@ -796,7 +820,26 @@ function Events({ C }) {
                 <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{ev.location}</p>
                 <div style={{display:"flex",gap:7}}>
                   {ev.formId ? (
-                    <button onClick={()=>setSelectedEvent({type:'register', event:ev})} className="bs" style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>Register</button>
+                    <button onClick={()=>{
+                      setSelectedEvent({type:'register', event:ev});
+                      if (globalAuthToken && globalProfile) {
+                        setAuthToken(globalAuthToken);
+                        setAuthStep(1);
+                        const newForm = {...formData, "Submitted By": globalProfile.name || globalProfile['Full Name'] || globalProfile.mobile};
+                        const formSpec = getForm(ev.formId);
+                        formSpec.fields.forEach(f => {
+                          const fKey = f.label?.trim() || "Field";
+                          const kLow = fKey.toLowerCase();
+                          if (f.type === 'tel' || kLow.includes('mobile') || kLow.includes('phone')) newForm[fKey] = globalProfile.mobile;
+                          if (kLow.includes('name') && !kLow.includes('event')) newForm[fKey] = globalProfile.name || globalProfile['Full Name'] || "";
+                          if (kLow.includes('address')) newForm[fKey] = globalProfile.address || globalProfile['Address'] || "";
+                          if (kLow.includes('gender') || kLow === 'sex') newForm[fKey] = globalProfile.gender || globalProfile['Gender'] || "";
+                        });
+                        setFormData(newForm);
+                      } else {
+                        setAuthStep(0);
+                      }
+                    }} className="bs" style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>Register</button>
                   ) : (
                     <button disabled style={{padding:"5px 12px",borderRadius:6,fontSize:".75rem",fontWeight:600,background:"#F5F5F5",color:"#CCC",border:"none"}}>No Registration</button>
                   )}
@@ -811,7 +854,7 @@ function Events({ C }) {
       {selectedEvent && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
           <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight:"95vh",overflowY:"auto",position:"relative", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
-            <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});setAuthStep(0);setMobile("");setPassword("");setAuthError("");}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
+            <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});if(!globalAuthToken){setAuthStep(0);setMobile("");setPassword("");}setAuthError("");}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
             
             {selectedEvent.type === 'details' && (
               <div>
