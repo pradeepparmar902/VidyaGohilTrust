@@ -2581,7 +2581,7 @@ function Overview({ mob, C }) {
 
 function Donations({ mob, auth, C }) {
   const [q,setQ]=useState(""); 
-  const [colF, setColF] = useState({ donor: "All", program: "All", date: "All", status: "All" });
+  const [colF, setColF] = useState({ id: "", donor: "All", amountOp: ">=", amountVal: "", program: "All", date: "All", pan: "", status: "All" });
   const [data, setData] = useState([]);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2695,12 +2695,31 @@ function Donations({ mob, auth, C }) {
 
   const rows = allData.filter(d => {
     const matchQ = d.name?.toLowerCase().includes(q.toLowerCase()) || d.id?.toLowerCase().includes(q.toLowerCase());
+    
+    const matchId = !colF.id || d.id?.toLowerCase().includes(colF.id.toLowerCase());
     const matchDonor = colF.donor === "All" || d.name === colF.donor;
+    
+    let matchAmount = true;
+    if (colF.amountVal !== "") {
+      const val = parseFloat(colF.amountVal);
+      const rowAmt = parseFloat(d.amount);
+      if (!isNaN(val) && !isNaN(rowAmt)) {
+        if (colF.amountOp === ">") matchAmount = rowAmt > val;
+        else if (colF.amountOp === ">=") matchAmount = rowAmt >= val;
+        else if (colF.amountOp === "<") matchAmount = rowAmt < val;
+        else if (colF.amountOp === "<=") matchAmount = rowAmt <= val;
+        else if (colF.amountOp === "=") matchAmount = rowAmt === val;
+      }
+    }
+
     const matchProgram = colF.program === "All" || d.program === colF.program;
     const matchDate = colF.date === "All" || d.date === colF.date;
+    const matchPan = !colF.pan || (d.pan || "").toLowerCase().includes(colF.pan.toLowerCase());
+    
     const currentStatus = d.status || "Pending";
     const matchStatus = colF.status === "All" || currentStatus === colF.status;
-    return matchQ && matchDonor && matchProgram && matchDate && matchStatus;
+    
+    return matchQ && matchId && matchDonor && matchAmount && matchProgram && matchDate && matchPan && matchStatus;
   });
 
   return (
@@ -2714,14 +2733,29 @@ function Donations({ mob, auth, C }) {
         <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:500}}>
           <thead>
             <tr>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>ID</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>ID</div>
+                <input value={colF.id} onChange={e=>setColF({...colF, id: e.target.value})} placeholder="Filter..." style={{fontSize:".7rem",padding:"2px 4px",maxWidth:70,borderRadius:4,border:"1px solid var(--bd)",outline:"none"}}/>
+              </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>DONOR</div>
                 <select value={colF.donor} onChange={e=>setColF({...colF, donor: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
                   {uniqueDonors.map(v=><option key={v} value={v}>{v}</option>)}
                 </select>
               </th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>AMOUNT</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>AMOUNT</div>
+                <div style={{display:"flex", gap:2}}>
+                  <select value={colF.amountOp} onChange={e=>setColF({...colF, amountOp: e.target.value})} style={{fontSize:".7rem",padding:"2px",borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
+                    <option value=">">&gt;</option>
+                    <option value=">=">&ge;</option>
+                    <option value="<">&lt;</option>
+                    <option value="<=">&le;</option>
+                    <option value="=">=</option>
+                  </select>
+                  <input type="number" value={colF.amountVal} onChange={e=>setColF({...colF, amountVal: e.target.value})} placeholder="Amt" style={{fontSize:".7rem",padding:"2px 4px",maxWidth:50,borderRadius:4,border:"1px solid var(--bd)",outline:"none"}}/>
+                </div>
+              </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>PROGRAM</div>
                 <select value={colF.program} onChange={e=>setColF({...colF, program: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
@@ -2734,7 +2768,10 @@ function Donations({ mob, auth, C }) {
                   {uniqueDates.map(v=><option key={v} value={v}>{v}</option>)}
                 </select>
               </th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>PAN</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>PAN</div>
+                <input value={colF.pan} onChange={e=>setColF({...colF, pan: e.target.value})} placeholder="Filter..." style={{fontSize:".7rem",padding:"2px 4px",maxWidth:80,borderRadius:4,border:"1px solid var(--bd)",outline:"none"}}/>
+              </th>
               <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
                 <div style={{marginBottom:4}}>STATUS</div>
                 <select value={colF.status} onChange={e=>setColF({...colF, status: e.target.value})} style={{fontSize:".7rem",padding:"2px 4px",maxWidth:100,borderRadius:4,border:"1px solid var(--bd)",outline:"none",cursor:"pointer"}}>
