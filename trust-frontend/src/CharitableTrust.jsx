@@ -145,6 +145,58 @@ const fbSubmitDonation = async (donationData, idToken) => {
   return true;
 };
 
+const fbSubmitVolunteer = async (vData) => {
+  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers`;
+  const res = await fetch(URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(vData) },
+        submittedAt: { timestampValue: new Date().toISOString() }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("Volunteer submission failed");
+  return true;
+};
+
+const fbFetchVolunteers = async (idToken) => {
+  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers?pageSize=300`;
+  const headers = {};
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(URL, { headers });
+  if (!res.ok) throw new Error("Failed to fetch volunteers");
+  const data = await res.json();
+  if (!data.documents) return [];
+  return data.documents.map(doc => {
+    try {
+      const parsed = JSON.parse(doc.fields.data.stringValue);
+      return { _docId: doc.name.split("/").pop(), ...parsed, _submittedAt: doc.fields.submittedAt?.timestampValue };
+    } catch(e) { return null; }
+  }).filter(Boolean);
+};
+
+const fbUpdateVolunteer = async (docId, vData, idToken) => {
+  if (!docId) throw new Error("Missing document ID");
+  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers/${docId}`;
+  const res = await fetch(URL, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(vData) },
+        submittedAt: { timestampValue: new Date().toISOString() }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("Volunteer update failed");
+  return true;
+};
+
 const fbFetchDonations = async (idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations?pageSize=300`;
   const headers = {};
@@ -338,7 +390,7 @@ const DC = {
   programs:[{icon:"📚",title:"Education for All",sub:"Scholarships and learning centers for underprivileged children",color:"#FFF4EC",border:"#FDDBB8"},{icon:"🏥",title:"Health and Wellness",sub:"Free medical camps, medicines and health awareness drives",color:"#E8F4F8",border:"#B8D8E8"},{icon:"🌾",title:"Livelihood Support",sub:"Skill development and micro-finance for rural communities",color:"#EDFAF1",border:"#B8E8CC"},{icon:"🤝",title:"Women Empowerment",sub:"Self-help groups, vocational training and legal aid",color:"#F9F0FF",border:"#D8B8E8"},{icon:"🌊",title:"Disaster Relief",sub:"Rapid response support for flood and earthquake victims",color:"#FEF9EC",border:"#F5E8B8"},{icon:"🌱",title:"Environment",sub:"Tree plantation drives and clean water initiatives",color:"#EDFAF1",border:"#B8E8CC"}],
   events:[{date:"Jun 15",month:"2025",title:"Annual Blood Donation Camp",location:"Ahmedabad Community Hall",tag:"Health",color:"#E8F4F8"},{date:"Jul 04",month:"2025",title:"Monsoon Tree Plantation Drive",location:"Sabarmati Riverfront",tag:"Environment",color:"#EDFAF1"},{date:"Aug 20",month:"2025",title:"Scholarship Distribution Ceremony",location:"Sardar Patel Hall, Surat",tag:"Education",color:"#FFF4EC"},{date:"Sep 10",month:"2025",title:"Womens Skill Fair 2025",location:"Vadodara Exhibition Ground",tag:"Empowerment",color:"#F9F0FF"}],
   donate:{heading:"Your Donation Changes Lives",subtext:"100% of donations go directly to programs. Tax exemption under 80G available.",note:"Secured by Razorpay - 256-bit SSL encryption - 80G receipt auto-generated",recurringLabel:"Monthly Recurring Donation",recurringNote:"Auto-deducted each month. Cancel anytime.",razorpayKey:"rzp_test_YourRazorpayKeyHere"},
-  contact:{volunteerHeading:"Become a Volunteer",volunteerSub:"Your time and skills can transform lives. Join 340+ active volunteers across Gujarat.",contactHeading:"Contact Us",socials:["WhatsApp","Facebook","Instagram","YouTube"]},
+  contact:{volunteerHeading:"Become a Volunteer",volunteerSub:"Your time and skills can transform lives. Join 340+ active volunteers across Gujarat.",contactHeading:"Contact Us",volunteerOptions:["Education","Healthcare","Field Work","IT and Digital","Fundraising"],socials:["WhatsApp","Facebook","Instagram","YouTube"]},
   nav:[
     {label:"Home",      labelGu:"ઘર",           sectionId:"home",     icon:"🏠", visible:true},
     {label:"About",     labelGu:"અમારા વિશે",    sectionId:"about",    icon:"ℹ️", visible:true},
@@ -1248,19 +1300,51 @@ function Gallery({ C }) {
 // ── CONTACT ───────────────────────────────────────────────────────────────────
 function Contact({ C }) {
   const w = useW(); const mob = w<768; const ct = C.contact; const tr = C.trust;
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", city: "", program: "" });
+  const [status, setStatus] = useState("idle");
+
+  const handleSubmit = async () => {
+    if(!formData.name || !formData.phone) return alert("Name and Phone are required.");
+    setStatus("submitting");
+    try {
+      await fbSubmitVolunteer({ ...formData, status: "Pending" });
+      setStatus("success");
+    } catch(e) {
+      console.error(e);
+      alert("Failed to submit. Please try again.");
+      setStatus("idle");
+    }
+  };
+
   return (
     <section id="contact" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?36:48}}>
         <div>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Join Us</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.5rem":"1.8rem",color:"var(--dt)",marginTop:8,marginBottom:14,fontWeight:700}}>{ct.volunteerHeading}</h2>
-          <p style={{color:"var(--tm2)",lineHeight:1.7,marginBottom:20,fontSize:".9rem"}}>{ct.volunteerSub}</p>
-          {[{f:"Full Name",t:"text"},{f:"Email",t:"email"},{f:"Phone",t:"tel"},{f:"City",t:"text"}].map(i=><div key={i.f} style={{marginBottom:10}}><input type={i.t} placeholder={i.f} style={{width:"100%",padding:"10px 13px",borderRadius:8,border:"2px solid var(--bd)",fontSize:".875rem",fontFamily:"inherit"}}/></div>)}
-          <select style={{width:"100%",padding:"10px 13px",borderRadius:8,border:"2px solid var(--bd)",fontSize:".875rem",fontFamily:"inherit",marginBottom:14,color:"var(--mu)"}}>
-            <option>Select Area of Interest</option>
-            <option>Education</option><option>Healthcare</option><option>Field Work</option><option>IT and Digital</option><option>Fundraising</option>
-          </select>
-          <button className="bs" style={{width:"100%",padding:"12px",borderRadius:10,fontSize:".92rem",fontWeight:700}}>Apply to Volunteer</button>
+          
+          {status === "success" ? (
+            <div style={{padding:32,background:"#EDFAF1",borderRadius:12,border:"1px solid #B8E8CC",textAlign:"center"}}>
+              <div style={{fontSize:"3rem",marginBottom:16}}>🙌</div>
+              <h3 style={{color:"#1A7A3E",marginBottom:8,fontSize:"1.3rem"}}>Thank you for applying!</h3>
+              <p style={{color:"var(--dt)",fontSize:".95rem"}}>Your volunteer application has been submitted successfully. Our team will review it and get in touch with you shortly.</p>
+              <button onClick={()=>setStatus("idle")} style={{marginTop:20,padding:"8px 16px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Submit Another</button>
+            </div>
+          ) : (
+            <>
+              <p style={{color:"var(--tm2)",lineHeight:1.7,marginBottom:20,fontSize:".9rem"}}>{ct.volunteerSub}</p>
+              {[{f:"Full Name",t:"text",k:"name"},{f:"Email",t:"email",k:"email"},{f:"Phone",t:"tel",k:"phone"},{f:"City",t:"text",k:"city"}].map(i=>
+                <div key={i.f} style={{marginBottom:10}}>
+                  <input type={i.t} placeholder={i.f} value={formData[i.k]} onChange={e=>setFormData({...formData, [i.k]:e.target.value})} style={{width:"100%",padding:"10px 13px",borderRadius:8,border:"2px solid var(--bd)",fontSize:".875rem",fontFamily:"inherit"}}/>
+                </div>
+              )}
+              <select value={formData.program} onChange={e=>setFormData({...formData, program:e.target.value})} style={{width:"100%",padding:"10px 13px",borderRadius:8,border:"2px solid var(--bd)",fontSize:".875rem",fontFamily:"inherit",marginBottom:14,color:formData.program?"black":"var(--mu)"}}>
+                <option value="">Select Area of Interest</option>
+                {ct.volunteerOptions?.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+              <button onClick={handleSubmit} disabled={status==="submitting"} className="bs" style={{width:"100%",padding:"12px",borderRadius:10,fontSize:".92rem",fontWeight:700,opacity:status==="submitting"?0.7:1}}>{status==="submitting"?"Submitting...":"Apply to Volunteer"}</button>
+            </>
+          )}
         </div>
         <div>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Get in Touch</span>
@@ -2365,6 +2449,17 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <F label="Volunteer Sub-text" path="contact.volunteerSub" ta/>
         <F label="Contact Heading" path="contact.contactHeading"/>
         <div className="cf">
+          <label className="cl">Volunteer Options</label>
+          {draft.contact.volunteerOptions?.map((opt,i)=>(
+            <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+              <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={opt} onCommit={v=>upd(`contact.volunteerOptions.${i}`,v)}/>
+              <button onClick={()=>delItem("contact.volunteerOptions",i)}
+                style={{padding:"8px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",flexShrink:0,fontWeight:700}}>Del</button>
+            </div>
+          ))}
+          <AddBtn label="Volunteer Option" onClick={()=>addItem("contact.volunteerOptions","New Option")}/>
+        </div>
+        <div className="cf">
           <label className="cl">Social Links</label>
           {draft.contact.socials.map((s,i)=>(
             <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
@@ -2508,7 +2603,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="donations" && <Donations mob={mob} auth={auth} C={C}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
-          {tab==="volunteers"&& <Volunteers mob={mob}/>}
+          {tab==="volunteers"&& <Volunteers mob={mob} auth={auth} C={C}/>}
           {tab==="gallery"   && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="settings"  && <Settings mob={mob} C={C}/>}
         </div>
@@ -3189,34 +3284,132 @@ function AdminEvents({ mob, C, setC, auth }) {
   );
 }
 
-function Volunteers({ mob }) {
+function Volunteers({ mob, auth, C }) {
+  const [q,setQ]=useState(""); 
+  const [colF, setColF] = useState({ name: [], city: [], program: [], status: [] });
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const token = auth?.idToken || auth?._tokenResponse?.idToken;
+        const res = await fbFetchVolunteers(token);
+        setData(res);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    if (auth) load();
+  }, [auth]);
+
+  const handleStatusChange = async (r, newStatus) => {
+    try {
+      const updated = { ...r, status: newStatus };
+      await fbUpdateVolunteer(r._docId, updated, auth?.idToken);
+      setData(prev => prev.map(x => x._docId === r._docId ? updated : x));
+    } catch(e) {
+      console.error(e);
+      alert("Failed to update status: " + e.message);
+    }
+  };
+
+  const uniqueNames = [...new Set(data.map(d => d.name).filter(Boolean))];
+  const uniqueCities = [...new Set(data.map(d => d.city).filter(Boolean))];
+  const uniquePrograms = [...new Set(data.map(d => d.program).filter(Boolean))];
+  const uniqueStatuses = ["Pending", "Approved", "Rejected"];
+
+  const rows = data.filter(d => {
+    const matchQ = d.name?.toLowerCase().includes(q.toLowerCase()) || d.phone?.includes(q) || d.email?.toLowerCase().includes(q.toLowerCase());
+    
+    const matchName = colF.name.length === 0 || colF.name.includes(d.name);
+    const matchCity = colF.city.length === 0 || colF.city.includes(d.city);
+    const matchProgram = colF.program.length === 0 || colF.program.includes(d.program);
+    const currentStatus = d.status || "Pending";
+    const matchStatus = colF.status.length === 0 || colF.status.includes(currentStatus);
+    
+    return matchQ && matchName && matchCity && matchProgram && matchStatus;
+  }).sort((a,b) => new Date(b.submittedAt||0) - new Date(a.submittedAt||0));
+
+  const downloadCSV = () => {
+    const headers = ["Name", "Email", "Phone", "City", "Program", "Status", "Date Submitted"];
+    const csvRows = [headers.join(",")];
+    rows.forEach(r => {
+      const csvRow = [
+        `"${(r.name || "").replace(/"/g, '""')}"`,
+        `"${(r.email || "").replace(/"/g, '""')}"`,
+        `"${(r.phone || "").replace(/"/g, '""')}"`,
+        `"${(r.city || "").replace(/"/g, '""')}"`,
+        `"${(r.program || "").replace(/"/g, '""')}"`,
+        r.status || "Pending",
+        r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ""
+      ];
+      csvRows.push(csvRow.join(","));
+    });
+    const blob = new Blob([csvRows.join("\\r\\n")], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Volunteers_Export_${new Date().getTime()}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:16}}>
-        <input placeholder="Search volunteers..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1}}/>
-        <button className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem"}}>+ Add</button>
+      <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search Name, Email, or Phone..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1,minWidth:140}}/>
+        <button onClick={downloadCSV} className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem", background:"var(--sf)", color:"white", border:"none", cursor:"pointer"}}>Download CSV</button>
       </div>
       <div className="ac" style={{padding:16,overflowX:"auto"}}>
-        <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:460}}>
-          <thead><tr>{["Name","Role","Joined","Events","Status","Actions"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
-          <tbody>{VOLS.map((v,i)=>(
+        <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:600}}>
+          <thead>
+            <tr>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>NAME</div>
+                <MultiSelect options={uniqueNames} value={colF.name} onChange={v=>setColF({...colF, name: v})} width={110} />
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>CONTACT INFO</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>CITY</div>
+                <MultiSelect options={uniqueCities} value={colF.city} onChange={v=>setColF({...colF, city: v})} width={100} />
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>PROGRAM</div>
+                <MultiSelect options={uniquePrograms} value={colF.program} onChange={v=>setColF({...colF, program: v})} width={110} />
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>
+                <div style={{marginBottom:4}}>STATUS</div>
+                <MultiSelect options={uniqueStatuses} value={colF.status} onChange={v=>setColF({...colF, status: v})} width={100} />
+              </th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>SUBMITTED</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && <tr><td colSpan="6" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading...</td></tr>}
+            {!loading && rows.length===0 && <tr><td colSpan="6" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>No applicants found.</td></tr>}
+            {!loading && rows.map((r,i)=>(
             <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
               <td style={{padding:"11px 12px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:9}}>
-                  <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:".78rem"}}>{v.name[0]}</div>
-                  <span style={{fontWeight:600}}>{v.name}</span>
+                  <div style={{width:30,height:30,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:".78rem"}}>{r.name?.[0]?.toUpperCase()||"?"}</div>
+                  <span style={{fontWeight:600}}>{r.name}</span>
                 </div>
               </td>
-              <td style={{padding:"11px 12px",color:"var(--tm2)",fontSize:".8rem"}}>{v.role}</td>
-              <td style={{padding:"11px 12px",color:"var(--mu)",fontSize:".78rem"}}>{v.joined}</td>
-              <td style={{padding:"11px 12px",fontWeight:700,color:"var(--dt)"}}>{v.events}</td>
-              <td style={{padding:"11px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,fontWeight:600,background:v.status==="Active"?"#EDFAF1":"#F5F5F5",color:v.status==="Active"?"#1A7A3E":"var(--mu)"}}>{v.status}</span></td>
+              <td style={{padding:"11px 12px",color:"var(--tm2)",fontSize:".75rem"}}>
+                <div style={{marginBottom:2}}>{r.email}</div>
+                <div>{r.phone}</div>
+              </td>
+              <td style={{padding:"11px 12px",color:"var(--tm2)",fontSize:".8rem"}}>{r.city}</td>
+              <td style={{padding:"11px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
               <td style={{padding:"11px 12px"}}>
-                <div style={{display:"flex",gap:5}}>
-                  <button style={{padding:"4px 9px",borderRadius:6,background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>View</button>
-                  <button style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Edit</button>
-                </div>
+                <select value={r.status || "Pending"} onChange={(e) => handleStatusChange(r, e.target.value)} style={{fontSize:".72rem",padding:"3px 6px",borderRadius:6,border:"1px solid var(--bd)",fontWeight:600,background:r.status==="Approved"?"#EDFAF1":r.status==="Rejected"?"#FEF0EF":"#FEF9EC",color:r.status==="Approved"?"#1A7A3E":r.status==="Rejected"?"#C0392B":"#C8860A",cursor:"pointer",outline:"none"}}>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
               </td>
+              <td style={{padding:"11px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ""}</td>
             </tr>
           ))}</tbody>
         </table>
@@ -3224,6 +3417,7 @@ function Volunteers({ mob }) {
     </div>
   );
 }
+
 
 function AdminGallery({ mob, C, setC, auth }) {
   const [loading, setLoading] = useState(false);
