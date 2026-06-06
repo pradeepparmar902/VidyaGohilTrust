@@ -89,6 +89,23 @@ const fbUpdateRegistration = async (docId, newData, idToken) => {
   return true;
 };
 
+const fbUpdateDonation = async (docId, newData, idToken) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations/${docId}?updateMask.fieldPaths=data`;
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(REG_URL, {
+    method: "PATCH",
+    headers: headers,
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(newData) }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("Update failed");
+  return true;
+};
+
 const fbFetchRegistrations = async (idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations?pageSize=300`;
   const headers = {};
@@ -2578,6 +2595,19 @@ function Donations({ mob, auth, C }) {
     await generateReceiptPDF(r, C);
   };
 
+  const handleStatusChange = async (r, newStatus) => {
+    try {
+      const updated = { ...r, status: newStatus };
+      if (!r.id.startsWith("DON")) {
+        await fbUpdateDonation(r.id, updated, auth?.idToken);
+      }
+      setData(prev => prev.map(x => x.id === r.id ? updated : x));
+    } catch(e) {
+      console.error(e);
+      alert("Failed to update donation status");
+    }
+  };
+
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
   return (
     <div>
@@ -2596,7 +2626,13 @@ function Donations({ mob, auth, C }) {
               <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{r.amount.toLocaleString()}</td>
               <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
               <td style={{padding:"10px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.date}</td>
-              <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A"}}>{r.status}</span></td>
+              <td style={{padding:"10px 12px"}}>
+                <select value={r.status || "Pending"} onChange={(e) => handleStatusChange(r, e.target.value)} style={{fontSize:".72rem",padding:"3px 6px",borderRadius:6,border:"1px solid var(--bd)",fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A",cursor:"pointer",outline:"none"}}>
+                  <option value="Pending (Payment Link)">Pending (Payment Link)</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Verified">Verified</option>
+                </select>
+              </td>
               <td style={{padding:"10px 12px"}}><button onClick={()=>generateReceipt(r)} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Generate</button></td>
             </tr>
           ))}</tbody>
