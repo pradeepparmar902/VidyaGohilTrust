@@ -1473,7 +1473,7 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
 
     if (action === "view") {
-      window.open(doc.output("bloburl"), "_blank");
+      return doc.output("bloburl");
     } else {
       doc.save(`Receipt_${r.id}.pdf`);
     }
@@ -2596,7 +2596,10 @@ function Donations({ mob, auth, C }) {
   }, [auth]);
 
   const generateReceipt = async (r, action) => {
-    await generateReceiptPDF(r, C, action);
+    const url = await generateReceiptPDF(r, C, action);
+    if (url && action === 'view') {
+      setPreviewUrl(url);
+    }
   };
 
   const handleStatusChange = async (r, newStatus) => {
@@ -2651,6 +2654,15 @@ function Donations({ mob, auth, C }) {
         </table>
         {rows.length===0&&<div style={{textAlign:"center",padding:28,color:"var(--mu)"}}>No results found.</div>}
       </div>
+      {previewUrl && (
+        <div style={{position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"rgba(0,0,0,0.8)", zIndex:99999, display:"flex", flexDirection:"column"}}>
+          <div style={{padding:16, display:"flex", justifyContent:"space-between", background:"#222", color:"white"}}>
+            <div style={{fontWeight:600}}>Receipt Preview</div>
+            <button onClick={()=>setPreviewUrl(null)} style={{background:"none", border:"none", color:"white", cursor:"pointer", fontSize:"1.5rem", lineHeight:1}}>&times;</button>
+          </div>
+          <iframe src={previewUrl} style={{flex:1, border:"none", width:"100%", background:"#525659"}} title="Receipt Preview" />
+        </div>
+      )}
     </div>
   );
 }
@@ -3278,6 +3290,13 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
     { id: "Invites", label: "Special Invites", icon: "💌" }
   ];
 
+  const handleViewReceipt = async (r) => {
+    const url = await generateReceiptPDF(r, C, 'view');
+    if (url) {
+      setPreviewFile({ url, type: "pdf", title: `Receipt_${r.id}.pdf` });
+    }
+  };
+
   useEffect(() => {
     const fetchMyRegs = async () => {
       try {
@@ -3498,7 +3517,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                               <td style={{padding:"14px 16px",textAlign:"right"}}>
                                 {isVerified ? (
                                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                                    <button onClick={() => generateReceiptPDF(r, C, 'view')} style={{padding:"6px 12px",borderRadius:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>View</button>
+                                    <button onClick={() => handleViewReceipt(r)} style={{padding:"6px 12px",borderRadius:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>View</button>
                                     <button onClick={() => generateReceiptPDF(r, C, 'download')} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download PDF</button>
                                   </div>
                                 ) : (
