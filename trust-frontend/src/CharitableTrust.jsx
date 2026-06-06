@@ -2734,6 +2734,7 @@ function UserLoginModal({ onClose, onPublicLogin }) {
   const [regName, setRegName] = useState("");
   const [regAddress, setRegAddress] = useState("");
   const [regGender, setRegGender] = useState("");
+  const [regImageFile, setRegImageFile] = useState(null);
   const [authError, setAuthError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const w = useW(); const mob = w < 640;
@@ -2750,7 +2751,10 @@ function UserLoginModal({ onClose, onPublicLogin }) {
       let profileData = { name: regName, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
       
       if (!isLoginMode) {
-        await fbUpdateProfile(res.idToken, regName, "").catch(()=>null);
+        if (regImageFile) {
+          profileData.photoUrl = await fbUploadPublicFile(regImageFile, res.idToken).catch(()=>"");
+        }
+        await fbUpdateProfile(res.idToken, regName, profileData.photoUrl || "").catch(()=>null);
         await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
       } else {
         const pref = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/users/${res.localId}.json?auth=${res.idToken}`);
@@ -2770,54 +2774,67 @@ function UserLoginModal({ onClose, onPublicLogin }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:24,zIndex:9999,backdropFilter:"blur(6px)"}}>
-      <div style={{background:"white",borderRadius:24,width:"100%",maxWidth:480,padding:"32px",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative"}}>
-        <button onClick={onClose} style={{position:"absolute",top:24,right:24,background:"#F5F5F5",border:"none",borderRadius:"50%",width:36,height:36,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:"var(--dt)"}}>✕</button>
-        <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",color:"var(--dt)",marginBottom:8,fontWeight:700}}>{isLoginMode ? "Welcome Back" : "Create Profile"}</h2>
-        <p style={{color:"var(--mu)",fontSize:".9rem",marginBottom:24}}>{isLoginMode ? "Login to access your dashboard and event registrations." : "Register once to easily apply for events and awards."}</p>
+      <div style={{background:"white",borderRadius:24,width:"100%",maxWidth:400,padding:"24px",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative"}}>
+        <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:"var(--dt)"}}>✕</button>
+        <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",color:"var(--dt)",marginBottom:6,fontWeight:700}}>{isLoginMode ? "Welcome Back" : "Create Profile"}</h2>
+        <p style={{color:"var(--mu)",fontSize:".85rem",marginBottom:20}}>{isLoginMode ? "Login to access your dashboard and event registrations." : "Register once to easily apply for events and awards."}</p>
         
-        {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"12px 16px",borderRadius:12,fontSize:".85rem",marginBottom:20,fontWeight:600}}>{authError}</div>}
+        {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"10px 14px",borderRadius:10,fontSize:".8rem",marginBottom:16,fontWeight:600}}>{authError}</div>}
         
-        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:16}}>
+        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:12}}>
           <div>
-            <label style={{fontSize:".8rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>Mobile Number *</label>
-            <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".95rem",outline:"none"}} placeholder="Enter your 10-digit mobile number"/>
+            <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Mobile Number *</label>
+            <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none"}} placeholder="Enter your 10-digit mobile number"/>
           </div>
           <div>
-            <label style={{fontSize:".8rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>Password *</label>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".95rem",outline:"none"}} placeholder="Enter password"/>
+            <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Password *</label>
+            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none"}} placeholder="Enter password"/>
           </div>
           
           {!isLoginMode && (
-            <div style={{background:"#F8F9FA",padding:16,borderRadius:16,display:"flex",flexDirection:"column",gap:16,border:"1px solid var(--bd)",marginTop:8}}>
-              <div style={{fontWeight:700,color:"var(--dt)",fontSize:".85rem",textTransform:"uppercase",letterSpacing:1}}>New Profile Details</div>
-              <div>
-                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Full Name *</label>
-                <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem"}}/>
+            <div style={{background:"#F8F9FA",padding:14,borderRadius:14,display:"flex",flexDirection:"column",gap:10,border:"1px solid var(--bd)",marginTop:4}}>
+              <div style={{fontWeight:700,color:"var(--dt)",fontSize:".8rem",textTransform:"uppercase",letterSpacing:1}}>New Profile Details</div>
+              
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:50,height:50,borderRadius:"50%",background:"#E9ECEF",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0,border:"1px solid var(--bd)"}}>
+                  {regImageFile ? <img src={URL.createObjectURL(regImageFile)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="preview"/> : <span style={{fontSize:"1.2rem",color:"#ADB5BD"}}>📷</span>}
+                </div>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Profile Photo (Optional)</label>
+                  <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{fontSize:".75rem",width:"100%"}}/>
+                </div>
               </div>
+
               <div>
-                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Address *</label>
-                <input value={regAddress} onChange={e=>setRegAddress(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem"}}/>
+                <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Full Name *</label>
+                <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem"}}/>
               </div>
-              <div>
-                <label style={{fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Gender *</label>
-                <select value={regGender} onChange={e=>setRegGender(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}}>
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+              <div style={{display:"flex",gap:10}}>
+                <div style={{flex:2}}>
+                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Address *</label>
+                  <input value={regAddress} onChange={e=>setRegAddress(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem"}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Gender *</label>
+                  <select value={regGender} onChange={e=>setRegGender(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",background:"white"}}>
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
             </div>
           )}
 
-          <button type="submit" disabled={submitting} style={{background:"var(--sf)",color:"white",padding:"14px",borderRadius:12,fontWeight:700,fontSize:"1rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:8}}>
+          <button type="submit" disabled={submitting} style={{background:"var(--sf)",color:"white",padding:"12px",borderRadius:10,fontWeight:700,fontSize:".95rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:4}}>
             {submitting ? "Processing..." : isLoginMode ? "Login" : "Create Profile & Login"}
           </button>
         </form>
         
-        <div style={{textAlign:"center",marginTop:24,fontSize:".9rem",color:"var(--mu)"}}>
+        <div style={{textAlign:"center",marginTop:16,fontSize:".85rem",color:"var(--mu)"}}>
           {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={()=>{setIsLoginMode(!isLoginMode);setAuthError("");}} style={{background:"none",border:"none",color:"var(--sf)",fontWeight:700,cursor:"pointer",fontSize:".9rem"}}>
+          <button onClick={()=>{setIsLoginMode(!isLoginMode);setAuthError("");}} style={{background:"none",border:"none",color:"var(--sf)",fontWeight:700,cursor:"pointer",fontSize:".85rem"}}>
             {isLoginMode ? "Create Profile" : "Login Instead"}
           </button>
         </div>
