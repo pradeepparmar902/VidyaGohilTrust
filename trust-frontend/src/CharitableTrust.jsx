@@ -1340,7 +1340,7 @@ function Contact({ C }) {
               )}
               <select value={formData.program} onChange={e=>setFormData({...formData, program:e.target.value})} style={{width:"100%",padding:"10px 13px",borderRadius:8,border:"2px solid var(--bd)",fontSize:".875rem",fontFamily:"inherit",marginBottom:14,color:formData.program?"black":"var(--mu)"}}>
                 <option value="">Select Area of Interest</option>
-                {ct.volunteerOptions?.map(o => <option key={o} value={o}>{o}</option>)}
+                {(ct.volunteerOptions?.length > 0 ? ct.volunteerOptions : ["Education","Healthcare","Field Work","IT and Digital","Fundraising"]).map(o => <option key={o} value={o}>{o}</option>)}
               </select>
               <button onClick={handleSubmit} disabled={status==="submitting"} className="bs" style={{width:"100%",padding:"12px",borderRadius:10,fontSize:".92rem",fontWeight:700,opacity:status==="submitting"?0.7:1}}>{status==="submitting"?"Submitting...":"Apply to Volunteer"}</button>
             </>
@@ -2450,7 +2450,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <F label="Contact Heading" path="contact.contactHeading"/>
         <div className="cf">
           <label className="cl">Volunteer Options</label>
-          {draft.contact.volunteerOptions?.map((opt,i)=>(
+          {(draft.contact.volunteerOptions || ["Education","Healthcare","Field Work","IT and Digital","Fundraising"]).map((opt,i)=>(
             <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
               <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={opt} onCommit={v=>upd(`contact.volunteerOptions.${i}`,v)}/>
               <button onClick={()=>delItem("contact.volunteerOptions",i)}
