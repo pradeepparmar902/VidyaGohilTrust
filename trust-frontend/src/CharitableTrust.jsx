@@ -1424,7 +1424,7 @@ const numberToWords = (num) => {
 };
 
 // Global Receipt PDF Generator
-export const generateReceiptPDF = async (r, C) => {
+export const generateReceiptPDF = async (r, C, action="download") => {
   try {
     const template = C?.donate?.receiptTemplate;
     if (!template) {
@@ -1472,7 +1472,11 @@ export const generateReceiptPDF = async (r, C) => {
     drawText("receiptNo", r.id, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
 
-    doc.save(`Receipt_${r.id}.pdf`);
+    if (action === "view") {
+      window.open(doc.output("bloburl"), "_blank");
+    } else {
+      doc.save(`Receipt_${r.id}.pdf`);
+    }
 
   } catch (e) {
     console.error(e);
@@ -2591,8 +2595,8 @@ function Donations({ mob, auth, C }) {
     if (auth) load();
   }, [auth]);
 
-  const generateReceipt = async (r) => {
-    await generateReceiptPDF(r, C);
+  const generateReceipt = async (r, action) => {
+    await generateReceiptPDF(r, C, action);
   };
 
   const handleStatusChange = async (r, newStatus) => {
@@ -2636,7 +2640,12 @@ function Donations({ mob, auth, C }) {
                   <option value="Verified">Verified</option>
                 </select>
               </td>
-              <td style={{padding:"10px 12px"}}><button onClick={()=>generateReceipt(r)} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Generate</button></td>
+              <td style={{padding:"10px 12px"}}>
+                <div style={{display:"flex",gap:4}}>
+                  <button onClick={()=>generateReceipt(r, 'view')} style={{padding:"4px 9px",borderRadius:6,background:"#EDFAF1",border:"none",color:"#1A7A3E",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>View</button>
+                  <button onClick={()=>generateReceipt(r, 'download')} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Download</button>
+                </div>
+              </td>
             </tr>
           ))}</tbody>
         </table>
@@ -3488,7 +3497,10 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                               </td>
                               <td style={{padding:"14px 16px",textAlign:"right"}}>
                                 {isVerified ? (
-                                  <button onClick={() => generateReceiptPDF(r, C)} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download 80G Receipt</button>
+                                  <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                                    <button onClick={() => generateReceiptPDF(r, C, 'view')} style={{padding:"6px 12px",borderRadius:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>View</button>
+                                    <button onClick={() => generateReceiptPDF(r, C, 'download')} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download PDF</button>
+                                  </div>
                                 ) : (
                                   <span style={{fontSize:".75rem",color:"var(--mu)"}}>Pending Verification</span>
                                 )}
