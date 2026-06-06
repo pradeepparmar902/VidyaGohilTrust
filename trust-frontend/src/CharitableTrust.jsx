@@ -2722,7 +2722,15 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
 function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const w = useW(); const mob = w < 640;
+  const [activeTab, setActiveTab] = useState("Registrations");
+  const w = useW(); const mob = w < 768;
+
+  const tabs = [
+    { id: "Registrations", label: "Event Registrations", icon: "📅" },
+    { id: "Awards", label: "Education Awards", icon: "🎓" },
+    { id: "Receipts", label: "Payment Receipts", icon: "🧾" },
+    { id: "Invites", label: "Special Invites", icon: "💌" }
+  ];
 
   useEffect(() => {
     const fetchMyRegs = async () => {
@@ -2742,8 +2750,11 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
       } catch(e) { console.error(e); }
       setLoading(false);
     };
-    if (globalAuthToken && globalProfile) fetchMyRegs();
-  }, [globalAuthToken, globalProfile]);
+    if (globalAuthToken && globalProfile && activeTab === "Registrations") {
+      setLoading(true);
+      fetchMyRegs();
+    }
+  }, [globalAuthToken, globalProfile, activeTab]);
 
   const getStatusColor = (s) => {
     if (!s) return {bg:"#FFF4EC", col:"#E8650A"}; // Pending
@@ -2758,13 +2769,13 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
     <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?0:24,zIndex:9999,backdropFilter:"blur(6px)"}}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       
-      <div style={{background:"#F8F9FA",borderRadius:mob?0:24,width:"100%",maxWidth:800,height:mob?"100%":"auto",maxHeight:mob?"100%":"90vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden"}}
+      <div style={{background:"#F8F9FA",borderRadius:mob?0:24,width:"100%",maxWidth:1000,height:mob?"100%":"auto",maxHeight:mob?"100%":"90vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden"}}
         onClick={e=>e.stopPropagation()}>
         
         {/* Header */}
         <div style={{padding:"24px 32px",background:"linear-gradient(135deg, var(--dt), var(--tm))",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,marginBottom:4}}>My Dashboard</h2>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,marginBottom:4}}>My Portal</h2>
             <div style={{fontSize:".85rem",opacity:.8}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
           </div>
           <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,width:40,height:40,cursor:"pointer",fontSize:"1.4rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}
@@ -2772,45 +2783,78 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
             onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>✕</button>
         </div>
 
-        {/* Content */}
-        <div style={{padding:mob?"20px 16px":"32px",overflowY:"auto",flex:1}}>
-          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Event Registrations</h3>
-          
-          {loading ? (
-            <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your registrations...</div>
-          ) : regs.length === 0 ? (
-            <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
-              <div style={{fontSize:"3rem",marginBottom:12}}>📅</div>
-              <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Registrations Found</div>
-              <div style={{color:"var(--mu)",fontSize:".85rem"}}>You haven't registered for any events yet.</div>
-            </div>
-          ) : (
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
-              {regs.map(r => {
-                const sc = getStatusColor(r.status || r.Status || "Pending");
-                return (
-                  <div key={r.id} style={{background:"white",borderRadius:16,padding:mob?"16px":"20px",border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
-                      <div>
-                        <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp).toLocaleString()}</div>
-                        <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r["Event Name"] || r["Event"] || "Event Registration"}</div>
-                      </div>
-                      <div style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
-                        {r.status || r.Status || "Pending Approval"}
-                      </div>
-                    </div>
-                    
-                    {(r.AdminRemarks || r.remarks || r.Remarks) && (
-                      <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:10,border:"1px solid #F5E8B8"}}>
-                        <div style={{fontSize:".7rem",fontWeight:700,color:"#C8860A",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Admin Remark</div>
-                        <div style={{fontSize:".85rem",color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks}</div>
-                      </div>
-                    )}
+        <div style={{display:"flex",flexDirection:mob?"column":"row",flex:1,minHeight:0}}>
+          {/* Sidebar Tabs */}
+          <div style={{width:mob?"100%":260,background:"white",borderRight:mob?"none":"1px solid var(--bd)",borderBottom:mob?"1px solid var(--bd)":"none",display:"flex",flexDirection:mob?"row":"column",overflowX:mob?"auto":"visible",flexShrink:0}}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                style={{
+                  display:"flex",alignItems:"center",gap:12,padding:"16px 20px",border:"none",background:activeTab===t.id?"#FFF4EC":"transparent",
+                  color:activeTab===t.id?"var(--sf)":"var(--tm2)",fontWeight:activeTab===t.id?700:500,fontSize:".95rem",cursor:"pointer",
+                  borderLeft:mob?"none":`4px solid ${activeTab===t.id?"var(--sf)":"transparent"}`,
+                  borderBottom:mob?`4px solid ${activeTab===t.id?"var(--sf)":"transparent"}`:"none",
+                  textAlign:"left",whiteSpace:mob?"nowrap":"normal",transition:"all .2s"
+                }}
+                onMouseEnter={e=>{ if(activeTab!==t.id) { e.currentTarget.style.background="#f9f9f9"; e.currentTarget.style.color="var(--dt)"; } }}
+                onMouseLeave={e=>{ if(activeTab!==t.id) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color="var(--tm2)"; } }}
+              >
+                <span style={{fontSize:"1.2rem"}}>{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content Area */}
+          <div style={{flex:1,padding:mob?"20px 16px":"32px",overflowY:"auto",background:"#F8F9FA"}}>
+            {activeTab === "Registrations" && (
+              <>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Event Registrations</h3>
+                {loading ? (
+                  <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your registrations...</div>
+                ) : regs.length === 0 ? (
+                  <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
+                    <div style={{fontSize:"3rem",marginBottom:12}}>📅</div>
+                    <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Registrations Found</div>
+                    <div style={{color:"var(--mu)",fontSize:".85rem"}}>You haven't registered for any events yet.</div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ) : (
+                  <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                    {regs.map(r => {
+                      const sc = getStatusColor(r.status || r.Status || "Pending");
+                      return (
+                        <div key={r.id} style={{background:"white",borderRadius:16,padding:mob?"16px":"20px",border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
+                            <div>
+                              <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp).toLocaleString()}</div>
+                              <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r["Event Name"] || r["Event"] || "Event Registration"}</div>
+                            </div>
+                            <div style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
+                              {r.status || r.Status || "Pending Approval"}
+                            </div>
+                          </div>
+                          
+                          {(r.AdminRemarks || r.remarks || r.Remarks) && (
+                            <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:10,border:"1px solid #F5E8B8"}}>
+                              <div style={{fontSize:".7rem",fontWeight:700,color:"#C8860A",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Admin Remark</div>
+                              <div style={{fontSize:".85rem",color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab !== "Registrations" && (
+              <div style={{background:"white",padding:"60px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                <div style={{fontSize:"3.5rem",marginBottom:16}}>{tabs.find(t=>t.id===activeTab)?.icon}</div>
+                <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.3rem",marginBottom:8,fontFamily:"'Playfair Display',serif"}}>No New {tabs.find(t=>t.id===activeTab)?.label}</div>
+                <div style={{color:"var(--mu)",fontSize:".9rem",maxWidth:300}}>When the Trust sends you updates related to {activeTab.toLowerCase()}, they will securely appear right here.</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
