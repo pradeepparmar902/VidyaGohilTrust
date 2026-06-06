@@ -2947,16 +2947,28 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                         <div key={r.id} style={{background:"white",borderRadius:16,padding:mob?"16px":"20px",border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)"}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
                             <div>
-                              <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp).toLocaleString()}</div>
-                              <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r["Event Name"] || r["Event"] || "Event Registration"}</div>
+                              <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp || r._submittedAt).toLocaleString()}</div>
+                              <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r.eventName || r["Event Name"] || r["Event"] || "Event Registration"}</div>
                             </div>
                             <div style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
                               {r.status || r.Status || "Pending Approval"}
                             </div>
                           </div>
                           
+                          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"12px 24px",marginTop:16,paddingTop:16,borderTop:"1px solid #F1F3F5"}}>
+                            {Object.entries(r).filter(([k,v]) => {
+                               const skip = ["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"];
+                               return !skip.includes(k) && v !== "" && v !== null && typeof v !== "object";
+                            }).map(([k,v]) => (
+                               <div key={k}>
+                                 <div style={{fontSize:".7rem",color:"var(--mu)",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{k}</div>
+                                 <div style={{fontSize:".85rem",color:"var(--dt)",fontWeight:600,wordBreak:"break-word"}}>{v}</div>
+                               </div>
+                            ))}
+                          </div>
+                          
                           {(r.AdminRemarks || r.remarks || r.Remarks) && (
-                            <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:10,border:"1px solid #F5E8B8"}}>
+                            <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:16,border:"1px solid #F5E8B8"}}>
                               <div style={{fontSize:".7rem",fontWeight:700,color:"#C8860A",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Admin Remark</div>
                               <div style={{fontSize:".85rem",color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks}</div>
                             </div>
