@@ -2740,7 +2740,35 @@ function AdminRegistrations({ mob, C, auth }) {
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{evName}</td>
                     {allKeys.map(k => {
                       let val = r[k] || "-";
-                      if (typeof val === 'string' && val.startsWith('http')) val = "📎 Attached File";
+                      if (typeof val === 'string' && val.startsWith('http')) {
+                        const isDoc = val.match(/\.(pdf|doc|docx)/i);
+                        if (isDoc) {
+                          return (
+                            <td key={k} style={{padding:"12px",whiteSpace:"nowrap"}}>
+                              <button 
+                                type="button" 
+                                onClick={()=>setPreviewFile({url: val, type: 'file'})}
+                                style={{background:"none",border:"none",color:"var(--dt)",textDecoration:"underline",cursor:"pointer",padding:0,fontSize:".85rem",display:"flex",alignItems:"center",gap:4}}
+                              >
+                                📎 View Doc
+                              </button>
+                            </td>
+                          );
+                        } else {
+                          return (
+                            <td key={k} style={{padding:"12px"}}>
+                              <img 
+                                src={val} 
+                                alt="Upload" 
+                                style={{width: 44, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", border:"1px solid var(--bd)"}}
+                                onClick={() => setPreviewFile({url: val, type: 'image'})}
+                                title="Click to view full size"
+                              />
+                            </td>
+                          );
+                        }
+                      }
+                      
                       else if (typeof val === 'string') val = val.replace(/\|/g, ' ');
                       else val = String(val);
                       if (val.length > 50) val = val.substring(0, 47) + "...";
