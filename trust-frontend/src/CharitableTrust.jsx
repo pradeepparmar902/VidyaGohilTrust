@@ -1474,6 +1474,8 @@ export const generateReceiptPDF = async (r, C, action="download") => {
 
     if (action === "view") {
       return doc.output("bloburl");
+    } else if (action === "blob") {
+      return doc.output("blob");
     } else {
       doc.save(`Receipt_${r.id}.pdf`);
     }
@@ -2597,6 +2599,18 @@ function Donations({ mob, auth, C }) {
   }, [auth]);
 
   const generateReceipt = async (r, action) => {
+    if (r.receiptUrl) {
+      if (action === 'view') {
+        setPreviewUrl(r.receiptUrl);
+      } else {
+        const link = document.createElement("a");
+        link.href = r.receiptUrl;
+        link.download = `Receipt_${r.id}.pdf`;
+        link.target = "_blank";
+        link.click();
+      }
+      return;
+    }
     const url = await generateReceiptPDF(r, C, action);
     if (url && action === 'view') {
       setPreviewUrl(url);
@@ -2605,7 +2619,19 @@ function Donations({ mob, auth, C }) {
 
   const handleStatusChange = async (r, newStatus) => {
     try {
-      const updated = { ...r, status: newStatus };
+      let updated = { ...r, status: newStatus };
+      if (newStatus === "Verified" && r.status !== "Verified") {
+        try {
+          const blob = await generateReceiptPDF(updated, C, "blob");
+          if (blob) {
+            const file = new File([blob], `Receipt_${r.id}.pdf`, { type: "application/pdf" });
+            const url = await fbUploadPublicFile(file, auth?.idToken);
+            updated.receiptUrl = url;
+          }
+        } catch(err) {
+          console.error("Failed to generate and upload initial PDF:", err);
+        }
+      }
       if (r._docId) {
         await fbUpdateDonation(r._docId, updated, auth?.idToken);
       } else if (!r.id.startsWith("DON")) {
@@ -2633,6 +2659,31 @@ function Donations({ mob, auth, C }) {
       console.error(e);
       alert("Failed to update PAN: " + e.message);
     }
+  };
+
+  const handleRegenerate = async (r) => {
+    if (!window.confirm("Are you sure you want to overwrite the existing receipt?")) return;
+    try {
+      setLoading(true);
+      const blob = await generateReceiptPDF(r, C, "blob");
+      if (blob) {
+        const file = new File([blob], `Receipt_${r.id}.pdf`, { type: "application/pdf" });
+        const url = await fbUploadPublicFile(file, auth?.idToken);
+        const updated = { ...r, receiptUrl: url };
+        
+        if (r._docId) {
+          await fbUpdateDonation(r._docId, updated, auth?.idToken);
+        } else if (!r.id.startsWith("DON")) {
+          await fbUpdateDonation(r.id, updated, auth?.idToken);
+        }
+        setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
+        alert("Receipt regenerated successfully!");
+      }
+    } catch(e) {
+      console.error(e);
+      alert("Failed to regenerate receipt: " + e.message);
+    }
+    setLoading(false);
   };
 
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
@@ -2664,9 +2715,12 @@ function Donations({ mob, auth, C }) {
                 </select>
               </td>
               <td style={{padding:"10px 12px"}}>
-                <div style={{display:"flex",gap:4}}>
+                <div style={{display:"flex",gap:4, flexWrap:"wrap"}}>
                   <button onClick={()=>generateReceipt(r, 'view')} style={{padding:"4px 9px",borderRadius:6,background:"#EDFAF1",border:"none",color:"#1A7A3E",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>View</button>
                   <button onClick={()=>generateReceipt(r, 'download')} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Download</button>
+                  {r.status === "Verified" && (
+                    <button onClick={()=>handleRegenerate(r)} style={{padding:"4px 9px",borderRadius:6,background:"#FEECEC",border:"none",color:"#D93025",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Regenerate</button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -3311,10 +3365,26 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
   ];
 
   const handleViewReceipt = async (r) => {
+    if (r.receiptUrl) {
+      setPreviewFile({ url: r.receiptUrl, type: "pdf", title: `Receipt_${r.id}.pdf` });
+      return;
+    }
     const url = await generateReceiptPDF(r, C, 'view');
     if (url) {
       setPreviewFile({ url, type: "pdf", title: `Receipt_${r.id}.pdf` });
     }
+  };
+
+  const handleDownloadReceipt = async (r) => {
+    if (r.receiptUrl) {
+      const link = document.createElement("a");
+      link.href = r.receiptUrl;
+      link.download = `Receipt_${r.id}.pdf`;
+      link.target = "_blank";
+      link.click();
+      return;
+    }
+    await generateReceiptPDF(r, C, 'download');
   };
 
   useEffect(() => {
@@ -3538,7 +3608,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                                 {isVerified ? (
                                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                                     <button onClick={() => handleViewReceipt(r)} style={{padding:"6px 12px",borderRadius:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>View</button>
-                                    <button onClick={() => generateReceiptPDF(r, C, 'download')} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download PDF</button>
+                                    <button onClick={() => handleDownloadReceipt(r)} style={{padding:"6px 12px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600,boxShadow:"0 2px 4px rgba(232,101,10,.2)"}}>Download PDF</button>
                                   </div>
                                 ) : (
                                   <span style={{fontSize:".75rem",color:"var(--mu)"}}>Pending Verification</span>
