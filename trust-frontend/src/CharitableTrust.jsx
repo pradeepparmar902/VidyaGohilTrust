@@ -2781,54 +2781,52 @@ function UserLoginModal({ onClose, onPublicLogin }) {
         
         {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"10px 14px",borderRadius:10,fontSize:".8rem",marginBottom:16,fontWeight:600}}>{authError}</div>}
         
-        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <div>
-            <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Mobile Number *</label>
-            <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none"}} placeholder="Enter your 10-digit mobile number"/>
-          </div>
-          <div>
-            <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Password *</label>
-            <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none"}} placeholder="Enter password"/>
+        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:16,textAlign:"left"}}>
+          <div style={{display:"flex",gap:12,flexDirection:mob?"column":"row"}}>
+            <div style={{flex:1}}>
+              <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>📱 Mobile Number *</label>
+              <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="10-digit number"/>
+            </div>
+            <div style={{flex:1}}>
+              <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>🔒 Password *</label>
+              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="••••••"/>
+            </div>
           </div>
           
           {!isLoginMode && (
-            <div style={{background:"#F8F9FA",padding:14,borderRadius:14,display:"flex",flexDirection:"column",gap:10,border:"1px solid var(--bd)",marginTop:4}}>
-              <div style={{fontWeight:700,color:"var(--dt)",fontSize:".8rem",textTransform:"uppercase",letterSpacing:1}}>New Profile Details</div>
+            <div style={{background:"linear-gradient(to bottom right, #F8F9FA, #FFFFFF)",padding:16,borderRadius:16,display:"flex",flexDirection:"column",gap:14,border:"1px solid var(--bd)",boxShadow:"inset 0 2px 10px rgba(0,0,0,.02)"}}>
+              <div style={{fontWeight:800,color:"var(--dt)",fontSize:".75rem",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid var(--bd)",paddingBottom:8}}>👤 New Profile Details</div>
               
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{width:50,height:50,borderRadius:"50%",background:"#E9ECEF",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0,border:"1px solid var(--bd)"}}>
-                  {regImageFile ? <img src={URL.createObjectURL(regImageFile)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="preview"/> : <span style={{fontSize:"1.2rem",color:"#ADB5BD"}}>📷</span>}
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:56,height:56,borderRadius:"50%",background:"var(--ww)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0,border:"2px dashed var(--bd)",position:"relative",cursor:"pointer"}} title="Click to upload profile photo">
+                  {regImageFile ? <img src={URL.createObjectURL(regImageFile)} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="preview"/> : <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}><span style={{fontSize:"1.2rem",opacity:.6}}>📷</span></div>}
+                  <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}}/>
                 </div>
                 <div style={{flex:1}}>
-                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Profile Photo (Optional)</label>
-                  <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{fontSize:".75rem",width:"100%"}}/>
+                  <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Full Name *</label>
+                  <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}} placeholder="Enter your full name"/>
                 </div>
               </div>
 
-              <div>
-                <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Full Name *</label>
-                <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem"}}/>
-              </div>
-              <div style={{display:"flex",gap:10}}>
+              <div style={{display:"flex",gap:12}}>
                 <div style={{flex:2}}>
-                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Address *</label>
-                  <input value={regAddress} onChange={e=>setRegAddress(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem"}}/>
+                  <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>📍 Address *</label>
+                  <input value={regAddress} onChange={e=>setRegAddress(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}} placeholder="City / Area"/>
                 </div>
                 <div style={{flex:1}}>
-                  <label style={{fontSize:".7rem",fontWeight:600,color:"var(--mu)",marginBottom:4,display:"block"}}>Gender *</label>
-                  <select value={regGender} onChange={e=>setRegGender(e.target.value)} required style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",background:"white"}}>
+                  <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>⚧ Gender *</label>
+                  <select value={regGender} onChange={e=>setRegGender(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white",cursor:"pointer"}}>
                     <option value="">Select</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
             </div>
           )}
 
-          <button type="submit" disabled={submitting} style={{background:"var(--sf)",color:"white",padding:"12px",borderRadius:10,fontWeight:700,fontSize:".95rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:4}}>
-            {submitting ? "Processing..." : isLoginMode ? "Login" : "Create Profile & Login"}
+          <button type="submit" disabled={submitting} style={{background:"linear-gradient(135deg, var(--sf), var(--gd))",color:"white",padding:"14px",borderRadius:12,fontWeight:800,fontSize:"1rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:8,boxShadow:"0 8px 20px rgba(232,101,10,.3)",transition:"all .2s",letterSpacing:.5}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+            {submitting ? "Processing..." : isLoginMode ? "Login to Dashboard" : "Create Profile & Login"}
           </button>
         </form>
         
