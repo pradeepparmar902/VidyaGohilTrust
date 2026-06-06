@@ -189,7 +189,7 @@ const fbUpdateVolunteer = async (docId, vData, idToken) => {
     body: JSON.stringify({
       fields: {
         data: { stringValue: JSON.stringify(vData) },
-        submittedAt: { timestampValue: new Date().toISOString() }
+        submittedAt: { timestampValue: vData._submittedAt || new Date().toISOString() }
       }
     })
   });
@@ -3305,7 +3305,7 @@ function Volunteers({ mob, auth, C }) {
 
   const handleStatusChange = async (r, newStatus) => {
     try {
-      const updated = { ...r, status: newStatus };
+      const updated = { ...r, status: newStatus, statusUpdatedAt: new Date().toISOString() };
       await fbUpdateVolunteer(r._docId, updated, auth?.idToken);
       setData(prev => prev.map(x => x._docId === r._docId ? updated : x));
     } catch(e) {
@@ -3382,12 +3382,13 @@ function Volunteers({ mob, auth, C }) {
                 <div style={{marginBottom:4}}>STATUS</div>
                 <MultiSelect options={uniqueStatuses} value={colF.status} onChange={v=>setColF({...colF, status: v})} width={100} />
               </th>
-              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>SUBMITTED</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>APPLIED DATE</th>
+              <th style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>STATUS DATE</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan="6" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading...</td></tr>}
-            {!loading && rows.length===0 && <tr><td colSpan="6" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>No applicants found.</td></tr>}
+            {loading && <tr><td colSpan="7" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading...</td></tr>}
+            {!loading && rows.length===0 && <tr><td colSpan="7" style={{textAlign:"center",padding:40,color:"var(--mu)"}}>No applicants found.</td></tr>}
             {!loading && rows.map((r,i)=>(
             <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
               <td style={{padding:"11px 12px"}}>
@@ -3409,7 +3410,8 @@ function Volunteers({ mob, auth, C }) {
                   <option value="Rejected">Rejected</option>
                 </select>
               </td>
-              <td style={{padding:"11px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : ""}</td>
+              <td style={{padding:"11px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r._submittedAt ? new Date(r._submittedAt).toLocaleDateString() : ""}</td>
+              <td style={{padding:"11px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.statusUpdatedAt ? new Date(r.statusUpdatedAt).toLocaleDateString() : "-"}</td>
             </tr>
           ))}</tbody>
         </table>
