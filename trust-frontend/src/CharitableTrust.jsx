@@ -1391,6 +1391,86 @@ function BlurInput({ value, onCommit, className, style }) {
   );
 }
 
+// Number to words helper
+const numberToWords = (num) => {
+  const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+  const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+  if ((num = num.toString()).length > 9) return 'overflow';
+  let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return ''; let str = '';
+  str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+  str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+  str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+  str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+  str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+  return str.trim() ? str.trim() + ' Rupees Only' : '';
+};
+
+function TemplateMapper({ imgUrl, mapData, onChange }) {
+  const [fields, setFields] = useState(mapData || {
+    donorName: { x: 50, y: 50, visible: true },
+    amount: { x: 50, y: 60, visible: true },
+    amountWords: { x: 50, y: 70, visible: true },
+    date: { x: 80, y: 20, visible: true },
+    receiptNo: { x: 80, y: 15, visible: true },
+    pan: { x: 50, y: 80, visible: true }
+  });
+
+  const containerRef = useRef(null);
+  const [dragging, setDragging] = useState(null);
+
+  useEffect(() => { onChange(fields); }, [fields]);
+
+  const handlePointerDown = (e, key) => { e.preventDefault(); setDragging(key); };
+  const handlePointerMove = (e) => {
+    if (!dragging || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    let x = ((e.clientX - rect.left) / rect.width) * 100;
+    let y = ((e.clientY - rect.top) / rect.height) * 100;
+    x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
+    setFields(prev => ({ ...prev, [dragging]: { ...prev[dragging], x, y } }));
+  };
+  const handlePointerUp = () => setDragging(null);
+
+  return (
+    <div style={{marginTop: 16, border: "1px solid var(--bd)", borderRadius: 8, padding: 16, background: "white"}}>
+      <h4 style={{margin: 0, marginBottom: 8, fontSize: ".9rem"}}>Visual Template Mapper</h4>
+      <p style={{fontSize: ".75rem", color: "var(--mu)", marginBottom: 16}}>Drag the fields to position them on your template. Click a button below to show/hide a field.</p>
+      
+      <div 
+        ref={containerRef} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}
+        style={{position: "relative", width: "100%", overflow: "hidden", borderRadius: 8, background: "#f5f5f5", border: "1px dashed var(--bd)", touchAction: "none", minHeight: 200}}
+      >
+        <img src={imgUrl} style={{width: "100%", display: "block", pointerEvents: "none"}} alt="Template" />
+        
+        {Object.entries(fields).map(([key, pos]) => pos.visible && (
+          <div
+            key={key} onPointerDown={(e) => handlePointerDown(e, key)}
+            style={{
+              position: "absolute", left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -50%)",
+              background: dragging === key ? "var(--sf)" : "rgba(13, 75, 94, 0.85)", color: "white", padding: "4px 8px", borderRadius: 4,
+              fontSize: "12px", fontWeight: 700, cursor: dragging === key ? "grabbing" : "grab", userSelect: "none", whiteSpace: "nowrap", zIndex: dragging === key ? 10 : 1
+            }}
+          >
+            {key}
+          </div>
+        ))}
+      </div>
+      
+      <div style={{display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16}}>
+        {Object.entries(fields).map(([key, pos]) => (
+          <button 
+            key={key} onClick={() => setFields(prev => ({ ...prev, [key]: { ...prev[key], visible: !pos.visible } }))}
+            style={{ padding: "6px 12px", borderRadius: 16, fontSize: ".75rem", fontWeight: 600, cursor: "pointer", background: pos.visible ? "var(--tl)" : "#f5f5f5", border: `1px solid ${pos.visible ? "var(--dt)" : "#ddd"}`, color: pos.visible ? "var(--dt)" : "#888" }}
+          >
+            {pos.visible ? "✓ " : "+ "}{key}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── CONTENT EDITOR ────────────────────────────────────────────────────────────
 function ContentEditor({ C, setC, setPage, auth }) {
   const [draft, setDraft] = useState(()=>JSON.parse(JSON.stringify(C)));
@@ -2140,6 +2220,14 @@ function ContentEditor({ C, setC, setPage, auth }) {
             <span style={{fontSize:".75rem",color:"var(--mu)"}}>Upload a blank PNG/JPG template. Text will be overlaid automatically.</span>
           </div>
         </div>
+        
+        {draft.donate.receiptTemplate && (
+          <TemplateMapper 
+            imgUrl={draft.donate.receiptTemplate} 
+            mapData={draft.donate.receiptMap} 
+            onChange={(map) => upd("donate.receiptMap", map)} 
+          />
+        )}
       </Sec>
 
       <Sec id="contact" icon="📞" label="Contact and Volunteer">
@@ -2387,10 +2475,15 @@ function Donations({ mob, auth, C }) {
         return;
       }
       
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
-      const pdfWidth = doc.internal.pageSize.getWidth();
-      const pdfHeight = doc.internal.pageSize.getHeight();
-
+      const map = C?.donate?.receiptMap || {
+        donorName: { x: 50, y: 50, visible: true },
+        amount: { x: 50, y: 60, visible: true },
+        amountWords: { x: 50, y: 70, visible: true },
+        date: { x: 80, y: 20, visible: true },
+        receiptNo: { x: 80, y: 15, visible: true },
+        pan: { x: 50, y: 80, visible: true }
+      };
+      
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.src = template;
@@ -2400,30 +2493,25 @@ function Donations({ mob, auth, C }) {
         img.onerror = () => reject(new Error("Failed to load template image."));
       });
 
-      doc.addImage(img, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
+      const doc = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
+      doc.addImage(img, 'PNG', 0, 0, img.width, img.height);
       doc.setTextColor(40, 40, 40);
-      doc.text("80G DONATION RECEIPT", pdfWidth / 2, pdfHeight / 2 - 60, { align: 'center' });
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(14);
-      doc.text(`Receipt No: ${r.id}`, pdfWidth / 2, pdfHeight / 2 - 30, { align: 'center' });
-      doc.text(`Date: ${r.date}`, pdfWidth / 2, pdfHeight / 2 - 10, { align: 'center' });
-      
-      doc.setFontSize(16);
-      doc.text(`Received with thanks from`, pdfWidth / 2, pdfHeight / 2 + 20, { align: 'center' });
       doc.setFont("helvetica", "bold");
-      doc.text(r.name || "Donor", pdfWidth / 2, pdfHeight / 2 + 40, { align: 'center' });
-      
-      doc.setFont("helvetica", "normal");
-      doc.text(`an amount of Rs. ${r.amount.toLocaleString()}`, pdfWidth / 2, pdfHeight / 2 + 65, { align: 'center' });
-      
-      if (r.pan) {
-        doc.setFontSize(12);
-        doc.text(`PAN: ${r.pan.toUpperCase()}`, pdfWidth / 2, pdfHeight / 2 + 85, { align: 'center' });
-      }
+
+      const drawText = (key, text, size=14) => {
+        if (!map[key] || !map[key].visible || !text) return;
+        doc.setFontSize(size);
+        const px = (map[key].x / 100) * img.width;
+        const py = (map[key].y / 100) * img.height;
+        doc.text(text, px, py, { align: 'center' });
+      };
+
+      drawText("donorName", r.name || "Donor", 16);
+      drawText("amount", `Rs. ${r.amount.toLocaleString()}`, 16);
+      drawText("amountWords", numberToWords(r.amount), 14);
+      drawText("date", r.date, 14);
+      drawText("receiptNo", r.id, 14);
+      drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 14);
 
       doc.save(`Receipt_${r.id}.pdf`);
 
