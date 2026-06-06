@@ -2748,13 +2748,16 @@ function AdminRegistrations({ mob, C, auth }) {
       let val = "";
       if(colKey === "Date") { try { if(r._submittedAt) val = new Date(r._submittedAt).toLocaleString().split(',')[0].trim(); } catch(e){} }
       else if(colKey === "Event") val = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
-      else val = r[colKey] || "";
+      else if(colKey === "Status") val = r['Status'] || "Pending";
+      else if(colKey === "Transaction ID") val = r['Transaction ID'] || "-";
+      else val = r[colKey] || "-";
       
       if (typeof val === 'string' && val.startsWith('http')) return;
       if (typeof val === 'string') val = val.trim();
       else val = String(val).trim();
       
-      if(val && val !== "-" && val !== "") vals.add(val);
+      if (!val) val = "-";
+      vals.add(val);
     });
     return Array.from(vals).sort();
   };
@@ -2776,7 +2779,9 @@ function AdminRegistrations({ mob, C, auth }) {
       let rVal = "";
       if(colKey === "Date") { try { if(r._submittedAt) rVal = new Date(r._submittedAt).toLocaleString(); } catch(e){} }
       else if(colKey === "Event") rVal = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
-      else rVal = r[colKey] || "";
+      else if(colKey === "Status") rVal = r['Status'] || "Pending";
+      else if(colKey === "Transaction ID") rVal = r['Transaction ID'] || "-";
+      else rVal = r[colKey] || "-";
       
       if(!String(rVal).toLowerCase().includes(filterVal.toLowerCase())) return false;
     }
