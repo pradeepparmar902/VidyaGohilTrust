@@ -676,9 +676,28 @@ function Donate({ C, lang, globalProfile }) {
     if (step === 1) return setStep(2);
     if (!form.name || !form.phone || !form.email) return alert("Please fill all required fields");
     
+    const rzpKey = C.donate?.razorpayKey || "rzp_test_DummyKeyForTest";
+
+    if (rzpKey.startsWith("http")) {
+      try {
+        await fbSubmitDonation({
+          name: form.name, phone: form.phone, email: form.email, pan: form.pan,
+          amount: final, program: prog, status: "Pending (Payment Link)",
+          date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
+          id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
+          razorpay_payment_id: "Off-site Link"
+        });
+        window.open(rzpKey, "_blank");
+        setStep(3);
+      } catch(e) {
+        console.error(e); alert("Failed to save record.");
+      }
+      return;
+    }
+
     if (window.Razorpay) {
       const options = {
-        key: C.donate?.razorpayKey || "rzp_test_DummyKeyForTest", // Use key from CMS
+        key: rzpKey, // Use key from CMS
         amount: final * 100, 
         currency: "INR",
         name: "Vidya Gohil Trust",
