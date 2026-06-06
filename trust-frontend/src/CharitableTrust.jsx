@@ -3329,7 +3329,7 @@ function Volunteers({ mob, auth, C }) {
     const matchStatus = colF.status.length === 0 || colF.status.includes(currentStatus);
     
     return matchQ && matchName && matchCity && matchProgram && matchStatus;
-  }).sort((a,b) => new Date(b.submittedAt||0) - new Date(a.submittedAt||0));
+  }).sort((a,b) => new Date(b._submittedAt||0) - new Date(a._submittedAt||0));
 
   const downloadCSV = () => {
     const headers = ["Name", "Email", "Phone", "City", "Program", "Status", "Date Submitted"];
