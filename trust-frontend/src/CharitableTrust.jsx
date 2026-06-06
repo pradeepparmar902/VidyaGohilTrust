@@ -2971,8 +2971,8 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                   {r.status || r.Status || "Pending"}
                                 </span>
                               </td>
-                              <td style={{padding:"14px 16px",minWidth:200,color:"var(--tm2)"}}>
-                                <div style={{maxWidth:250,maxHeight:60,overflowY:"auto",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4}}>
+                              <td style={{padding:"14px 16px",color:"var(--tm2)"}}>
+                                <div style={{minWidth:150,maxWidth:500,maxHeight:80,overflow:"auto",resize:"horizontal",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4,paddingBottom:4}}>
                                   {r.AdminRemarks || r.remarks || r.Remarks || "-"}
                                 </div>
                               </td>
@@ -2990,7 +2990,7 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                         📎 View Document
                                       </button>
                                     ) : (
-                                      <div style={{maxWidth:250,maxHeight:60,overflowY:"auto",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4}}>
+                                      <div style={{minWidth:150,maxWidth:500,maxHeight:80,overflow:"auto",resize:"horizontal",whiteSpace:"normal",wordBreak:"break-word",paddingRight:4,paddingBottom:4}}>
                                         {val}
                                       </div>
                                     )}
