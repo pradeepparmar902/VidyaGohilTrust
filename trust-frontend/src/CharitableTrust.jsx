@@ -2728,11 +2728,37 @@ function Donations({ mob, auth, C }) {
     return matchQ && matchId && matchDonor && matchAmount && matchProgram && matchDate && matchPan && matchStatus;
   });
 
+  const downloadCSV = () => {
+    const headers = ["ID", "Donor", "Amount", "Program", "Date", "PAN", "Status", "Receipt_URL"];
+    const csvRows = [headers.join(",")];
+    rows.forEach(r => {
+      const csvRow = [
+        r.id || "",
+        `"${(r.name || "").replace(/"/g, '""')}"`,
+        r.amount || 0,
+        `"${(r.program || "").replace(/"/g, '""')}"`,
+        r.date || "",
+        r.pan || "",
+        r.status || "Pending",
+        r.receiptUrl || ""
+      ];
+      csvRows.push(csvRow.join(","));
+    });
+    const blob = new Blob([csvRows.join("\\n")], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Donations_Export_${new Date().getTime()}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search ID or Name..." style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",flex:1,minWidth:140}}/>
         <div style={{display:"flex",gap:6}}>{["All","Verified","Pending"].map(v=><button key={v} onClick={()=>setColF({...colF, status: v})} style={{padding:"8px 14px",borderRadius:8,background:colF.status===v?"var(--dt)":"white",color:colF.status===v?"white":"var(--tm2)",border:`1px solid ${colF.status===v?"var(--dt)":"var(--bd)"}`,cursor:"pointer",fontWeight:600,fontSize:".8rem"}}>{v}</button>)}</div>
+        <button onClick={downloadCSV} className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem", background:"var(--sf)", color:"white", border:"none", cursor:"pointer"}}>Download CSV</button>
         <button className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem"}}>+ Add</button>
       </div>
       <div className="ac" style={{padding:16,overflowX:"auto"}}>
