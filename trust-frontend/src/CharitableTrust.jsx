@@ -2635,15 +2635,6 @@ function AdminRegistrations({ mob, C, auth }) {
   const [viewing, setViewing] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [error, setError] = useState(null);
-  const [activeEventId, setActiveEventId] = useState("");
-
-  const events = C?.events || [];
-
-  useEffect(() => {
-    if(events.length > 0 && !activeEventId) {
-      setActiveEventId(events[0].id || events[0].title);
-    }
-  }, [events, activeEventId]);
 
   useEffect(() => {
     try {
@@ -2657,31 +2648,70 @@ function AdminRegistrations({ mob, C, auth }) {
     }
   }, [auth]);
 
-  let evMap = {};
-  try {
-    events.forEach(e => { if(e) evMap[e.id || e.title] = e; });
-  } catch(e) { console.error("Error building evMap", e); }
-
   if (error) return <div style={{padding:30}}>Error loading registrations: {error}</div>;
 
-  const activeEvent = evMap[activeEventId];
-  const formFields = activeEvent?.form || [];
-  const filteredRegs = regs.filter(r => (r.eventId === activeEventId) || (r.eventName === activeEvent?.title));
+  // 1. Gather all unique field keys across ALL registrations
+  const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt'];
+  const allKeysSet = new Set();
+  regs.forEach(r => {
+    if(!r) return;
+    Object.keys(r).forEach(k => {
+      if (!ignoreKeys.includes(k) && !k.startsWith('_')) {
+        allKeysSet.add(k);
+      }
+    });
+  });
+  
+  // Try to sort keys so "Full Name" or "Name" is first, "Mobile" second, etc.
+  let allKeys = Array.from(allKeysSet);
+  const priority = ["Full Name", "Name", "Mobile Number", "Mobile", "Phone", "Email Address", "Email"];
+  allKeys.sort((a, b) => {
+    const ia = priority.indexOf(a);
+    const ib = priority.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  const handleExportCSV = () => {
+    if(regs.length === 0) return;
+    const headers = ["Date", "Event", ...allKeys];
+    const rows = regs.map(r => {
+      let date = "-";
+      try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
+      const evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+      
+      const rowData = [
+        `"${date}"`,
+        `"${evName}"`,
+        ...allKeys.map(k => {
+          let val = r[k] || "";
+          if (typeof val === 'string') val = val.replace(/"/g, '""');
+          else val = String(val);
+          return `"${val}"`;
+        })
+      ];
+      return rowData.join(",");
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Trust_Registrations_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <div style={{padding:mob?"16px":"32px",maxWidth:1200,margin:"0 auto"}}>
-      <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
+    <div style={{padding:mob?"16px":"32px",maxWidth:1400,margin:"0 auto"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Event Registrations</h2>
-        <select 
-          value={activeEventId} 
-          onChange={e=>setActiveEventId(e.target.value)}
-          style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",minWidth:250,fontFamily:"inherit"}}
-        >
-          {events.length === 0 && <option value="">No events available</option>}
-          {events.map((e,i) => (
-            <option key={i} value={e.id || e.title}>{e.title}</option>
-          ))}
-        </select>
+        <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
+          <span>📥</span> Export to CSV
+        </button>
       </div>
 
       {loading ? <p>Loading registrations...</p> : (
@@ -2689,29 +2719,32 @@ function AdminRegistrations({ mob, C, auth }) {
           <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
             <thead>
               <tr style={{background:"#F5F5F5"}}>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Date</th>
-                {formFields.map(f => (
-                  <th key={f.id || f.label} style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>{f.label}</th>
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Date</th>
+                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Event</th>
+                {allKeys.map(k => (
+                  <th key={k} style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>{k}</th>
                 ))}
                 <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRegs.map((r, i) => {
+              {regs.map((r, i) => {
                 if(!r) return null;
                 let date = "-";
                 try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
+                let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
 
                 return (
                   <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{date}</td>
-                    {formFields.map(f => {
-                      let val = r[f.label] || r[f.id] || "-";
+                    <td style={{padding:"12px",whiteSpace:"nowrap"}}>{evName}</td>
+                    {allKeys.map(k => {
+                      let val = r[k] || "-";
                       if (typeof val === 'string' && val.startsWith('http')) val = "📎 Attached File";
                       else if (typeof val === 'string') val = val.replace(/\|/g, ' ');
                       else val = String(val);
                       if (val.length > 50) val = val.substring(0, 47) + "...";
-                      return <td key={f.id || f.label} style={{padding:"12px"}}>{val}</td>;
+                      return <td key={k} style={{padding:"12px"}}>{val}</td>;
                     })}
                     <td style={{padding:"12px"}}>
                       <button onClick={()=>setViewing(r)} className="bt" style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem"}}>View</button>
@@ -2719,7 +2752,7 @@ function AdminRegistrations({ mob, C, auth }) {
                   </tr>
                 );
               })}
-              {filteredRegs.length === 0 && <tr><td colSpan={formFields.length + 2} style={{padding:20,textAlign:"center"}}>No registrations found for this event.</td></tr>}
+              {regs.length === 0 && <tr><td colSpan={allKeys.length + 3} style={{padding:20,textAlign:"center"}}>No registrations found.</td></tr>}
             </tbody>
           </table>
         </div>
