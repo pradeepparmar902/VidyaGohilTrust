@@ -1328,7 +1328,7 @@ function Contact({ C }) {
               <div style={{fontSize:"3rem",marginBottom:16}}>🙌</div>
               <h3 style={{color:"#1A7A3E",marginBottom:8,fontSize:"1.3rem"}}>Thank you for applying!</h3>
               <p style={{color:"var(--dt)",fontSize:".95rem"}}>Your volunteer application has been submitted successfully. Our team will review it and get in touch with you shortly.</p>
-              <button onClick={()=>setStatus("idle")} style={{marginTop:20,padding:"8px 16px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Submit Another</button>
+              <button onClick={()=>{setStatus("idle");setFormData({name:"",email:"",phone:"",city:"",program:""})}} style={{marginTop:20,padding:"8px 16px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",cursor:"pointer",fontWeight:600}}>Submit Another</button>
             </div>
           ) : (
             <>
