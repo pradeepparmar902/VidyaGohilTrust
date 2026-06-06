@@ -2741,6 +2741,24 @@ function AdminRegistrations({ mob, C, auth }) {
     return a.localeCompare(b);
   });
 
+  const getUniqueValues = (colKey) => {
+    const vals = new Set();
+    regs.forEach(r => {
+      if(!r) return;
+      let val = "";
+      if(colKey === "Date") { try { if(r._submittedAt) val = new Date(r._submittedAt).toLocaleString().split(',')[0].trim(); } catch(e){} }
+      else if(colKey === "Event") val = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+      else val = r[colKey] || "";
+      
+      if (typeof val === 'string' && val.startsWith('http')) return;
+      if (typeof val === 'string') val = val.trim();
+      else val = String(val).trim();
+      
+      if(val && val !== "-" && val !== "") vals.add(val);
+    });
+    return Array.from(vals).sort();
+  };
+
   // 2. Filter registrations based on search query
   const filteredRegs = regs.filter(r => {
     if(!r) return false;
@@ -2812,39 +2830,62 @@ function AdminRegistrations({ mob, C, auth }) {
             onChange={e=>setSearchQuery(e.target.value)}
             style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}}
           />
-          <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap"}}>
+          <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
             <span>📥</span> Export to CSV
           </button>
         </div>
       </div>
 
       {loading ? <p>Loading registrations...</p> : (
-        <div className="ac" style={{overflowX:"auto"}}>
-          <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:1200}}>
+        <>
+        <style>{`
+          .admin-table tbody tr { transition: background-color 0.2s ease; border-bottom: 1px solid #E0E0E0; }
+          .admin-table tbody tr:hover { background-color: #f4f9ff !important; }
+          .admin-table-wrapper { border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid #E0E0E0; background: white; }
+          .admin-table thead tr:first-child th { background-color: var(--dt); color: white; border-bottom: none; }
+          .admin-table th { font-weight: 600; letter-spacing: 0.3px; }
+          .admin-table select, .admin-table input { font-family: inherit; }
+        `}</style>
+        <div className="admin-table-wrapper" style={{overflowX:"auto"}}>
+          <table className="admin-table" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:1200}}>
             <thead>
-              <tr style={{background:"#F5F5F5"}}>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Date</th>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Event</th>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Txn ID</th>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Status</th>
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>Remarks</th>
+              <tr>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Date</th>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Event</th>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Txn ID</th>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Status</th>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Remarks</th>
                 {allKeys.map(k => (
-                  <th key={k} style={{padding:"12px",textAlign:"left",color:"var(--sf)",whiteSpace:"nowrap"}}>{k}</th>
+                  <th key={k} style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>{k}</th>
                 ))}
-                <th style={{padding:"12px",textAlign:"left",color:"var(--sf)"}}>Actions</th>
+                <th style={{padding:"14px 12px",textAlign:"left"}}>Actions</th>
               </tr>
               <tr style={{background:"#FAFAFA", borderBottom:"2px solid #E0E0E0"}}>
-                {["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys].map(k => (
-                  <th key={`filter-${k}`} style={{padding:"6px 12px", fontWeight:"normal"}}>
-                    <input 
-                      type="text" 
-                      placeholder="Filter..." 
-                      value={columnFilters[k] || ""}
-                      onChange={(e) => setColumnFilters({...columnFilters, [k]: e.target.value})}
-                      style={{width:"100%", padding:"4px 6px", fontSize:".75rem", border:"1px solid #CCC", borderRadius:4, boxSizing:"border-box", minWidth: 80}}
-                    />
-                  </th>
-                ))}
+                {["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys].map(k => {
+                  const uniqueVals = getUniqueValues(k);
+                  return (
+                    <th key={`filter-${k}`} style={{padding:"6px 12px", fontWeight:"normal"}}>
+                      {uniqueVals.length > 0 ? (
+                        <select 
+                          value={columnFilters[k] || ""}
+                          onChange={(e) => setColumnFilters({...columnFilters, [k]: e.target.value})}
+                          style={{width:"100%", padding:"4px 6px", fontSize:".75rem", border:"1px solid #CCC", borderRadius:4, boxSizing:"border-box", minWidth: 80, background:"white", outline:"none"}}
+                        >
+                          <option value="">All</option>
+                          {uniqueVals.map(uv => <option key={uv} value={uv}>{uv}</option>)}
+                        </select>
+                      ) : (
+                        <input 
+                          type="text" 
+                          placeholder="Filter..." 
+                          value={columnFilters[k] || ""}
+                          onChange={(e) => setColumnFilters({...columnFilters, [k]: e.target.value})}
+                          style={{width:"100%", padding:"4px 6px", fontSize:".75rem", border:"1px solid #CCC", borderRadius:4, boxSizing:"border-box", minWidth: 80, outline:"none"}}
+                        />
+                      )}
+                    </th>
+                  );
+                })}
                 <th></th>
               </tr>
             </thead>
@@ -2856,7 +2897,7 @@ function AdminRegistrations({ mob, C, auth }) {
                 let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
 
                 return (
-                  <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
+                  <tr key={i}>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{date}</td>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{evName}</td>
                     <td style={{padding:"12px",whiteSpace:"nowrap",fontWeight:600}}>{r['Transaction ID'] || "-"}</td>
@@ -2865,10 +2906,10 @@ function AdminRegistrations({ mob, C, auth }) {
                         value={r['Status'] || "Pending"} 
                         onChange={(e) => handleStatusChange(r, e.target.value)}
                         style={{
-                          padding:"4px 8px", borderRadius:4, border:"1px solid var(--bd)", fontSize:".8rem", outline:"none",
+                          padding:"4px 8px", borderRadius:6, border:"1px solid rgba(0,0,0,0.1)", fontSize:".8rem", outline:"none",
                           background: (r['Status']==="Approved")?"#E8F5E9":(r['Status']==="Disapproved")?"#FFEBEE":(r['Status']==="Needs Info")?"#FFF3E0":"#F5F5F5",
                           color: (r['Status']==="Approved")?"#2E7D32":(r['Status']==="Disapproved")?"#C62828":(r['Status']==="Needs Info")?"#EF6C00":"#424242",
-                          fontWeight: 600, fontFamily: "inherit"
+                          fontWeight: 600, fontFamily: "inherit", cursor:"pointer"
                         }}
                       >
                         <option value="Pending">Pending</option>
@@ -2877,10 +2918,10 @@ function AdminRegistrations({ mob, C, auth }) {
                         <option value="Needs Info">Needs Info</option>
                       </select>
                     </td>
-                    <td style={{padding:"12px",maxWidth:200,whiteSpace:"normal",fontSize:".8rem",color:"var(--mu)"}}>
-                      <div style={{display:"flex", alignItems:"flex-start", gap: 6}}>
+                    <td style={{padding:"12px",maxWidth:200}}>
+                      <div style={{maxHeight:"60px", overflowY:"auto", whiteSpace:"normal", fontSize:".8rem", color:"var(--mu)", display:"flex", alignItems:"flex-start", gap: 6, minWidth:120, paddingRight:4}}>
                         <span>{r['Remarks'] || "-"}</span>
-                        <button onClick={() => handleEditRemarks(r)} style={{background:"none",border:"none",cursor:"pointer",fontSize:".8rem",opacity:0.6}} title="Edit Remarks">✏️</button>
+                        <button onClick={() => handleEditRemarks(r)} style={{background:"white",border:"1px solid #E0E0E0",borderRadius:4,cursor:"pointer",fontSize:".7rem",padding:"2px 4px",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}} title="Edit Remarks">✏️</button>
                       </div>
                     </td>
                     {allKeys.map(k => {
@@ -2893,7 +2934,7 @@ function AdminRegistrations({ mob, C, auth }) {
                               <button 
                                 type="button" 
                                 onClick={()=>setPreviewFile({url: val, type: 'file'})}
-                                style={{background:"none",border:"none",color:"var(--dt)",textDecoration:"underline",cursor:"pointer",padding:0,fontSize:".85rem",display:"flex",alignItems:"center",gap:4}}
+                                style={{background:"#f4f9ff",border:"1px solid #d0e3ff",color:"#0056b3",borderRadius:4,cursor:"pointer",padding:"6px 10px",fontSize:".8rem",display:"flex",alignItems:"center",gap:6,fontWeight:500}}
                               >
                                 📎 View Doc
                               </button>
@@ -2905,7 +2946,7 @@ function AdminRegistrations({ mob, C, auth }) {
                               <img 
                                 src={val} 
                                 alt="Upload" 
-                                style={{width: 44, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", border:"1px solid var(--bd)"}}
+                                style={{width: 44, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", border:"1px solid #E0E0E0", boxShadow:"0 2px 6px rgba(0,0,0,0.05)"}}
                                 onClick={() => setPreviewFile({url: val, type: 'image'})}
                                 title="Click to view full size"
                               />
@@ -2916,19 +2957,26 @@ function AdminRegistrations({ mob, C, auth }) {
                       
                       else if (typeof val === 'string') val = val.replace(/\|/g, ' ');
                       else val = String(val);
-                      if (val.length > 50) val = val.substring(0, 47) + "...";
-                      return <td key={k} style={{padding:"12px"}}>{val}</td>;
+                      
+                      return (
+                        <td key={k} style={{padding:"12px", maxWidth:250}}>
+                          <div style={{maxHeight:"60px", overflowY:"auto", whiteSpace:"normal", minWidth:100, paddingRight:4, lineHeight:1.4}}>
+                            {val}
+                          </div>
+                        </td>
+                      );
                     })}
                     <td style={{padding:"12px"}}>
-                      <button onClick={()=>setViewing(r)} className="bt" style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem"}}>View</button>
+                      <button onClick={()=>setViewing(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"var(--dt)",color:"white",border:"none",cursor:"pointer",fontWeight:500,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>View</button>
                     </td>
                   </tr>
                 );
               })}
-              {filteredRegs.length === 0 && <tr><td colSpan={allKeys.length + 6} style={{padding:20,textAlign:"center"}}>No registrations found matching your search.</td></tr>}
+              {filteredRegs.length === 0 && <tr><td colSpan={allKeys.length + 6} style={{padding:40,textAlign:"center",color:"var(--mu)",fontSize:"1rem"}}>No registrations found matching your search.</td></tr>}
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {viewing && (
