@@ -303,7 +303,7 @@ const DC = {
   about:{heading:"Rooted in Compassion, Driven by Purpose",headingGu:"કરુણામાં મૂળ, ઉદ્દેશ્ય દ્વારા ચાલિત",body1:"The Vidya Gohil Charitable Trust was founded in 2004 by Vidyaben Gohil with a vision to create a dignified life for every individual regardless of caste, creed, or economic status.",body1Gu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ 2004 માં વિદ્યાબેન ગોહિલ દ્વારા સ્થાપિત કરવામાં આવ્યો હતો.",body2:"Our work spans education, healthcare, women's empowerment, environmental conservation, and disaster relief through community participation and transparent governance.",body2Gu:"અમારું કાર્ય શિક્ષણ, આરોગ્ય, મહિલા સશક્તિકરણ, પર્યાવરણ સંરક્ષણ અને આપત્તિ રાહત સુધી ફેલાયેલું છે.",points:["Transparent Governance","Community-Led Programs","Annual Public Audit","Zero Admin Fee Policy"],yearsLabel:"Years of Service",cta:"Read Our Story"},
   programs:[{icon:"📚",title:"Education for All",sub:"Scholarships and learning centers for underprivileged children",color:"#FFF4EC",border:"#FDDBB8"},{icon:"🏥",title:"Health and Wellness",sub:"Free medical camps, medicines and health awareness drives",color:"#E8F4F8",border:"#B8D8E8"},{icon:"🌾",title:"Livelihood Support",sub:"Skill development and micro-finance for rural communities",color:"#EDFAF1",border:"#B8E8CC"},{icon:"🤝",title:"Women Empowerment",sub:"Self-help groups, vocational training and legal aid",color:"#F9F0FF",border:"#D8B8E8"},{icon:"🌊",title:"Disaster Relief",sub:"Rapid response support for flood and earthquake victims",color:"#FEF9EC",border:"#F5E8B8"},{icon:"🌱",title:"Environment",sub:"Tree plantation drives and clean water initiatives",color:"#EDFAF1",border:"#B8E8CC"}],
   events:[{date:"Jun 15",month:"2025",title:"Annual Blood Donation Camp",location:"Ahmedabad Community Hall",tag:"Health",color:"#E8F4F8"},{date:"Jul 04",month:"2025",title:"Monsoon Tree Plantation Drive",location:"Sabarmati Riverfront",tag:"Environment",color:"#EDFAF1"},{date:"Aug 20",month:"2025",title:"Scholarship Distribution Ceremony",location:"Sardar Patel Hall, Surat",tag:"Education",color:"#FFF4EC"},{date:"Sep 10",month:"2025",title:"Womens Skill Fair 2025",location:"Vadodara Exhibition Ground",tag:"Empowerment",color:"#F9F0FF"}],
-  donate:{heading:"Your Donation Changes Lives",subtext:"100% of donations go directly to programs. Tax exemption under 80G available.",note:"Secured by Razorpay - 256-bit SSL encryption - 80G receipt auto-generated",recurringLabel:"Monthly Recurring Donation",recurringNote:"Auto-deducted each month. Cancel anytime."},
+  donate:{heading:"Your Donation Changes Lives",subtext:"100% of donations go directly to programs. Tax exemption under 80G available.",note:"Secured by Razorpay - 256-bit SSL encryption - 80G receipt auto-generated",recurringLabel:"Monthly Recurring Donation",recurringNote:"Auto-deducted each month. Cancel anytime.",razorpayKey:"rzp_test_YourRazorpayKeyHere"},
   contact:{volunteerHeading:"Become a Volunteer",volunteerSub:"Your time and skills can transform lives. Join 340+ active volunteers across Gujarat.",contactHeading:"Contact Us",socials:["WhatsApp","Facebook","Instagram","YouTube"]},
   nav:[
     {label:"Home",      labelGu:"ઘર",           sectionId:"home",     icon:"🏠", visible:true},
@@ -645,7 +645,7 @@ function Donate({ C, lang }) {
     
     if (window.Razorpay) {
       const options = {
-        key: "rzp_test_DummyKeyForTest", // Use a test key
+        key: C.donate.razorpayKey || "rzp_test_DummyKeyForTest", // Use key from CMS
         amount: final * 100, 
         currency: "INR",
         name: "Vidya Gohil Trust",
@@ -2063,6 +2063,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <F label="Security Note" path="donate.note"/>
         <F label="Recurring Toggle Label" path="donate.recurringLabel"/>
         <F label="Recurring Note" path="donate.recurringNote"/>
+        <F label="Razorpay Test Key ID" path="donate.razorpayKey"/>
       </Sec>
 
       <Sec id="contact" icon="📞" label="Contact and Volunteer">
