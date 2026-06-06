@@ -826,8 +826,12 @@ function Events({ C }) {
 
             {selectedEvent.type === 'register' && (
               <div>
-                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:4,fontWeight:700,paddingRight:30}}>Register</h3>
-                <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:20}}>{selectedEvent.event.title}</p>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:4,fontWeight:700,paddingRight:30}}>
+                  {authStep === 'register' ? 'New User Entry' : authStep === 0 ? 'User Login' : 'Event Registration'}
+                </h3>
+                <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:20}}>
+                  {authStep === 1 ? selectedEvent.event.title : 'Sign in or create a profile to continue'}
+                </p>
                 {done ? (
                   <div style={{textAlign:"center",padding:"30px 0"}}>
                     <div style={{fontSize:"3rem",marginBottom:10}}>✅</div>
