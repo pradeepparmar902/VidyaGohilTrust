@@ -2940,42 +2940,45 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                     <div style={{color:"var(--mu)",fontSize:".85rem"}}>You haven't registered for any events yet.</div>
                   </div>
                 ) : (
-                  <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                    {regs.map(r => {
-                      const sc = getStatusColor(r.status || r.Status || "Pending");
-                      return (
-                        <div key={r.id} style={{background:"white",borderRadius:16,padding:mob?"16px":"20px",border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
-                            <div>
-                              <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp || r._submittedAt).toLocaleString()}</div>
-                              <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r.eventName || r["Event Name"] || r["Event"] || "Event Registration"}</div>
-                            </div>
-                            <div style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
-                              {r.status || r.Status || "Pending Approval"}
-                            </div>
-                          </div>
+                  <div style={{background:"white",borderRadius:12,border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)",overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
+                      <thead style={{background:"var(--dt)",color:"white"}}>
+                        <tr>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Date</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Event</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Status</th>
+                          <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Admin Remarks</th>
+                          {Array.from(new Set(regs.flatMap(r => Object.keys(r))))
+                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"].includes(k))
+                            .map(k => (
+                            <th key={k} style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {regs.map((r, i) => {
+                          const sc = getStatusColor(r.status || r.Status || "Pending");
+                          const rowKeys = Array.from(new Set(regs.flatMap(r => Object.keys(r))))
+                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"].includes(k));
                           
-                          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"12px 24px",marginTop:16,paddingTop:16,borderTop:"1px solid #F1F3F5"}}>
-                            {Object.entries(r).filter(([k,v]) => {
-                               const skip = ["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"];
-                               return !skip.includes(k) && v !== "" && v !== null && typeof v !== "object";
-                            }).map(([k,v]) => (
-                               <div key={k}>
-                                 <div style={{fontSize:".7rem",color:"var(--mu)",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{k}</div>
-                                 <div style={{fontSize:".85rem",color:"var(--dt)",fontWeight:600,wordBreak:"break-word"}}>{v}</div>
-                               </div>
-                            ))}
-                          </div>
-                          
-                          {(r.AdminRemarks || r.remarks || r.Remarks) && (
-                            <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:16,border:"1px solid #F5E8B8"}}>
-                              <div style={{fontSize:".7rem",fontWeight:700,color:"#C8860A",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Admin Remark</div>
-                              <div style={{fontSize:".85rem",color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks}</div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          return (
+                            <tr key={r.id || i} style={{borderBottom:"1px solid var(--ww)",background:i%2===0?"white":"#FAFAFA"}}>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap"}}>{new Date(r.timestamp || r._submittedAt).toLocaleString()}</td>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap",fontWeight:700,color:"var(--dt)"}}>{r.eventName || r["Event Name"] || r["Event"] || "Event Registration"}</td>
+                              <td style={{padding:"14px 16px",whiteSpace:"nowrap"}}>
+                                <span style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
+                                  {r.status || r.Status || "Pending"}
+                                </span>
+                              </td>
+                              <td style={{padding:"14px 16px",minWidth:200,color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks || "-"}</td>
+                              {rowKeys.map(k => (
+                                <td key={k} style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--mu)"}}>{r[k] || "-"}</td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </>
