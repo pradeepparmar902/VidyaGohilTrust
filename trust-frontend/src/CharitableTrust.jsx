@@ -634,9 +634,20 @@ function About({ C, lang }) {
 
 
 // ── DONATION ──────────────────────────────────────────────────────────────────
-function Donate({ C, lang }) {
+function Donate({ C, lang, globalProfile }) {
   const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
-  const [rec, setRec] = useState(false); const [step, setStep] = useState(1); const [form, setForm] = useState({name:"",phone:"",email:"",pan:""});
+  const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
+  const [form, setForm] = useState({name:globalProfile?.name || globalProfile?.['Full Name'] || "",phone:globalProfile?.mobile || globalProfile?.['Mobile Number'] || "",email:"",pan:""});
+
+  useEffect(() => {
+    if (globalProfile) {
+      setForm(prev => ({
+        ...prev, 
+        name: prev.name || globalProfile.name || globalProfile['Full Name'] || "",
+        phone: prev.phone || globalProfile.mobile || globalProfile['Mobile Number'] || ""
+      }));
+    }
+  }, [globalProfile]);
   const w = useW(); const mob = w<640; const presets = [500,1100,2100,5100,11000,25000];
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
@@ -2808,7 +2819,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       {bs.programs !== false && <Programs C={C}/>}
       {bs.gallery  !== false && <Gallery C={C}/>}
       {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
-      {bs.donate   !== false && <Donate C={C} lang={lang}/>}
+      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile}/>}
       {/* Custom sections render here — before Contact */}
       {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
       {bs.contact  !== false && <Contact C={C}/>}
