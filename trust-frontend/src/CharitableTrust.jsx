@@ -2824,7 +2824,8 @@ function AdminRegistrations({ mob, C, auth }) {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Trust_Registrations_${new Date().toISOString().split('T')[0]}.csv`);
+    const ts = new Date().toLocaleString('sv-SE').replace(' ', '_').replace(/:/g, '-');
+    link.setAttribute("download", `Trust_Registrations_${ts}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
