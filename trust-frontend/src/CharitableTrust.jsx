@@ -156,7 +156,7 @@ const fbFetchDonations = async (idToken) => {
   return data.documents.map(doc => {
     try {
       const parsed = JSON.parse(doc.fields.data.stringValue);
-      return { id: doc.name.split("/").pop(), ...parsed, _submittedAt: doc.fields.submittedAt?.timestampValue };
+      return { _docId: doc.name.split("/").pop(), ...parsed, _submittedAt: doc.fields.submittedAt?.timestampValue };
     } catch(e) { return null; }
   }).filter(Boolean).sort((a,b) => new Date(b._submittedAt || 0).getTime() - new Date(a._submittedAt || 0).getTime());
 };
@@ -2598,13 +2598,16 @@ function Donations({ mob, auth, C }) {
   const handleStatusChange = async (r, newStatus) => {
     try {
       const updated = { ...r, status: newStatus };
-      if (!r.id.startsWith("DON")) {
+      if (r._docId) {
+        await fbUpdateDonation(r._docId, updated, auth?.idToken);
+      } else if (!r.id.startsWith("DON")) {
+        // Fallback for older items that might use id as docId
         await fbUpdateDonation(r.id, updated, auth?.idToken);
       }
-      setData(prev => prev.map(x => x.id === r.id ? updated : x));
+      setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
     } catch(e) {
       console.error(e);
-      alert("Failed to update donation status");
+      alert("Failed to update donation status: " + e.message);
     }
   };
 
