@@ -2950,7 +2950,7 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                           <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Status</th>
                           <th style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>Admin Remarks</th>
                           {Array.from(new Set(regs.flatMap(r => Object.keys(r))))
-                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"].includes(k))
+                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventTitle", "eventId"].includes(k))
                             .map(k => (
                             <th key={k} style={{padding:"14px 16px",textAlign:"left",whiteSpace:"nowrap",fontWeight:600}}>{k}</th>
                           ))}
@@ -2960,7 +2960,7 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                         {regs.map((r, i) => {
                           const sc = getStatusColor(r.status || r.Status || "Pending");
                           const rowKeys = Array.from(new Set(regs.flatMap(r => Object.keys(r))))
-                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventId"].includes(k));
+                            .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventTitle", "eventId"].includes(k));
                           
                           return (
                             <tr key={r.id || i} style={{borderBottom:"1px solid var(--ww)",background:i%2===0?"white":"#FAFAFA"}}>
