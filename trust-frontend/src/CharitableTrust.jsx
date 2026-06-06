@@ -2729,12 +2729,16 @@ function Donations({ mob, auth, C }) {
         {rows.length===0&&<div style={{textAlign:"center",padding:28,color:"var(--mu)"}}>No results found.</div>}
       </div>
       {previewUrl && (
-        <div style={{position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"rgba(0,0,0,0.8)", zIndex:99999, display:"flex", flexDirection:"column"}}>
-          <div style={{padding:16, display:"flex", justifyContent:"space-between", background:"#222", color:"white"}}>
-            <div style={{fontWeight:600}}>Receipt Preview</div>
-            <button onClick={()=>setPreviewUrl(null)} style={{background:"none", border:"none", color:"white", cursor:"pointer", fontSize:"1.5rem", lineHeight:1}}>&times;</button>
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", padding: "4vh 4vw"}}>
+          <div style={{background:"white", borderRadius: 16, width:"100%", maxWidth: 900, height:"100%", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 20px 40px rgba(0,0,0,0.4)"}}>
+            <div style={{padding:"16px 24px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid var(--bd)", background:"#F8F9FA"}}>
+              <div style={{fontWeight:700, fontSize:"1.2rem", color:"var(--dt)"}}>Receipt Preview</div>
+              <button onClick={()=>setPreviewUrl(null)} style={{background:"#E8EAED", border:"none", color:"var(--dt)", cursor:"pointer", fontSize:"1.4rem", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold"}}>&times;</button>
+            </div>
+            <div style={{flex:1,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
+              <iframe src={previewUrl} style={{width:"100%", height:"100%", border:"none", borderRadius:"0 0 16px 16px"}} title="Receipt Preview" />
+            </div>
           </div>
-          <iframe src={previewUrl} style={{flex:1, border:"none", width:"100%", background:"#525659"}} title="Receipt Preview" />
         </div>
       )}
     </div>
@@ -3635,18 +3639,18 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
         </div>
       </div>
       {previewFile && (
-        <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <h3 style={{fontSize:"1rem",fontWeight:600}}>File Preview</h3>
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", padding: "4vh 4vw"}}>
+          <div style={{background:"white", borderRadius: 16, width:"100%", maxWidth: 900, height:"100%", display:"flex", flexDirection:"column", overflow:"hidden", boxShadow:"0 20px 40px rgba(0,0,0,0.4)"}}>
+            <div style={{padding:"16px 24px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid var(--bd)", background:"#F8F9FA"}}>
+              <h3 style={{fontWeight:700, fontSize:"1.2rem", color:"var(--dt)", margin:0}}>File Preview</h3>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
                 {previewFile.type !== 'image' && (
-                  <a href={previewFile.url} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+                  <a href={previewFile.url} target="_blank" rel="noreferrer" style={{color:"var(--sf)",fontSize:".9rem",textDecoration:"underline",fontWeight:600}}>Open externally</a>
                 )}
-                <button onClick={()=>setPreviewFile(null)} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+                <button onClick={()=>setPreviewFile(null)} style={{background:"#E8EAED", border:"none", color:"var(--dt)", cursor:"pointer", fontSize:"1.4rem", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold"}}>&times;</button>
               </div>
             </div>
-            <div style={{flex:1,overflow:"auto",padding:20,display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
+            <div style={{flex:1,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",background:"#F5F5F5"}}>
                {previewFile.type === 'image' ? (
                  <img src={previewFile.url} alt="Preview" style={{maxWidth:"100%",maxHeight:"70vh",objectFit:"contain",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}} />
                ) : (
