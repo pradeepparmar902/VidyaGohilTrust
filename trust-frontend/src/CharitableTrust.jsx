@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { jsPDF } from "jspdf";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const FB = {
@@ -2113,6 +2114,32 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <F label="Recurring Toggle Label" path="donate.recurringLabel"/>
         <F label="Recurring Note" path="donate.recurringNote"/>
         <F label="Razorpay Test Key ID" path="donate.razorpayKey"/>
+        
+        <div className="cf">
+          <label className="cl">80G Receipt Template Image</label>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {draft.donate.receiptTemplate && (
+               <img src={draft.donate.receiptTemplate} style={{width:"100%",maxHeight:150,objectFit:"contain",border:"1px solid var(--bd)",borderRadius:8,background:"#f5f5f5"}} alt="Template"/>
+            )}
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <label style={{padding:"7px 14px",borderRadius:8,border:"2px solid var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".78rem",cursor:!auth?.idToken||uploading?"not-allowed":"pointer",opacity:!auth?.idToken?.5:1,fontFamily:"inherit",display:"inline-block"}}>
+                {uploading ? "Uploading..." : "Upload Template Image"}
+                <input type="file" accept="image/*" disabled={uploading||!auth?.idToken} style={{display:"none"}} onChange={async (e) => {
+                  const file = e.target.files[0]; if(!file) return;
+                  if (!auth?.idToken) { alert("Please login to upload."); return; }
+                  setUploading(true);
+                  try {
+                    const url = await fbUploadPublicFile(file, auth.idToken);
+                    upd("donate.receiptTemplate", url);
+                    alert("Template uploaded successfully!");
+                  } catch(err) { alert("Upload failed: " + err.message); }
+                  finally { setUploading(false); }
+                }} />
+              </label>
+            </div>
+            <span style={{fontSize:".75rem",color:"var(--mu)"}}>Upload a blank PNG/JPG template. Text will be overlaid automatically.</span>
+          </div>
+        </div>
       </Sec>
 
       <Sec id="contact" icon="📞" label="Contact and Volunteer">
@@ -2260,7 +2287,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
         <div style={{padding:mob?"16px":"24px"}}>
           {tab==="content"   && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
           {tab==="overview"  && <Overview mob={mob} C={C}/>}
-          {tab==="donations" && <Donations mob={mob} auth={auth}/>}
+          {tab==="donations" && <Donations mob={mob} auth={auth} C={C}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
           {tab==="volunteers"&& <Volunteers mob={mob}/>}
@@ -2334,7 +2361,7 @@ function Overview({ mob, C }) {
   );
 }
 
-function Donations({ mob, auth }) {
+function Donations({ mob, auth, C }) {
   const [q,setQ]=useState(""); const [f,setF]=useState("All");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2351,6 +2378,60 @@ function Donations({ mob, auth }) {
     };
     if (auth) load();
   }, [auth]);
+
+  const generateReceipt = async (r) => {
+    try {
+      const template = C?.donate?.receiptTemplate;
+      if (!template) {
+        alert("Please upload an 80G Receipt Template Image in the Content Editor (Donation Section) first!");
+        return;
+      }
+      
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = doc.internal.pageSize.getHeight();
+
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = template;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Failed to load template image."));
+      });
+
+      doc.addImage(img, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(40, 40, 40);
+      doc.text("80G DONATION RECEIPT", pdfWidth / 2, pdfHeight / 2 - 60, { align: 'center' });
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.text(`Receipt No: ${r.id}`, pdfWidth / 2, pdfHeight / 2 - 30, { align: 'center' });
+      doc.text(`Date: ${r.date}`, pdfWidth / 2, pdfHeight / 2 - 10, { align: 'center' });
+      
+      doc.setFontSize(16);
+      doc.text(`Received with thanks from`, pdfWidth / 2, pdfHeight / 2 + 20, { align: 'center' });
+      doc.setFont("helvetica", "bold");
+      doc.text(r.name || "Donor", pdfWidth / 2, pdfHeight / 2 + 40, { align: 'center' });
+      
+      doc.setFont("helvetica", "normal");
+      doc.text(`an amount of Rs. ${r.amount.toLocaleString()}`, pdfWidth / 2, pdfHeight / 2 + 65, { align: 'center' });
+      
+      if (r.pan) {
+        doc.setFontSize(12);
+        doc.text(`PAN: ${r.pan.toUpperCase()}`, pdfWidth / 2, pdfHeight / 2 + 85, { align: 'center' });
+      }
+
+      doc.save(`Receipt_${r.id}.pdf`);
+
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate PDF: " + e.message);
+    }
+  };
 
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
   return (
@@ -2371,7 +2452,7 @@ function Donations({ mob, auth }) {
               <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
               <td style={{padding:"10px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.date}</td>
               <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A"}}>{r.status}</span></td>
-              <td style={{padding:"10px 12px"}}>{r.receipt?<button style={{padding:"4px 9px",borderRadius:6,background:"var(--tl)",border:"none",color:"var(--dt)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>PDF</button>:<button style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Generate</button>}</td>
+              <td style={{padding:"10px 12px"}}><button onClick={()=>generateReceipt(r)} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Generate</button></td>
             </tr>
           ))}</tbody>
         </table>
