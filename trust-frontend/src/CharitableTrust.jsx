@@ -2214,16 +2214,30 @@ function ContentEditor({ C, setC, setPage, auth }) {
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
               <label style={{padding:"7px 14px",borderRadius:8,border:"2px solid var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".78rem",cursor:!auth?.idToken||uploading?"not-allowed":"pointer",opacity:!auth?.idToken?.5:1,fontFamily:"inherit",display:"inline-block"}}>
                 {uploading ? "Uploading..." : "Upload Template Image"}
-                <input type="file" accept="image/*" disabled={uploading||!auth?.idToken} style={{display:"none"}} onChange={async (e) => {
+                <input type="file" accept="image/*" disabled={uploading||!auth?.idToken} style={{display:"none"}} onChange={(e) => {
                   const file = e.target.files[0]; if(!file) return;
                   if (!auth?.idToken) { alert("Please login to upload."); return; }
                   setUploading(true);
                   try {
-                    const url = await fbUploadPublicFile(file, auth.idToken);
-                    upd("donate.receiptTemplate", url);
-                    alert("Template uploaded successfully!");
-                  } catch(err) { alert("Upload failed: " + err.message); }
-                  finally { setUploading(false); }
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                       const img = new Image();
+                       img.onload = () => {
+                          const canvas = document.createElement('canvas');
+                          let w = img.width; let h = img.height;
+                          if (w > 1200) { h = Math.round((1200/w)*h); w = 1200; }
+                          canvas.width = w; canvas.height = h;
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(img, 0, 0, w, h);
+                          const b64 = canvas.toDataURL('image/jpeg', 0.85);
+                          upd("donate.receiptTemplate", b64);
+                          alert("Template uploaded successfully!");
+                          setUploading(false);
+                       };
+                       img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                  } catch(err) { alert("Upload failed: " + err.message); setUploading(false); }
                 }} />
               </label>
             </div>
