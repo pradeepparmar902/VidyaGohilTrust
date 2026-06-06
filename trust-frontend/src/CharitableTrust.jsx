@@ -2580,6 +2580,7 @@ function Overview({ mob, C }) {
 function Donations({ mob, auth, C }) {
   const [q,setQ]=useState(""); const [f,setF]=useState("All");
   const [data, setData] = useState([]);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
