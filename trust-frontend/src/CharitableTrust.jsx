@@ -637,14 +637,20 @@ function About({ C, lang }) {
 function Donate({ C, lang, globalProfile }) {
   const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
-  const [form, setForm] = useState({name:globalProfile?.name || globalProfile?.['Full Name'] || "",phone:globalProfile?.mobile || globalProfile?.['Mobile Number'] || "",email:"",pan:""});
+  const [form, setForm] = useState({
+    name: globalProfile?.name || globalProfile?.['Full Name'] || globalProfile?.displayName || "",
+    phone: globalProfile?.mobile || globalProfile?.['Mobile Number'] || "",
+    email: globalProfile?.email || globalProfile?.['Email'] || "",
+    pan: ""
+  });
 
   useEffect(() => {
     if (globalProfile) {
       setForm(prev => ({
         ...prev, 
-        name: prev.name || globalProfile.name || globalProfile['Full Name'] || "",
-        phone: prev.phone || globalProfile.mobile || globalProfile['Mobile Number'] || ""
+        name: prev.name || globalProfile.name || globalProfile['Full Name'] || globalProfile.displayName || "",
+        phone: prev.phone || globalProfile.mobile || globalProfile['Mobile Number'] || "",
+        email: prev.email || globalProfile.email || globalProfile['Email'] || ""
       }));
     }
   }, [globalProfile]);
