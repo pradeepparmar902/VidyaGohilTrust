@@ -1419,9 +1419,7 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
   const containerRef = useRef(null);
   const [dragging, setDragging] = useState(null);
 
-  useEffect(() => { onChange(fields); }, [fields]);
-
-  const handlePointerDown = (e, key) => { e.preventDefault(); setDragging(key); };
+  const handlePointerDown = (e, key) => { e.preventDefault(); e.target.setPointerCapture(e.pointerId); setDragging(key); };
   const handlePointerMove = (e) => {
     if (!dragging || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -1430,7 +1428,19 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
     x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
     setFields(prev => ({ ...prev, [dragging]: { ...prev[dragging], x, y } }));
   };
-  const handlePointerUp = () => setDragging(null);
+  const handlePointerUp = (e) => { 
+    if (dragging) {
+      e.target.releasePointerCapture(e.pointerId);
+      setDragging(null); 
+      onChange(fields); // Save to parent only when dragging stops!
+    }
+  };
+
+  const toggleVisibility = (key) => {
+    const nextFields = { ...fields, [key]: { ...fields[key], visible: !fields[key].visible } };
+    setFields(nextFields);
+    onChange(nextFields);
+  };
 
   return (
     <div style={{marginTop: 16, border: "1px solid var(--bd)", borderRadius: 8, padding: 16, background: "white"}}>
@@ -1460,7 +1470,7 @@ function TemplateMapper({ imgUrl, mapData, onChange }) {
       <div style={{display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16}}>
         {Object.entries(fields).map(([key, pos]) => (
           <button 
-            key={key} onClick={() => setFields(prev => ({ ...prev, [key]: { ...prev[key], visible: !pos.visible } }))}
+            key={key} onClick={() => toggleVisibility(key)}
             style={{ padding: "6px 12px", borderRadius: 16, fontSize: ".75rem", fontWeight: 600, cursor: "pointer", background: pos.visible ? "var(--tl)" : "#f5f5f5", border: `1px solid ${pos.visible ? "var(--dt)" : "#ddd"}`, color: pos.visible ? "var(--dt)" : "#888" }}
           >
             {pos.visible ? "✓ " : "+ "}{key}
