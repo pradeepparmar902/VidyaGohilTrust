@@ -720,7 +720,7 @@ function About({ C, lang }) {
 
 
 // ── DONATION ──────────────────────────────────────────────────────────────────
-function Donate({ C, lang, globalProfile }) {
+function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
   const [form, setForm] = useState({
@@ -743,7 +743,13 @@ function Donate({ C, lang, globalProfile }) {
   const w = useW(); const mob = w<640; const presets = [500,1100,2100,5100,11000,25000];
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
-    if (step === 1) return setStep(2);
+    if (step === 1) {
+      if (!globalAuthToken) {
+        onShowUserLogin();
+        return;
+      }
+      return setStep(2);
+    }
     if (!form.name || !form.phone || !form.email) return alert("Please fill all required fields");
     
     const rzpKey = C.donate?.razorpayKey || "rzp_test_DummyKeyForTest";
@@ -3556,7 +3562,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       {bs.programs !== false && <Programs C={C}/>}
       {bs.gallery  !== false && <Gallery C={C}/>}
       {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
-      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile}/>}
+      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin(true)}/>}
       {/* Custom sections render here — before Contact */}
       {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
       {bs.contact  !== false && <Contact C={C}/>}
