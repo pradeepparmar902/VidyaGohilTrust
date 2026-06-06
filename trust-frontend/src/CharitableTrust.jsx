@@ -638,14 +638,14 @@ function Donate({ C, lang }) {
   const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); const [form, setForm] = useState({name:"",phone:"",email:"",pan:""});
   const w = useW(); const mob = w<640; const presets = [500,1100,2100,5100,11000,25000];
-  const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate;
+  const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
     if (step === 1) return setStep(2);
     if (!form.name || !form.phone || !form.email) return alert("Please fill all required fields");
     
     if (window.Razorpay) {
       const options = {
-        key: C.donate.razorpayKey || "rzp_test_DummyKeyForTest", // Use key from CMS
+        key: C.donate?.razorpayKey || "rzp_test_DummyKeyForTest", // Use key from CMS
         amount: final * 100, 
         currency: "INR",
         name: "Vidya Gohil Trust",
