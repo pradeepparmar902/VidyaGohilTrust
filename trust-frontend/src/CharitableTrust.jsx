@@ -2856,6 +2856,7 @@ function UserLoginModal({ onClose, onPublicLogin }) {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [regAddress, setRegAddress] = useState("");
   const [regGender, setRegGender] = useState("");
   const [regImageFile, setRegImageFile] = useState(null);
@@ -2866,13 +2867,13 @@ function UserLoginModal({ onClose, onPublicLogin }) {
   const handleAuth = async (e) => {
     e.preventDefault();
     if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
-    if (!isLoginMode && (!regName || !regAddress || !regGender)) { setAuthError("Please fill out Name, Address, and Gender."); return; }
+    if (!isLoginMode && (!regName || !regAddress || !regGender || !regEmail)) { setAuthError("Please fill out Name, Email, Address, and Gender."); return; }
     setSubmitting(true); setAuthError("");
     try {
       const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
       const res = !isLoginMode ? await fbSignUp(email, password) : await fbLogin(email, password);
       
-      let profileData = { name: regName, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
+      let profileData = { name: regName, email: regEmail, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
       
       if (!isLoginMode) {
         if (regImageFile) {
@@ -2927,6 +2928,11 @@ function UserLoginModal({ onClose, onPublicLogin }) {
                   <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>Full Name *</label>
                   <input value={regName} onChange={e=>setRegName(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}} placeholder="Enter your full name"/>
                 </div>
+              </div>
+
+              <div style={{}}>
+                <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4,display:"block"}}>✉️ Email Address *</label>
+                <input type="email" value={regEmail} onChange={e=>setRegEmail(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid var(--bd)",fontSize:".9rem",background:"white"}} placeholder="For event updates and 80G receipts"/>
               </div>
 
               <div style={{display:"flex",gap:12}}>
