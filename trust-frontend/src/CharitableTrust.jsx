@@ -2294,13 +2294,13 @@ function Donations({ mob, auth }) {
     const load = async () => {
       setLoading(true);
       try {
-        const token = auth?.idToken || globalAuthToken;
+        const token = auth?.idToken || auth?._tokenResponse?.idToken;
         const res = await fbFetchDonations(token);
         setData(res);
       } catch(e) { console.error(e); }
       setLoading(false);
     };
-    if (globalAuthToken || auth) load();
+    if (auth) load();
   }, [auth]);
 
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
