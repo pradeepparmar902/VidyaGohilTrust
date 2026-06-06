@@ -2971,9 +2971,21 @@ function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
                                 </span>
                               </td>
                               <td style={{padding:"14px 16px",minWidth:200,color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks || "-"}</td>
-                              {rowKeys.map(k => (
-                                <td key={k} style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--mu)"}}>{r[k] || "-"}</td>
-                              ))}
+                              {rowKeys.map(k => {
+                                const val = r[k] || "-";
+                                const isLink = typeof val === 'string' && val.startsWith('http');
+                                return (
+                                  <td key={k} style={{padding:"14px 16px",whiteSpace:"nowrap",color:"var(--mu)"}}>
+                                    {isLink ? (
+                                      <a href={val} target="_blank" rel="noopener noreferrer" style={{color:"var(--sf)",fontWeight:600,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:6,border:"1px solid var(--bd)",padding:"6px 12px",borderRadius:8,background:"white",boxShadow:"0 2px 4px rgba(0,0,0,.02)"}}>
+                                        📎 View Document
+                                      </a>
+                                    ) : (
+                                      val
+                                    )}
+                                  </td>
+                                );
+                              })}
                             </tr>
                           );
                         })}
