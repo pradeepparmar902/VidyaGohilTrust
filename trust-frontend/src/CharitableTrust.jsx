@@ -109,6 +109,41 @@ const fbFetchRegistrations = async (idToken) => {
   }).filter(Boolean).sort((a,b) => new Date(b._submittedAt || 0).getTime() - new Date(a._submittedAt || 0).getTime());
 };
 
+const fbSubmitDonation = async (donationData, idToken) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations`;
+  const headers = { "Content-Type": "application/json" };
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(REG_URL, {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify({
+      fields: {
+        data: { stringValue: JSON.stringify(donationData) },
+        submittedAt: { timestampValue: new Date().toISOString() }
+      }
+    })
+  });
+  if (!res.ok) throw new Error("Donation save failed");
+  return true;
+};
+
+const fbFetchDonations = async (idToken) => {
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations?pageSize=300`;
+  const headers = {};
+  if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+  const res = await fetch(REG_URL, { headers });
+  if (!res.ok) throw new Error("Failed to fetch donations");
+  const data = await res.json();
+  if (!data.documents) return [];
+  return data.documents.map(doc => {
+    try {
+      const parsed = JSON.parse(doc.fields.data.stringValue);
+      return { id: doc.name.split("/").pop(), ...parsed, _submittedAt: doc.fields.submittedAt?.timestampValue };
+    } catch(e) { return null; }
+  }).filter(Boolean).sort((a,b) => new Date(b._submittedAt || 0).getTime() - new Date(a._submittedAt || 0).getTime());
+};
+
+
 const fbSignUp = async (email, password) => {
   const SIGNUP_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.apiKey}`;
   const res = await fetch(SIGNUP_URL, {
@@ -604,7 +639,49 @@ function Donate({ C, lang }) {
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); const [form, setForm] = useState({name:"",phone:"",email:"",pan:""});
   const w = useW(); const mob = w<640; const presets = [500,1100,2100,5100,11000,25000];
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate;
-  const go = () => step===1 ? setStep(2) : setTimeout(()=>setStep(3),600);
+  const go = async () => {
+    if (step === 1) return setStep(2);
+    if (!form.name || !form.phone || !form.email) return alert("Please fill all required fields");
+    
+    if (window.Razorpay) {
+      const options = {
+        key: "rzp_test_DummyKeyForTest", // Use a test key
+        amount: final * 100, 
+        currency: "INR",
+        name: "Vidya Gohil Trust",
+        description: `Donation for ${prog}`,
+        handler: async function (response) {
+          try {
+            await fbSubmitDonation({
+              name: form.name,
+              phone: form.phone,
+              email: form.email,
+              pan: form.pan,
+              amount: final,
+              program: prog,
+              status: "Verified",
+              date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
+              id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
+              razorpay_payment_id: response.razorpay_payment_id
+            });
+            setStep(3);
+          } catch(e) {
+            console.error(e);
+            alert("Payment recorded by Razorpay, but failed to save in database.");
+          }
+        },
+        prefill: { name: form.name, email: form.email, contact: form.phone },
+        theme: { color: "#0D4B5E" }
+      };
+      const rzp1 = new window.Razorpay(options);
+      rzp1.on('payment.failed', function (response){
+        alert("Payment Failed: " + response.error.description);
+      });
+      rzp1.open();
+    } else {
+      alert("Payment gateway not loaded. Please try again.");
+    }
+  };
   return (
     <section id="donate" style={{padding:mob?"56px 16px":"80px 32px",background:"linear-gradient(135deg,#0D4B5E,#1A6B87)",position:"relative"}}>
       <div style={{maxWidth:820,margin:"0 auto"}}>
@@ -2133,7 +2210,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
         <div style={{padding:mob?"16px":"24px"}}>
           {tab==="content"   && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
           {tab==="overview"  && <Overview mob={mob} C={C}/>}
-          {tab==="donations" && <Donations mob={mob}/>}
+          {tab==="donations" && <Donations mob={mob} auth={auth}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
           {tab==="volunteers"&& <Volunteers mob={mob}/>}
@@ -2207,9 +2284,25 @@ function Overview({ mob, C }) {
   );
 }
 
-function Donations({ mob }) {
+function Donations({ mob, auth }) {
   const [q,setQ]=useState(""); const [f,setF]=useState("All");
-  const rows=DDATA.filter(d=>(f==="All"||d.status===f)&&(d.name.toLowerCase().includes(q.toLowerCase())||d.id.includes(q)));
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const token = auth?.idToken || globalAuthToken;
+        const res = await fbFetchDonations(token);
+        setData(res);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    if (globalAuthToken || auth) load();
+  }, [auth]);
+
+  const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
   return (
     <div>
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
