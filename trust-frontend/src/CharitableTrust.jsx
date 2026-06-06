@@ -2687,11 +2687,13 @@ function AdminRegistrations({ mob, C, auth }) {
       newRemarks = reason;
     }
     
+    const updatedBy = auth?.email || "Admin";
+    
     // Optimistic UI update
-    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Status: newStatus, Remarks: newRemarks } : x));
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Status: newStatus, Remarks: newRemarks, "Updated By": updatedBy } : x));
     
     try {
-      const cleanData = { ...r, Status: newStatus, Remarks: newRemarks };
+      const cleanData = { ...r, Status: newStatus, Remarks: newRemarks, "Updated By": updatedBy };
       delete cleanData.id;
       delete cleanData._submittedAt;
       await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
@@ -2706,9 +2708,11 @@ function AdminRegistrations({ mob, C, auth }) {
   const handleEditRemarks = async (r) => {
     const reason = prompt(`Edit remarks for this registration:`, r['Remarks'] || "");
     if (reason === null) return;
-    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Remarks: reason } : x));
+    
+    const updatedBy = auth?.email || "Admin";
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Remarks: reason, "Updated By": updatedBy } : x));
     try {
-      const cleanData = { ...r, Remarks: reason };
+      const cleanData = { ...r, Remarks: reason, "Updated By": updatedBy };
       delete cleanData.id; delete cleanData._submittedAt;
       await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
     } catch (e) {
@@ -2719,7 +2723,7 @@ function AdminRegistrations({ mob, C, auth }) {
   };
 
   // 1. Gather all unique dynamic field keys
-  const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt', 'Transaction ID', 'Status', 'Remarks'];
+  const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt', 'Transaction ID', 'Status', 'Remarks', 'Updated By'];
   const allKeysSet = new Set();
   regs.forEach(r => {
     if(!r) return;
@@ -2750,6 +2754,7 @@ function AdminRegistrations({ mob, C, auth }) {
       else if(colKey === "Event") val = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
       else if(colKey === "Status") val = r['Status'] || "Pending";
       else if(colKey === "Transaction ID") val = r['Transaction ID'] || "-";
+      else if(colKey === "Updated By") val = r['Updated By'] || "-";
       else val = r[colKey] || "-";
       
       if (typeof val === 'string' && val.startsWith('http')) return;
@@ -2781,6 +2786,7 @@ function AdminRegistrations({ mob, C, auth }) {
       else if(colKey === "Event") rVal = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
       else if(colKey === "Status") rVal = r['Status'] || "Pending";
       else if(colKey === "Transaction ID") rVal = r['Transaction ID'] || "-";
+      else if(colKey === "Updated By") rVal = r['Updated By'] || "-";
       else rVal = r[colKey] || "-";
       
       if(!String(rVal).toLowerCase().includes(filterVal.toLowerCase())) return false;
@@ -2791,7 +2797,7 @@ function AdminRegistrations({ mob, C, auth }) {
 
   const handleExportCSV = () => {
     if(filteredRegs.length === 0) return;
-    const headers = ["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys];
+    const headers = ["Date", "Event", "Transaction ID", "Status", "Remarks", "Updated By", ...allKeys];
     const rows = filteredRegs.map(r => {
       let date = "-";
       try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
@@ -2803,6 +2809,7 @@ function AdminRegistrations({ mob, C, auth }) {
         `"${r['Transaction ID'] || '-'}"`,
         `"${r['Status'] || 'Pending'}"`,
         `"${r['Remarks'] || ''}"`,
+        `"${r['Updated By'] || '-'}"`,
         ...allKeys.map(k => {
           let val = r[k] || "";
           if (typeof val === 'string') val = val.replace(/"/g, '""');
@@ -2860,13 +2867,14 @@ function AdminRegistrations({ mob, C, auth }) {
                 <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Txn ID</th>
                 <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Status</th>
                 <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Remarks</th>
+                <th style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>Updated By</th>
                 {allKeys.map(k => (
                   <th key={k} style={{padding:"14px 12px",textAlign:"left",whiteSpace:"nowrap"}}>{k}</th>
                 ))}
                 <th style={{padding:"14px 12px",textAlign:"left"}}>Actions</th>
               </tr>
               <tr style={{background:"#FAFAFA", borderBottom:"2px solid #E0E0E0"}}>
-                {["Date", "Event", "Transaction ID", "Status", "Remarks", ...allKeys].map(k => {
+                {["Date", "Event", "Transaction ID", "Status", "Remarks", "Updated By", ...allKeys].map(k => {
                   const uniqueVals = getUniqueValues(k);
                   return (
                     <th key={`filter-${k}`} style={{padding:"6px 12px", fontWeight:"normal"}}>
@@ -2928,6 +2936,9 @@ function AdminRegistrations({ mob, C, auth }) {
                         <span>{r['Remarks'] || "-"}</span>
                         <button onClick={() => handleEditRemarks(r)} style={{background:"white",border:"1px solid #E0E0E0",borderRadius:4,cursor:"pointer",fontSize:".7rem",padding:"2px 4px",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}} title="Edit Remarks">✏️</button>
                       </div>
+                    </td>
+                    <td style={{padding:"12px",whiteSpace:"nowrap",fontSize:".8rem",color:"var(--mu)"}}>
+                      {r['Updated By'] || "-"}
                     </td>
                     {allKeys.map(k => {
                       let val = r[k] || "-";
