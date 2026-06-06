@@ -3700,6 +3700,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
   const [activeTab, setActiveTab] = useState("Registrations");
   const [previewFile, setPreviewFile] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const w = useW(); const mob = w < 768;
 
   const tabs = [
@@ -3783,21 +3784,26 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:32,zIndex:9999,backdropFilter:"blur(6px)"}}
+    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:isFullScreen?0:(mob?16:32),zIndex:9999,backdropFilter:"blur(6px)",transition:"all 0.3s"}}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       
-      <div style={{background:"#F8F9FA",borderRadius:mob?16:24,width:"100%",maxWidth:1200,height:"90vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden"}}
+      <div style={{background:"#F8F9FA",borderRadius:isFullScreen?0:(mob?16:24),width:isFullScreen?"100%":"95%",maxWidth:isFullScreen?"100%":1000,height:isFullScreen?"100%":"85vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden",transition:"all 0.3s"}}
         onClick={e=>e.stopPropagation()}>
         
         {/* Header */}
-        <div style={{padding:"24px 32px",background:"linear-gradient(135deg, var(--dt), var(--tm))",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+        <div style={{padding:"20px 32px",background:"linear-gradient(135deg, #1e3a8a, #312e81)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
           <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,marginBottom:4}}>My Portal</h2>
-            <div style={{fontSize:".85rem",opacity:.8}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,marginBottom:4}}>My Portal</h2>
+            <div style={{fontSize:".8rem",opacity:.8}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
           </div>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,width:40,height:40,cursor:"pointer",fontSize:"1.4rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
-            onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>✕</button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setIsFullScreen(!isFullScreen)} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:"1.1rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title={isFullScreen?"Exit Fullscreen":"Fullscreen"}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
+              onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>{isFullScreen ? "🗗" : "🗖"}</button>
+            <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:"1.2rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title="Close"
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
+              onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>✕</button>
+          </div>
         </div>
 
         <div style={{display:"flex",flexDirection:mob?"column":"row",flex:1,minHeight:0}}>
