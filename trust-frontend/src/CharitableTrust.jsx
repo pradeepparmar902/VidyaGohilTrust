@@ -2619,6 +2619,22 @@ function Donations({ mob, auth, C }) {
     }
   };
 
+  const handlePanChange = async (r, newPan) => {
+    if ((r.pan || "") === newPan) return;
+    try {
+      const updated = { ...r, pan: newPan };
+      if (r._docId) {
+        await fbUpdateDonation(r._docId, updated, auth?.idToken);
+      } else if (!r.id.startsWith("DON")) {
+        await fbUpdateDonation(r.id, updated, auth?.idToken);
+      }
+      setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
+    } catch(e) {
+      console.error(e);
+      alert("Failed to update PAN: " + e.message);
+    }
+  };
+
   const rows=(data.length > 0 ? data : DDATA).filter(d=>(f==="All"||d.status===f)&&(d.name?.toLowerCase().includes(q.toLowerCase())||d.id?.includes(q)));
   return (
     <div>
@@ -2629,7 +2645,7 @@ function Donations({ mob, auth, C }) {
       </div>
       <div className="ac" style={{padding:16,overflowX:"auto"}}>
         <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:500}}>
-          <thead><tr>{["ID","Donor","Amount","Program","Date","Status","Receipt"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <thead><tr>{["ID","Donor","Amount","Program","Date","PAN","Status","Receipt"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
           <tbody>{rows.map((r,i)=>(
             <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
               <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>{r.id}</td>
@@ -2637,6 +2653,9 @@ function Donations({ mob, auth, C }) {
               <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{r.amount.toLocaleString()}</td>
               <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
               <td style={{padding:"10px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.date}</td>
+              <td style={{padding:"10px 12px"}}>
+                <input type="text" defaultValue={r.pan || ""} onBlur={(e)=>handlePanChange(r, e.target.value)} placeholder="PAN No." style={{fontSize:".75rem", padding:"4px 8px", borderRadius:6, border:"1px solid var(--bd)", width: 100, outline:"none"}} />
+              </td>
               <td style={{padding:"10px 12px"}}>
                 <select value={r.status || "Pending"} onChange={(e) => handleStatusChange(r, e.target.value)} style={{fontSize:".72rem",padding:"3px 6px",borderRadius:6,border:"1px solid var(--bd)",fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A",cursor:"pointer",outline:"none"}}>
                   <option value="Pending (Payment Link)">Pending (Payment Link)</option>
