@@ -348,7 +348,7 @@ function LogoMark({ logo, mob }) {
 }
 
 // ── NAVBAR ────────────────────────────────────────────────────────────────────
-function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout }) {
+function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout, onShowDashboard }) {
   const [scrolled, setScrolled] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const w = useW(); const mob = w < 900;
@@ -370,6 +370,7 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
             {globalProfile ? (
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:".75rem",fontWeight:600,color:"white"}}>Welcome, {globalProfile.name?.split(' ')[0] || globalProfile['Full Name']?.split(' ')[0] || "User"}</span>
+                <button onClick={onShowDashboard} style={{background:"var(--sf)",border:"none",color:"white",fontWeight:600,fontSize:".7rem",cursor:"pointer",padding:"4px 10px",borderRadius:6}}>My Dashboard</button>
                 <button onClick={onPublicLogout} style={{background:"rgba(255,255,255,0.15)",border:"none",color:"white",fontWeight:600,fontSize:".7rem",cursor:"pointer",padding:"4px 8px",borderRadius:6}}>Logout</button>
                 <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
               </div>
@@ -453,7 +454,7 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
 
               {/* Login / Account row */}
               {globalProfile ? (
-                <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700}}>
                       {(globalProfile.name || globalProfile['Full Name'] || "U")[0].toUpperCase()}
@@ -463,7 +464,10 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                       <div style={{fontSize:".7rem",color:"var(--mu)"}}>Logged In</div>
                     </div>
                   </div>
-                  <button onClick={onPublicLogout} style={{background:"none",border:"1px solid #B8E8CC",color:"#1A7A3E",fontWeight:600,fontSize:".75rem",padding:"4px 10px",borderRadius:6,cursor:"pointer"}}>Logout</button>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setDrawer(false); onShowDashboard();}} style={{background:"var(--sf)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",padding:"5px 10px",borderRadius:6,cursor:"pointer"}}>Dashboard</button>
+                    <button onClick={onPublicLogout} style={{background:"none",border:"1px solid #B8E8CC",color:"#1A7A3E",fontWeight:600,fontSize:".75rem",padding:"4px 10px",borderRadius:6,cursor:"pointer"}}>Logout</button>
+                  </div>
                 </div>
               ) : null}
 
@@ -2693,9 +2697,11 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
     localStorage.removeItem("trustPublicProfile");
   };
 
+  const [showDashboard, setShowDashboard] = useState(false);
+
   return (
     <div>
-      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout}/>
+      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)}/>
       <Hero C={C} lang={lang}/>
       {bs.about    !== false && <About C={C} lang={lang}/>}
       {bs.programs !== false && <Programs C={C}/>}
@@ -2707,6 +2713,106 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       {bs.contact  !== false && <Contact C={C}/>}
       <Footer C={C}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
+      {showDashboard && <UserDashboard globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
+    </div>
+  );
+}
+
+// ── USER DASHBOARD ────────────────────────────────────────────────────────────
+function UserDashboard({ globalProfile, globalAuthToken, onClose }) {
+  const [regs, setRegs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const w = useW(); const mob = w < 640;
+
+  useEffect(() => {
+    const fetchMyRegs = async () => {
+      try {
+        const res = await fetch(`https://${FB.projectId}-default-rtdb.firebaseio.com/registrations.json?auth=${globalAuthToken}`);
+        if (res.ok) {
+          const data = await res.json();
+          const allRegs = data ? Object.entries(data).map(([id, val]) => ({id, ...val})) : [];
+          // Filter by matching mobile number or name
+          const myRegs = allRegs.filter(r => 
+            (r["Mobile Number"] && r["Mobile Number"] === (globalProfile.mobile || globalProfile['Mobile Number'])) || 
+            (r["Submitted By"] && r["Submitted By"] === (globalProfile.name || globalProfile['Full Name']))
+          );
+          myRegs.sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+          setRegs(myRegs);
+        }
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    if (globalAuthToken && globalProfile) fetchMyRegs();
+  }, [globalAuthToken, globalProfile]);
+
+  const getStatusColor = (s) => {
+    if (!s) return {bg:"#FFF4EC", col:"#E8650A"}; // Pending
+    const st = s.toLowerCase();
+    if (st.includes('approv')) return {bg:"#EDFAF1", col:"#1A7A3E"};
+    if (st.includes('reject')) return {bg:"#FEF0F0", col:"#C0392B"};
+    if (st.includes('info')) return {bg:"#FEF9EC", col:"#C8860A"};
+    return {bg:"#F5F5F5", col:"#666"};
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:mob?0:24,zIndex:9999,backdropFilter:"blur(6px)"}}
+      onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      
+      <div style={{background:"#F8F9FA",borderRadius:mob?0:24,width:"100%",maxWidth:800,height:mob?"100%":"auto",maxHeight:mob?"100%":"90vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden"}}
+        onClick={e=>e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{padding:"24px 32px",background:"linear-gradient(135deg, var(--dt), var(--tm))",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,marginBottom:4}}>My Dashboard</h2>
+            <div style={{fontSize:".85rem",opacity:.8}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
+          </div>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,width:40,height:40,cursor:"pointer",fontSize:"1.4rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
+            onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>✕</button>
+        </div>
+
+        {/* Content */}
+        <div style={{padding:mob?"20px 16px":"32px",overflowY:"auto",flex:1}}>
+          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Event Registrations</h3>
+          
+          {loading ? (
+            <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your registrations...</div>
+          ) : regs.length === 0 ? (
+            <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
+              <div style={{fontSize:"3rem",marginBottom:12}}>📅</div>
+              <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Registrations Found</div>
+              <div style={{color:"var(--mu)",fontSize:".85rem"}}>You haven't registered for any events yet.</div>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {regs.map(r => {
+                const sc = getStatusColor(r.status || r.Status || "Pending");
+                return (
+                  <div key={r.id} style={{background:"white",borderRadius:16,padding:mob?"16px":"20px",border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:12}}>
+                      <div>
+                        <div style={{fontSize:".7rem",color:"var(--mu)",marginBottom:4}}>{new Date(r.timestamp).toLocaleString()}</div>
+                        <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{r["Event Name"] || r["Event"] || "Event Registration"}</div>
+                      </div>
+                      <div style={{background:sc.bg,color:sc.col,padding:"5px 12px",borderRadius:20,fontSize:".75rem",fontWeight:700,border:`1px solid ${sc.col}33`}}>
+                        {r.status || r.Status || "Pending Approval"}
+                      </div>
+                    </div>
+                    
+                    {(r.AdminRemarks || r.remarks || r.Remarks) && (
+                      <div style={{background:"#FEF9EC",padding:"12px 16px",borderRadius:10,marginTop:10,border:"1px solid #F5E8B8"}}>
+                        <div style={{fontSize:".7rem",fontWeight:700,color:"#C8860A",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Admin Remark</div>
+                        <div style={{fontSize:".85rem",color:"var(--tm2)"}}>{r.AdminRemarks || r.remarks || r.Remarks}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
