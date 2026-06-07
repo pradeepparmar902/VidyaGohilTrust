@@ -723,6 +723,7 @@ function About({ C, lang }) {
 function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [form, setForm] = useState({
     name: globalProfile?.name || globalProfile?.['Full Name'] || globalProfile?.displayName || "",
     phone: globalProfile?.mobile || globalProfile?.['Mobile Number'] || "",
@@ -755,20 +756,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
     const rzpKey = C.donate?.razorpayKey || "rzp_test_DummyKeyForTest";
 
     if (rzpKey.startsWith("http")) {
-      try {
-        await fbSubmitDonation({
-          name: form.name, phone: form.phone, email: form.email, pan: form.pan,
-          amount: final, program: prog, status: "Pending (Payment Link)",
-          date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
-          id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
-          razorpay_payment_id: "Off-site Link"
-        });
-        alert("You are being redirected to our secure payment gateway.\n\nNOTE: If Razorpay shows 'Payment Completed' from your previous donation, please open the link in an Incognito/Private window to make a new donation, or wait a few minutes for the session to clear.");
-        window.open(rzpKey, "_blank");
-        setStep(3);
-      } catch(e) {
-        console.error(e); alert("Failed to save record.");
-      }
+      setShowPaymentPopup(true);
       return;
     }
 
