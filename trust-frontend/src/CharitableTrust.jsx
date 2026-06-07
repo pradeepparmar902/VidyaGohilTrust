@@ -1560,7 +1560,8 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       pan: { x: 50, y: 80, visible: true },
       purpose: { x: 50, y: 90, visible: true },
       paymentMode: { x: 30, y: 70, visible: true },
-      systemGenerated: { x: 50, y: 95, visible: true }
+      systemGenerated: { x: 50, y: 95, visible: true },
+      transactionId: { x: 30, y: 80, visible: true }
     };
     const map = C?.donate?.receiptMap ? { 
       ...defaultMap, 
@@ -1568,7 +1569,8 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       purpose: C.donate.receiptMap.purpose || defaultMap.purpose,
       paymentMode: C.donate.receiptMap.paymentMode || defaultMap.paymentMode,
       systemGenerated: C.donate.receiptMap.systemGenerated || defaultMap.systemGenerated,
-      amountTotal: C.donate.receiptMap.amountTotal || defaultMap.amountTotal
+      amountTotal: C.donate.receiptMap.amountTotal || defaultMap.amountTotal,
+      transactionId: C.donate.receiptMap.transactionId || defaultMap.transactionId
     } : defaultMap;
     
     const baseFontSize = C?.donate?.receiptFontSize || 14;
@@ -1611,6 +1613,7 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("purpose", `Towards ${r.program || "General"} purpose`, 1);
     drawText("paymentMode", "Online Payment Transfer", 1);
     drawText("systemGenerated", "This receipt is system generated.", 0.7);
+    drawText("transactionId", r.razorpay_payment_id ? `TXN: ${r.razorpay_payment_id}` : "", 0.85);
 
     if (action === "view") {
       return doc.output("bloburl");
@@ -1638,7 +1641,8 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
       pan: { x: 50, y: 80, visible: true },
       purpose: { x: 50, y: 90, visible: true },
       paymentMode: { x: 30, y: 70, visible: true },
-      systemGenerated: { x: 50, y: 95, visible: true }
+      systemGenerated: { x: 50, y: 95, visible: true },
+      transactionId: { x: 30, y: 80, visible: true }
     };
     return mapData ? { 
       ...defaultFields, 
@@ -1646,7 +1650,8 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
       purpose: mapData.purpose || defaultFields.purpose,
       paymentMode: mapData.paymentMode || defaultFields.paymentMode,
       systemGenerated: mapData.systemGenerated || defaultFields.systemGenerated,
-      amountTotal: mapData.amountTotal || defaultFields.amountTotal
+      amountTotal: mapData.amountTotal || defaultFields.amountTotal,
+      transactionId: mapData.transactionId || defaultFields.transactionId
     } : defaultFields;
   });
 
@@ -3092,6 +3097,7 @@ function Donations({ mob, auth, C }) {
               <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>
                 <strong style={{color:"var(--dt)"}}>{r.receiptNo || r.id}</strong>
                 {r.receiptNo && <div style={{fontSize:".65rem",color:"#aaa"}}>{r.id}</div>}
+                {r.razorpay_payment_id && <div style={{fontSize:".65rem",color:"var(--sf)"}} title="Razorpay Txn ID">{r.razorpay_payment_id}</div>}
               </td>
               <td style={{padding:"10px 12px",fontWeight:600}}>{r.name}</td>
               <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{r.amount.toLocaleString()}</td>
