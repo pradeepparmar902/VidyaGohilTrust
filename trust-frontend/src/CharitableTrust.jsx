@@ -2897,11 +2897,15 @@ function Donations({ mob, auth, C }) {
        const newC = JSON.parse(JSON.stringify(C));
        if (!newC.donate) newC.donate = {};
        newC.donate.receiptNextNum = nextNo + 1;
+       
+       // Mutate local C so we don't have to reload the page to get the updated counter
+       if (!C.donate) C.donate = {};
+       C.donate.receiptNextNum = nextNo + 1;
+       
        await fbSave(newC, auth?.idToken);
        
        setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
-       alert(`Receipt number ${finalId} assigned! Reloading config...`);
-       window.location.reload();
+       alert(`Receipt number ${finalId} assigned successfully!`);
     } catch (e) {
        alert("Failed to assign receipt number: " + e.message);
     }
