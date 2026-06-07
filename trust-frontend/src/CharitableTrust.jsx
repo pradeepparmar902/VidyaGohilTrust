@@ -469,7 +469,7 @@ function LogoMark({ logo, mob }) {
 }
 
 // ── NAVBAR ────────────────────────────────────────────────────────────────────
-function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout, onShowDashboard, onShowUserLogin }) {
+function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, onPublicLogout, onShowDashboard, onShowUserLogin, onHomeClick }) {
   const [scrolled, setScrolled] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const w = useW(); const mob = w < 900;
@@ -1481,7 +1481,7 @@ function CustomSection({ sec, lang }) {
 }
 
 // ── FOOTER ────────────────────────────────────────────────────────────────────
-function Footer({ C }) {
+function Footer({ C, onPolicyClick }) {
   const w = useW(); const mob = w<640;
   return (
     <footer style={{background:"#071E2A",color:"rgba(255,255,255,.75)",padding:mob?"36px 16px 20px":"48px 32px 24px"}}>
@@ -1495,10 +1495,10 @@ function Footer({ C }) {
             <p style={{fontSize:".82rem",lineHeight:1.7,marginBottom:12}}>Serving humanity with compassion since {C.trust.estd}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.</p>
             <div style={{fontSize:".72rem",color:"rgba(255,255,255,.4)"}}>CIN: {C.trust.cin}</div>
           </div>
-          {[{title:"Quick Links",items:["About Us","Programs","Events","Gallery","Annual Reports","Contact"]},{title:"Programs",items:["Education","Healthcare","Women Empowerment","Environment","Disaster Relief","Livelihood"]},...(w>=900?[{title:"Legal",items:["Privacy Policy","Terms of Use","Donation Policy","Volunteer Policy","Grievance"]}]:[])].map(col=>(
+          {[{title:"Quick Links",items:[{label:"About Us"},{label:"Programs"},{label:"Events"},{label:"Gallery"},{label:"Contact"}]},{title:"Programs",items:[{label:"Education"},{label:"Healthcare"},{label:"Women Empowerment"},{label:"Environment"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"}]}].map(col=>(
             <div key={col.title}>
               <h4 style={{color:"white",fontWeight:700,marginBottom:14,fontSize:".82rem"}}>{col.title}</h4>
-              {col.items.map(item=><div key={item} style={{fontSize:".78rem",marginBottom:8,cursor:"pointer"}} onMouseEnter={e=>e.target.style.color="var(--sflt)"} onMouseLeave={e=>e.target.style.color="rgba(255,255,255,.75)"}>{item}</div>)}
+              {col.items.map(item=><div key={item.label} onClick={()=>{if(item.id && onPolicyClick){onPolicyClick(item.id); window.scrollTo({top:0,behavior:'smooth'});}}} style={{fontSize:".78rem",marginBottom:8,cursor:item.id?"pointer":"default"}} onMouseEnter={e=>item.id&&(e.target.style.color="var(--sflt)")} onMouseLeave={e=>item.id&&(e.target.style.color="rgba(255,255,255,.75)")}>{item.label}</div>)}
             </div>
           ))}
         </div>
@@ -3581,20 +3581,24 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
 
   const [showDashboard, setShowDashboard] = useState(false);
   const [showUserLogin, setShowUserLogin] = useState("");
+  const [viewPolicy, setViewPolicy] = useState(null);
 
   return (
     <div>
-      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin("nav")}/>
-      <Hero C={C} lang={lang}/>
-      {bs.about    !== false && <About C={C} lang={lang}/>}
-      {bs.programs !== false && <Programs C={C}/>}
-      {bs.gallery  !== false && <Gallery C={C}/>}
-      {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
-      {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
-      {/* Custom sections render here — before Contact */}
-      {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
-      {bs.contact  !== false && <Contact C={C}/>}
-      <Footer C={C}/>
+      <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin("nav")} onHomeClick={()=>setViewPolicy(null)}/>
+      {viewPolicy ? <PolicyPage type={viewPolicy} C={C}/> : (
+        <>
+          <Hero C={C} lang={lang}/>
+          {bs.about    !== false && <About C={C} lang={lang}/>}
+          {bs.programs !== false && <Programs C={C}/>}
+          {bs.gallery  !== false && <Gallery C={C}/>}
+          {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
+          {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
+          {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
+          {bs.contact  !== false && <Contact C={C}/>}
+        </>
+      )}
+      <Footer C={C} onPolicyClick={setViewPolicy}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
       {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin("")} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); const intent = showUserLogin; setShowUserLogin(""); if(intent === "nav") setShowDashboard(true);}}/>}
       {showDashboard && <UserDashboard C={C} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
@@ -4529,6 +4533,58 @@ function AdminRegistrations({ mob, C, auth }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── POLICY PAGE COMPONENT ───────────────────────────────────────────────────
+function PolicyPage({ type, C }) {
+  const t = type === 'privacy' ? 'Privacy Policy' : type === 'terms' ? 'Terms & Conditions' : 'Refund & Cancellation Policy';
+  return (
+    <div style={{maxWidth:900,margin:"0 auto",padding:"60px 24px 100px",minHeight:"80vh"}}>
+      <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"2.5rem",color:"var(--dt)",marginBottom:24}}>{t}</h1>
+      <div style={{color:"var(--mu)",lineHeight:1.7,fontSize:".95rem",display:"flex",flexDirection:"column",gap:16}}>
+        {type === 'privacy' && (
+          <>
+            <p><strong>Last Updated: {new Date().toLocaleDateString('en-IN')}</strong></p>
+            <p>This Privacy Policy outlines how {C.trust.name} ("we", "us", or "our") collects, uses, and protects your personal information when you use our website or services.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>1. Information We Collect</h3>
+            <p>We may collect personal information such as your name, email address, phone number, and payment details when you make a donation, register for an event, or sign up as a volunteer.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>2. How We Use Your Information</h3>
+            <p>Your information is used strictly to process donations, issue 80G tax receipts, communicate about events, and manage volunteer activities. We do not sell or rent your personal information to third parties.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>3. Data Security</h3>
+            <p>We implement standard security measures to protect your data. All payment transactions are processed securely through Razorpay.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>4. Contact Us</h3>
+            <p>If you have any questions about this Privacy Policy, please contact us at {C.trust.email}.</p>
+          </>
+        )}
+        {type === 'terms' && (
+          <>
+            <p><strong>Last Updated: {new Date().toLocaleDateString('en-IN')}</strong></p>
+            <p>Welcome to {C.trust.name}. By accessing or using our website, you agree to be bound by these Terms and Conditions.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>1. Use of the Website</h3>
+            <p>You agree to use this website only for lawful purposes. You must not use the site in a way that causes damage or interrupts access to the site.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>2. Donations</h3>
+            <p>All donations made through the site are voluntary. By donating, you confirm that the funds are legitimate and belong to you.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>3. Intellectual Property</h3>
+            <p>The content, logos, and materials on this site are the property of {C.trust.name}. Unauthorized use is prohibited.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>4. Changes to Terms</h3>
+            <p>We reserve the right to modify these terms at any time. Changes will be effective immediately upon posting to the website.</p>
+          </>
+        )}
+        {type === 'refund' && (
+          <>
+            <p><strong>Last Updated: {new Date().toLocaleDateString('en-IN')}</strong></p>
+            <p>Thank you for supporting {C.trust.name}. Because our organization operates on voluntary donations to support charitable causes, all donations are strictly non-refundable.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>1. No Refunds</h3>
+            <p>Once a donation has been successfully processed, it cannot be refunded, cancelled, or reversed under any circumstances.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>2. Erroneous Transactions</h3>
+            <p>In the event of an erroneous double transaction due to a technical glitch, please contact us at {C.trust.email} within 48 hours with your transaction ID. We will review such cases at our sole discretion.</p>
+            <h3 style={{color:"var(--dt)",marginTop:12}}>3. Event Registrations</h3>
+            <p>If an event requires a registration fee, it is non-refundable unless the event is officially cancelled by the Trust.</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
