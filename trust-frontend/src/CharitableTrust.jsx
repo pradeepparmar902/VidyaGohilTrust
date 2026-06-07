@@ -1409,6 +1409,26 @@ function Gallery({ C }) {
   const items = C.galleryItems || [];
   const cats = ["All", ...new Set(items.map(g=>g.category).filter(Boolean))];
   const filtered = active==="All" ? items : items.filter(g=>g.category===active);
+
+  const navigate = (dir) => {
+    if(!selectedImage) return;
+    const idx = filtered.findIndex(g=>g.id===selectedImage.id);
+    if(idx === -1) return;
+    const nextIdx = (idx + dir + filtered.length) % filtered.length;
+    setSelectedImage(filtered[nextIdx]);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if(!selectedImage) return;
+      if(e.key === "ArrowLeft") navigate(-1);
+      if(e.key === "ArrowRight") navigate(1);
+      if(e.key === "Escape") setSelectedImage(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage, filtered]);
+
   return (
     <>
     <section id="gallery" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
@@ -1437,6 +1457,17 @@ function Gallery({ C }) {
     {selectedImage && (
       <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,zIndex:1000,backdropFilter:"blur(4px)"}}
         onClick={()=>setSelectedImage(null)}>
+        
+        <button onClick={(e)=>{e.stopPropagation(); navigate(-1);}}
+          style={{position:"absolute",left:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)"}}>
+          &#10094;
+        </button>
+
+        <button onClick={(e)=>{e.stopPropagation(); navigate(1);}}
+          style={{position:"absolute",right:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)"}}>
+          &#10095;
+        </button>
+
         <div style={{position:"relative",maxWidth:"100%",maxHeight:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}
           onClick={e=>e.stopPropagation()}>
           <button onClick={()=>setSelectedImage(null)}
