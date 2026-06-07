@@ -1557,9 +1557,17 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       date: { x: 80, y: 20, visible: true },
       receiptNo: { x: 80, y: 15, visible: true },
       pan: { x: 50, y: 80, visible: true },
-      purpose: { x: 50, y: 90, visible: true }
+      purpose: { x: 50, y: 90, visible: true },
+      paymentMode: { x: 30, y: 70, visible: true },
+      systemGenerated: { x: 50, y: 95, visible: true }
     };
-    const map = C?.donate?.receiptMap ? { ...defaultMap, ...C.donate.receiptMap, purpose: C.donate.receiptMap.purpose || defaultMap.purpose } : defaultMap;
+    const map = C?.donate?.receiptMap ? { 
+      ...defaultMap, 
+      ...C.donate.receiptMap, 
+      purpose: C.donate.receiptMap.purpose || defaultMap.purpose,
+      paymentMode: C.donate.receiptMap.paymentMode || defaultMap.paymentMode,
+      systemGenerated: C.donate.receiptMap.systemGenerated || defaultMap.systemGenerated
+    } : defaultMap;
     
     const baseFontSize = C?.donate?.receiptFontSize || 14;
     
@@ -1591,7 +1599,9 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("date", r.date, 1);
     drawText("receiptNo", r.id, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
-    drawText("purpose", r.program || "General", 1);
+    drawText("purpose", `Towards ${r.program || "General"} purpose`, 1);
+    drawText("paymentMode", "Online Payment Transfer", 1);
+    drawText("systemGenerated", "This receipt is system generated.", 0.7);
 
     if (action === "view") {
       return doc.output("bloburl");
@@ -1616,9 +1626,17 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
       date: { x: 80, y: 20, visible: true },
       receiptNo: { x: 80, y: 15, visible: true },
       pan: { x: 50, y: 80, visible: true },
-      purpose: { x: 50, y: 90, visible: true }
+      purpose: { x: 50, y: 90, visible: true },
+      paymentMode: { x: 30, y: 70, visible: true },
+      systemGenerated: { x: 50, y: 95, visible: true }
     };
-    return mapData ? { ...defaultFields, ...mapData, purpose: mapData.purpose || defaultFields.purpose } : defaultFields;
+    return mapData ? { 
+      ...defaultFields, 
+      ...mapData, 
+      purpose: mapData.purpose || defaultFields.purpose,
+      paymentMode: mapData.paymentMode || defaultFields.paymentMode,
+      systemGenerated: mapData.systemGenerated || defaultFields.systemGenerated
+    } : defaultFields;
   });
 
   const [fSize, setFSize] = useState(fontSize || 14);
