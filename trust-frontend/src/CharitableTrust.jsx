@@ -679,11 +679,10 @@ function Programs({ C }) {
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:w<640?"1.7rem":"2.2rem",color:"var(--dt)",marginTop:8,fontWeight:700}} className="sh">Our Programs</h2>
         </div>
         <div style={{display:"grid",gridTemplateColumns:cols,gap:18}}>
-          {C.programs.map((p,i)=><div key={i} className="ch" style={{background:p.color,border:`1px solid ${p.border}`,borderRadius:16,padding:"24px 20px",cursor:"pointer"}}>
+          {C.programs.map((p,i)=><div key={i} className="ch" style={{background:p.color,border:`1px solid ${p.border}`,borderRadius:16,padding:"24px 20px"}}>
             <div style={{fontSize:"2rem",marginBottom:12}}>{p.icon}</div>
             <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",fontWeight:700,color:"var(--dt)",marginBottom:7}}>{p.title}</h3>
-            <p style={{fontSize:".85rem",color:"var(--tm2)",lineHeight:1.6}}>{p.sub}</p>
-            <div style={{marginTop:14,color:"var(--sf)",fontSize:".8rem",fontWeight:600}}>Learn more</div>
+            <p style={{fontSize:".85rem",color:"var(--tm2)",lineHeight:1.6,margin:0}}>{p.sub}</p>
           </div>)}
         </div>
       </div>
