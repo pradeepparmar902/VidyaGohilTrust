@@ -2745,7 +2745,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
         </div>
         <div style={{padding:mob?"16px":"24px"}}>
           {tab==="content"   && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
-          {tab==="overview"  && <Overview mob={mob} C={C}/>}
+          {tab==="overview"  && <Overview mob={mob} C={C} auth={auth}/>}
           {tab==="donations" && <Donations mob={mob} auth={auth} C={C}/>}
           {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
@@ -2758,9 +2758,101 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
   );
 }
 
-function Overview({ mob, C }) {
-  const cards=[{l:"Total Donations",v:"Rs.14,23,500",ch:"+18%",up:true,ic:"💰",bg:"#FFF4EC",br:"#FDDBB8"},{l:"Active Volunteers",v:"347",ch:"+3",up:true,ic:"🤝",bg:"#E8F4F8",br:"#B8D8E8"},{l:"Upcoming Events",v:"4",ch:"",up:true,ic:"📅",bg:"#EDFAF1",br:"#B8E8CC"},{l:"Pending Receipts",v:"12",ch:"⚠️",up:false,ic:"📄",bg:"#FEF9EC",br:"#F5E8B8"}];
-  const mn=[42,67,89,120,95,142]; const ms=["Jan","Feb","Mar","Apr","May","Jun"]; const mx=142;
+function Overview({ mob, C, auth }) {
+  const [data, setData] = useState({
+    totalDonations: 0,
+    activeVolunteers: 0,
+    upcomingEvents: C.events?.length || 0,
+    pendingReceipts: 0,
+    monthly: [],
+    programs: [],
+    recentDonations: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!auth?.idToken) return;
+    const fetchAll = async () => {
+      try {
+        const [dons, vols] = await Promise.all([
+          fbFetchDonations(auth.idToken),
+          fbFetchVolunteers(auth.idToken)
+        ]);
+        
+        let totalDonations = 0;
+        let pendingReceipts = 0;
+        const progSums = {};
+        
+        // Process donations
+        dons.forEach(d => {
+          if (d.status === "Verified") {
+            const amt = Number(d.amount) || 0;
+            totalDonations += amt;
+            progSums[d.program || "General"] = (progSums[d.program || "General"] || 0) + amt;
+            if (!d.receiptNo) pendingReceipts++;
+          } else {
+            pendingReceipts++;
+          }
+        });
+
+        // Recent Donations
+        const recentDonations = dons.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+
+        // Monthly
+        const months = {};
+        const today = new Date();
+        for (let i=5; i>=0; i--) {
+          const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+          months[`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`] = {
+            label: d.toLocaleString('en', {month:'short'}),
+            total: 0
+          };
+        }
+        dons.forEach(d => {
+          if (d.status !== "Verified") return;
+          const dt = new Date(d.date);
+          const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+          if (months[key]) months[key].total += (Number(d.amount) || 0);
+        });
+        const monthly = Object.values(months);
+
+        // Programs
+        const programs = Object.entries(progSums)
+          .map(([p, v]) => ({ p, v: totalDonations ? Math.round((v/totalDonations)*100) : 0, amt: v }))
+          .sort((a,b) => b.v - a.v);
+          
+        const colors = ["var(--sf)", "var(--dt)", "#7B2D8B", "#1A7A3E", "var(--gd)"];
+        programs.forEach((p,i) => p.c = colors[i%colors.length]);
+
+        setData({ 
+          totalDonations, 
+          activeVolunteers: vols.filter(v => v.status !== "Inactive").length, 
+          upcomingEvents: C.events?.length || 0, 
+          pendingReceipts, 
+          monthly, 
+          programs, 
+          recentDonations 
+        });
+      } catch (e) {
+        console.error("Failed to fetch overview data", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, [auth?.idToken, C.events]);
+
+  const cards=[
+    {l:"Total Donations (Verified)",v:`Rs.${data.totalDonations.toLocaleString()}`,ch:"",up:true,ic:"💰",bg:"#FFF4EC",br:"#FDDBB8"},
+    {l:"Active Volunteers",v:data.activeVolunteers.toString(),ch:"",up:true,ic:"🤝",bg:"#E8F4F8",br:"#B8D8E8"},
+    {l:"Upcoming Events",v:data.upcomingEvents.toString(),ch:"",up:true,ic:"📅",bg:"#EDFAF1",br:"#B8E8CC"},
+    {l:"Pending Receipts/Payments",v:data.pendingReceipts.toString(),ch:data.pendingReceipts>0?"⚠️":"",up:false,ic:"📄",bg:"#FEF9EC",br:"#F5E8B8"}
+  ];
+  
+  const mx = Math.max(...data.monthly.map(m=>m.total), 1);
+
+  if (loading && auth?.idToken) return <div style={{padding:40,textAlign:"center",color:"var(--mu)"}}>Loading live data...</div>;
+
   return (
     <div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(4,1fr)",gap:14,marginBottom:20}}>
@@ -2777,25 +2869,25 @@ function Overview({ mob, C }) {
       </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"2fr 1fr",gap:16,marginBottom:16}}>
         <div className="ac" style={{padding:mob?"16px":"22px"}}>
-          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",color:"var(--dt)",marginBottom:18,fontWeight:700}}>Monthly Donations</h3>
+          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",color:"var(--dt)",marginBottom:18,fontWeight:700}}>Monthly Donations (Verified)</h3>
           <div style={{display:"flex",alignItems:"flex-end",gap:mob?8:12,height:150}}>
-            {mn.map((v,i)=>(
+            {data.monthly.length > 0 ? data.monthly.map((m,i)=>(
               <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
-                <div style={{fontSize:".6rem",color:"var(--mu)"}}>Rs.{v}k</div>
-                <div style={{width:"100%",background:i===mn.length-1?"linear-gradient(to top,var(--sf),var(--gd))":"linear-gradient(to top,var(--dt),var(--tm))",borderRadius:"5px 5px 0 0",height:`${(v/mx)*120}px`}}/>
-                <div style={{fontSize:".65rem",color:"var(--mu)"}}>{ms[i]}</div>
+                <div style={{fontSize:".6rem",color:"var(--mu)"}}>{m.total > 0 ? `Rs.${(m.total/1000).toFixed(1)}k` : ''}</div>
+                <div style={{width:"100%",background:i===data.monthly.length-1?"linear-gradient(to top,var(--sf),var(--gd))":"linear-gradient(to top,var(--dt),var(--tm))",borderRadius:"5px 5px 0 0",height:`${Math.max((m.total/mx)*120, 4)}px`}}/>
+                <div style={{fontSize:".65rem",color:"var(--mu)"}}>{m.label}</div>
               </div>
-            ))}
+            )) : <div style={{flex:1,textAlign:"center",color:"var(--mu)",fontSize:".8rem"}}>No data</div>}
           </div>
         </div>
         <div className="ac" style={{padding:mob?"16px":"22px"}}>
           <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",color:"var(--dt)",marginBottom:18,fontWeight:700}}>By Program</h3>
-          {[{p:"Education",v:38,c:"var(--sf)"},{p:"Healthcare",v:24,c:"var(--dt)"},{p:"Women",v:18,c:"#7B2D8B"},{p:"Environment",v:12,c:"#1A7A3E"},{p:"General",v:8,c:"var(--gd)"}].map(r=>(
+          {data.programs.length > 0 ? data.programs.map(r=>(
             <div key={r.p} style={{marginBottom:11}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:".78rem"}}>{r.p}</span><span style={{fontSize:".78rem",fontWeight:700}}>{r.v}%</span></div>
               <div style={{height:7,borderRadius:4,background:"#EEE"}}><div style={{height:"100%",width:`${r.v}%`,background:r.c,borderRadius:4}}/></div>
             </div>
-          ))}
+          )) : <div style={{textAlign:"center",color:"var(--mu)",fontSize:".8rem"}}>No data</div>}
         </div>
       </div>
       <div className="ac" style={{padding:mob?"16px":"22px"}}>
@@ -2803,16 +2895,16 @@ function Overview({ mob, C }) {
         <div style={{overflowX:"auto"}}>
           <table className="tt" style={{width:"100%",borderCollapse:"collapse",fontSize:".8rem",minWidth:500}}>
             <thead><tr>{["ID","Donor","Amount","Program","Date","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:".72rem",letterSpacing:.5,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
-            <tbody>{DDATA.slice(0,4).map((r,i)=>(
+            <tbody>{data.recentDonations.length > 0 ? data.recentDonations.map((r,i)=>(
               <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
-                <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>{r.id}</td>
+                <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>{r.receiptNo || r.id}</td>
                 <td style={{padding:"10px 12px",fontWeight:600}}>{r.name}</td>
-                <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{r.amount.toLocaleString()}</td>
+                <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{Number(r.amount).toLocaleString()}</td>
                 <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
                 <td style={{padding:"10px 12px",color:"var(--mu)",fontSize:".78rem"}}>{r.date}</td>
                 <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A"}}>{r.status}</span></td>
               </tr>
-            ))}</tbody>
+            )) : <tr><td colSpan="6" style={{textAlign:"center",padding:20,color:"var(--mu)"}}>No recent donations found.</td></tr>}</tbody>
           </table>
         </div>
       </div>
