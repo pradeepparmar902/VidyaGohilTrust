@@ -3558,6 +3558,7 @@ function Settings({ mob, C }) {
 function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   const bs = C.builtinSections || {};
   const custom = (C.customSections || []).filter(s => s.visible);
+  const w = useW(); const mob = w < 768;
 
   const [globalAuthToken, setGlobalAuthToken] = useState(() => localStorage.getItem("trustPublicAuthToken") || "");
   const [globalProfile, setGlobalProfile] = useState(() => {
