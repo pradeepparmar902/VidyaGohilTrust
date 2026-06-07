@@ -776,7 +776,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
               pan: form.pan,
               amount: final,
               program: prog,
-              status: "Verified",
+              status: "Pending",
               date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
               id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
               razorpay_payment_id: response.razorpay_payment_id
