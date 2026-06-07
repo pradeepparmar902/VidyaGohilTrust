@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { jsPDF } from "jspdf";
 import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, sendPasswordResetEmail } from "firebase/auth";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const FB = {
@@ -4446,6 +4446,21 @@ function LoginScreen({ onLogin, onSkip }) {
     } finally { setLoading(false); }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setErr("Please enter your admin email address first, then click Forgot Password.");
+      return;
+    }
+    setErr(""); setLoading(true);
+    try {
+      await sendPasswordResetEmail(fbAuth, email);
+      setErr("✅ A password reset link has been sent to your email. Please check your inbox.");
+    } catch(e) {
+      setErr(e.message.replace("Firebase: ", ""));
+    } finally { setLoading(false); }
+  };
+
   return (
     /* Overlay backdrop — click outside to dismiss */
     <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,zIndex:1000,backdropFilter:"blur(4px)"}}
@@ -4488,6 +4503,9 @@ function LoginScreen({ onLogin, onSkip }) {
               style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:"var(--mu)",fontSize:".78rem",fontWeight:600}}>
               {showPass?"Hide":"Show"}
             </button>
+          </div>
+          <div style={{textAlign:"right", marginTop:6}}>
+            <button type="button" onClick={handleForgotPassword} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer"}}>Forgot Password?</button>
           </div>
         </div>
 
