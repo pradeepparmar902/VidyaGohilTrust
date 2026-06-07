@@ -721,7 +721,7 @@ function About({ C, lang }) {
 
 // ── DONATION ──────────────────────────────────────────────────────────────────
 function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
-  const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("General");
+  const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("");
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [form, setForm] = useState({
@@ -745,6 +745,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
     if (step === 1) {
+      if (!prog) return alert("Please consciously select a purpose for your donation from the 'Donate to Program' options above.");
       if (!globalAuthToken) {
         onShowUserLogin();
         return;
