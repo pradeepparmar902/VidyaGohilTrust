@@ -763,6 +763,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
           id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
           razorpay_payment_id: "Off-site Link"
         });
+        alert("You are being redirected to our secure payment gateway.\n\nNOTE: If Razorpay shows 'Payment Completed' from your previous donation, please open the link in an Incognito/Private window to make a new donation, or wait a few minutes for the session to clear.");
         window.open(rzpKey, "_blank");
         setStep(3);
       } catch(e) {
