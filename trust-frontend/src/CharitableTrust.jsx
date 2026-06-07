@@ -1625,7 +1625,8 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     } else if (action === "blob") {
       return doc.output("blob");
     } else {
-      doc.save(`Receipt_${r.id}.pdf`);
+      const safeId = (r.receiptNo || r.id).replace(/\//g, "-");
+      doc.save(`Receipt_${safeId}.pdf`);
     }
 
   } catch (e) {
@@ -2863,7 +2864,8 @@ function Donations({ mob, auth, C }) {
       } else {
         const link = document.createElement("a");
         link.href = r.receiptUrl;
-        link.download = `Receipt_${r.id}.pdf`;
+        const safeId = (r.receiptNo || r.id).replace(/\//g, "-");
+        link.download = `Receipt_${safeId}.pdf`;
         link.target = "_blank";
         link.click();
       }
@@ -3919,7 +3921,8 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
     if (r.receiptUrl) {
       const link = document.createElement("a");
       link.href = r.receiptUrl;
-      link.download = `Receipt_${r.id}.pdf`;
+      const safeId = (r.receiptNo || r.id).replace(/\//g, "-");
+      link.download = `Receipt_${safeId}.pdf`;
       link.target = "_blank";
       link.click();
       return;
