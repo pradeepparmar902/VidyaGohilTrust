@@ -508,17 +508,15 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
             ) : (
               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                 <button onClick={onShowUserLogin} style={{background:"var(--sf)",border:"none",color:"white",fontWeight:600,fontSize:".75rem",cursor:"pointer",padding:"5px 12px",borderRadius:6,transition:"all .2s"}}>
-                  User Login
+                  Login
                 </button>
-                <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
-                {auth?.email ? (
+                {auth?.email && (
+                  <>
+                  <div style={{width:1,height:12,background:"rgba(255,255,255,.3)"}}/>
                   <button onClick={()=>setPage("admin")} style={{background:"transparent",border:"none",color:"white",fontWeight:700,fontSize:".75rem",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                     <span style={{width:18,height:18,borderRadius:"50%",background:"var(--sf)",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".6rem"}}>{auth.email[0].toUpperCase()}</span> Admin Panel
                   </button>
-                ) : (
-                  <button onClick={onShowLogin} style={{background:"transparent",border:"none",color:"rgba(255,255,255,.8)",fontWeight:600,fontSize:".75rem",cursor:"pointer",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.color="white"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}>
-                    Admin Login
-                  </button>
+                  </>
                 )}
               </div>
             )}
@@ -611,7 +609,7 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                   <button onClick={()=>{setDrawer(false); onShowUserLogin();}} style={{padding:"12px",borderRadius:10,background:"var(--sf)",border:"none",color:"white",fontWeight:700,fontSize:".85rem",cursor:"pointer"}}>
                     User Login / Sign Up
                   </button>
-                  {auth?.email ? (
+                  {auth?.email && (
                     <div style={{background:"#EDFAF1",border:"1px solid #B8E8CC",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
                       <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,flexShrink:0}}>
                         {auth.email[0].toUpperCase()}
@@ -624,13 +622,6 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                         Admin
                       </button>
                     </div>
-                  ) : (
-                    <button onClick={()=>{setDrawer(false); onShowLogin();}}
-                      style={{padding:"12px",borderRadius:10,background:"white",border:"2px solid var(--bd)",color:"var(--dt)",fontWeight:700,fontSize:".9rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit",transition:"all .2s"}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--dt)"}}>
-                      Admin Login
-                    </button>
                   )}
                 </div>
               )}
@@ -1567,7 +1558,7 @@ function Footer({ C, onFooterLinkClick }) {
             <p style={{fontSize:".82rem",lineHeight:1.7,marginBottom:12}}>Serving humanity with compassion since {C.trust.estd}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.</p>
             <div style={{fontSize:".72rem",color:"rgba(255,255,255,.4)"}}>CIN: {C.trust.cin}</div>
           </div>
-          {[{title:"Quick Links",items:[{label:"About Us",id:"about"},{label:"Programs",id:"programs"},{label:"Events",id:"events"},{label:"Gallery",id:"gallery"},{label:"Contact",id:"contact"}]},{title:"Programs",items:[{label:"Education",id:"programs"},{label:"Healthcare",id:"programs"},{label:"Women Empowerment",id:"programs"},{label:"Environment",id:"programs"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"}]}].map(col=>(
+          {[{title:"Quick Links",items:[{label:"About Us",id:"about"},{label:"Programs",id:"programs"},{label:"Events",id:"events"},{label:"Gallery",id:"gallery"},{label:"Contact",id:"contact"}]},{title:"Programs",items:[{label:"Education",id:"programs"},{label:"Healthcare",id:"programs"},{label:"Women Empowerment",id:"programs"},{label:"Environment",id:"programs"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"},{label:"Admin Login",id:"admin_login"}]}].map(col=>(
             <div key={col.title}>
               <h4 style={{color:"white",fontWeight:700,marginBottom:14,fontSize:".82rem"}}>{col.title}</h4>
               {col.items.map(item=><div key={item.label} onClick={()=>{if(item.id && onFooterLinkClick){onFooterLinkClick(item.id);}}} style={{fontSize:".78rem",marginBottom:8,cursor:item.id?"pointer":"default"}} onMouseEnter={e=>item.id&&(e.target.style.color="var(--sflt)")} onMouseLeave={e=>item.id&&(e.target.style.color="rgba(255,255,255,.75)")}>{item.label}</div>)}
@@ -3907,6 +3898,10 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   const [viewPolicy, setViewPolicy] = useState(null);
 
   const handleFooterLinkClick = (id) => {
+    if (id === "admin_login") {
+      onShowLogin();
+      return;
+    }
     if (["privacy", "terms", "refund"].includes(id)) {
       setViewPolicy(id);
       window.scrollTo({top:0, behavior:'smooth'});
