@@ -518,10 +518,10 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
       <nav style={{position:"sticky",top:0,zIndex:300,background:scrolled?"rgba(255,251,244,.97)":"var(--ww)",borderBottom:`1px solid ${scrolled?"var(--bd)":"transparent"}`,backdropFilter:"blur(12px)",boxShadow:scrolled?"0 2px 20px rgba(0,0,0,.08)":"none",transition:"all .3s",padding:mob?"0 16px":"0 28px",display:"flex",alignItems:"center",justifyContent:"space-between",height:mob?56:64,gap:8}}>
 
         {/* Logo */}
-        <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",flexShrink:0}} onClick={()=>go("home")}>
+        <div style={{display:"flex",alignItems:"center",gap:mob?6:10,cursor:"pointer",flexShrink:1,minWidth:0}} onClick={()=>go("home")}>
           <LogoMark logo={C.trust.logo} mob={mob}/>
-          <div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:mob?".85rem":".95rem",color:"var(--dt)",lineHeight:1.2}}>{lang==="en"?C.trust.name:C.trust.nameGu}</div>
+          <div style={{flexShrink:1,minWidth:0}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:mob?".85rem":".95rem",color:"var(--dt)",lineHeight:1.2,wordBreak:"break-word"}}>{lang==="en"?C.trust.name:C.trust.nameGu}</div>
             {!mob && <div style={{fontSize:".6rem",color:"var(--mu)",letterSpacing:"1px",textTransform:"uppercase"}}>Charitable Trust</div>}
           </div>
         </div>
