@@ -2473,15 +2473,43 @@ function ContentEditor({ C, setC, setPage, auth }) {
         </div>
         
         {draft.donate.receiptTemplate && (
-          <TemplateMapper 
-            imgUrl={draft.donate.receiptTemplate} 
-            mapData={draft.donate.receiptMap} 
-            fontSize={draft.donate.receiptFontSize}
-            onChange={(map, size) => { 
-               upd("donate.receiptMap", map); 
-               upd("donate.receiptFontSize", size); 
-            }} 
-          />
+          <>
+            <TemplateMapper 
+              imgUrl={draft.donate.receiptTemplate} 
+              mapData={draft.donate.receiptMap} 
+              fontSize={draft.donate.receiptFontSize}
+              onChange={(map, size) => { 
+                 upd("donate.receiptMap", map); 
+                 upd("donate.receiptFontSize", size); 
+              }} 
+            />
+            <div style={{marginTop: 16, background: "rgba(200,134,10,.05)", border: "1px dashed rgba(200,134,10,.3)", padding: 16, borderRadius: 8}}>
+              <h4 style={{fontSize: ".9rem", marginTop: 0, marginBottom: 8}}>Test Your Mapping</h4>
+              <p style={{fontSize: ".8rem", color: "var(--mu)", marginTop: 0, marginBottom: 12}}>Generate a test receipt with dummy data to see how your layout looks on an actual PDF before saving.</p>
+              <button 
+                className="bs" 
+                onClick={async () => {
+                  try {
+                    const dummy_r = {
+                      id: "DON-TEST-12345",
+                      name: "Test Donor Name",
+                      amount: 5100,
+                      date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
+                      pan: "ABCDE1234F",
+                      program: "Education"
+                    };
+                    const url = await generateReceiptPDF(dummy_r, draft, "view");
+                    window.open(url, "_blank");
+                  } catch(e) {
+                    alert("Failed to generate test PDF");
+                  }
+                }}
+                style={{padding: "8px 16px", borderRadius: 8, fontSize: ".85rem", fontWeight: 700}}
+              >
+                Generate Test PDF
+              </button>
+            </div>
+          </>
         )}
       </Sec>
 
