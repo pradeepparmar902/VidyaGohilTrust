@@ -1481,7 +1481,7 @@ function CustomSection({ sec, lang }) {
 }
 
 // ── FOOTER ────────────────────────────────────────────────────────────────────
-function Footer({ C, onPolicyClick }) {
+function Footer({ C, onFooterLinkClick }) {
   const w = useW(); const mob = w<640;
   return (
     <footer style={{background:"#071E2A",color:"rgba(255,255,255,.75)",padding:mob?"36px 16px 20px":"48px 32px 24px"}}>
@@ -1495,10 +1495,10 @@ function Footer({ C, onPolicyClick }) {
             <p style={{fontSize:".82rem",lineHeight:1.7,marginBottom:12}}>Serving humanity with compassion since {C.trust.estd}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.</p>
             <div style={{fontSize:".72rem",color:"rgba(255,255,255,.4)"}}>CIN: {C.trust.cin}</div>
           </div>
-          {[{title:"Quick Links",items:[{label:"About Us"},{label:"Programs"},{label:"Events"},{label:"Gallery"},{label:"Contact"}]},{title:"Programs",items:[{label:"Education"},{label:"Healthcare"},{label:"Women Empowerment"},{label:"Environment"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"}]}].map(col=>(
+          {[{title:"Quick Links",items:[{label:"About Us",id:"about"},{label:"Programs",id:"programs"},{label:"Events",id:"events"},{label:"Gallery",id:"gallery"},{label:"Contact",id:"contact"}]},{title:"Programs",items:[{label:"Education",id:"programs"},{label:"Healthcare",id:"programs"},{label:"Women Empowerment",id:"programs"},{label:"Environment",id:"programs"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"}]}].map(col=>(
             <div key={col.title}>
               <h4 style={{color:"white",fontWeight:700,marginBottom:14,fontSize:".82rem"}}>{col.title}</h4>
-              {col.items.map(item=><div key={item.label} onClick={()=>{if(item.id && onPolicyClick){onPolicyClick(item.id); window.scrollTo({top:0,behavior:'smooth'});}}} style={{fontSize:".78rem",marginBottom:8,cursor:item.id?"pointer":"default"}} onMouseEnter={e=>item.id&&(e.target.style.color="var(--sflt)")} onMouseLeave={e=>item.id&&(e.target.style.color="rgba(255,255,255,.75)")}>{item.label}</div>)}
+              {col.items.map(item=><div key={item.label} onClick={()=>{if(item.id && onFooterLinkClick){onFooterLinkClick(item.id);}}} style={{fontSize:".78rem",marginBottom:8,cursor:item.id?"pointer":"default"}} onMouseEnter={e=>item.id&&(e.target.style.color="var(--sflt)")} onMouseLeave={e=>item.id&&(e.target.style.color="rgba(255,255,255,.75)")}>{item.label}</div>)}
             </div>
           ))}
         </div>
@@ -3583,6 +3583,18 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
   const [showUserLogin, setShowUserLogin] = useState("");
   const [viewPolicy, setViewPolicy] = useState(null);
 
+  const handleFooterLinkClick = (id) => {
+    if (["privacy", "terms", "refund"].includes(id)) {
+      setViewPolicy(id);
+      window.scrollTo({top:0, behavior:'smooth'});
+    } else {
+      setViewPolicy(null);
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
+      }, 50);
+    }
+  };
+
   return (
     <div>
       <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin("nav")} onHomeClick={()=>setViewPolicy(null)}/>
@@ -3598,7 +3610,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
           {bs.contact  !== false && <Contact C={C}/>}
         </>
       )}
-      <Footer C={C} onPolicyClick={setViewPolicy}/>
+      <Footer C={C} onFooterLinkClick={handleFooterLinkClick}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
       {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin("")} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); const intent = showUserLogin; setShowUserLogin(""); if(intent === "nav") setShowDashboard(true);}}/>}
       {showDashboard && <UserDashboard C={C} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onClose={()=>setShowDashboard(false)} />}
