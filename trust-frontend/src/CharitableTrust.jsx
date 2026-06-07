@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { jsPDF } from "jspdf";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
@@ -1748,6 +1748,81 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
   );
 }
 
+// ── ADMIN: Content Editor Components ─────────────────────────────────────────
+
+const EditorContext = createContext({});
+
+const RowBar = ({ arrPath, idx, total, label }) => {
+  const { moveItem, delItem } = useContext(EditorContext);
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+      <span style={{flex:1,fontSize:".7rem",fontWeight:700,color:"var(--tm)",textTransform:"uppercase",letterSpacing:.5}}>{label} {idx+1}</span>
+      <button onClick={()=>moveItem(arrPath,idx,-1)} disabled={idx===0}
+        style={{padding:"4px 9px",borderRadius:6,border:"1px solid var(--bd)",background:idx===0?"#f5f5f5":"white",cursor:idx===0?"not-allowed":"pointer",fontSize:".8rem",color:idx===0?"#ccc":"var(--dt)",fontWeight:600}}>↑</button>
+      <button onClick={()=>moveItem(arrPath,idx,1)} disabled={idx===total-1}
+        style={{padding:"4px 9px",borderRadius:6,border:"1px solid var(--bd)",background:idx===total-1?"#f5f5f5":"white",cursor:idx===total-1?"not-allowed":"pointer",fontSize:".8rem",color:idx===total-1?"#ccc":"var(--dt)",fontWeight:600}}>↓</button>
+      <button onClick={()=>{ if(window.confirm(`Delete ${label} ${idx+1}?`)) delItem(arrPath,idx); }}
+        style={{padding:"4px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",fontWeight:600}}>Delete</button>
+    </div>
+  );
+};
+
+const AddBtn = ({ label, onClick }) => (
+  <button onClick={onClick}
+    style={{width:"100%",padding:"12px",borderRadius:10,border:"2px dashed var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".88rem",cursor:"pointer",transition:"all .2s",marginTop:6}}
+    onMouseEnter={e=>e.currentTarget.style.background="#FFE8D6"}
+    onMouseLeave={e=>e.currentTarget.style.background="#FFF4EC"}>
+    + Add {label}
+  </button>
+);
+
+const F = ({label, path, ta, hint}) => {
+  const { gv, upd, draft } = useContext(EditorContext);
+  const initVal = gv(path);
+  const [local, setLocal] = useState(initVal);
+  useEffect(() => { setLocal(gv(path)); }, [path, draft]);
+  const commit = () => upd(path, local);
+  return (
+    <div className="cf">
+      <label className="cl">{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
+      {ta
+        ? <textarea className="ci" rows={3} value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
+        : <input    className="ci"          value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
+      }
+    </div>
+  );
+};
+
+const Sec = ({id, icon, label, children, onAdd, addLabel}) => {
+  const { exp, setExp } = useContext(EditorContext);
+  return (
+    <div className="csc">
+      <div className="csh" style={{userSelect:"none"}}>
+        <div onClick={()=>setExp(e=>({...e,[id]:!e[id]}))} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+          <span style={{fontSize:"1.2rem",flexShrink:0}}>{icon}</span>
+          <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:"var(--dt)",fontSize:".95rem",flex:1}}>{label}</span>
+          <span style={{color:"var(--tm)",fontSize:".8rem",flexShrink:0,marginRight:8}}>{exp[id]?"▲":"▼"}</span>
+        </div>
+        {onAdd && (
+          <button
+            onClick={e=>{ e.stopPropagation(); onAdd(); if(!exp[id]) setExp(e=>({...e,[id]:true})); }}
+            style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"2px solid var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".75rem",cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s"}}
+            onMouseEnter={e=>e.currentTarget.style.background="#FFE8D6"}
+            onMouseLeave={e=>e.currentTarget.style.background="#FFF4EC"}>
+            + {addLabel||"Add"}
+          </button>
+        )}
+      </div>
+      {exp[id] && <div className="csb">{children}</div>}
+    </div>
+  );
+};
+
+const G2 = ({children}) => {
+  const { mob } = useContext(EditorContext);
+  return <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 16px"}}>{children}</div>;
+};
+
 // ── CONTENT EDITOR ────────────────────────────────────────────────────────────
 function ContentEditor({ C, setC, setPage, auth }) {
   const [draft, setDraft] = useState(()=>JSON.parse(JSON.stringify(C)));
@@ -1841,75 +1916,9 @@ function ContentEditor({ C, setC, setPage, auth }) {
     });
   };
 
-  // ── Reusable row toolbar: move up/down + delete ────────────────────────────
-  const RowBar = ({ arrPath, idx, total, label }) => (
-    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-      <span style={{flex:1,fontSize:".7rem",fontWeight:700,color:"var(--tm)",textTransform:"uppercase",letterSpacing:.5}}>{label} {idx+1}</span>
-      <button onClick={()=>moveItem(arrPath,idx,-1)} disabled={idx===0}
-        style={{padding:"4px 9px",borderRadius:6,border:"1px solid var(--bd)",background:idx===0?"#f5f5f5":"white",cursor:idx===0?"not-allowed":"pointer",fontSize:".8rem",color:idx===0?"#ccc":"var(--dt)",fontWeight:600}}>↑</button>
-      <button onClick={()=>moveItem(arrPath,idx,1)} disabled={idx===total-1}
-        style={{padding:"4px 9px",borderRadius:6,border:"1px solid var(--bd)",background:idx===total-1?"#f5f5f5":"white",cursor:idx===total-1?"not-allowed":"pointer",fontSize:".8rem",color:idx===total-1?"#ccc":"var(--dt)",fontWeight:600}}>↓</button>
-      <button onClick={()=>{ if(window.confirm(`Delete ${label} ${idx+1}?`)) delItem(arrPath,idx); }}
-        style={{padding:"4px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",fontWeight:600}}>Delete</button>
-    </div>
-  );
-
-  // ── Add button ─────────────────────────────────────────────────────────────
-  const AddBtn = ({ label, onClick }) => (
-    <button onClick={onClick}
-      style={{width:"100%",padding:"12px",borderRadius:10,border:"2px dashed var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".88rem",cursor:"pointer",transition:"all .2s",marginTop:6}}
-      onMouseEnter={e=>e.currentTarget.style.background="#FFE8D6"}
-      onMouseLeave={e=>e.currentTarget.style.background="#FFF4EC"}>
-      + Add {label}
-    </button>
-  );
-
-  // Field uses LOCAL state so typing never re-renders parent (fixes mobile keyboard dismiss).
-  // Value syncs to parent draft only on onBlur (when user leaves the field).
-  const F = ({label, path, ta, hint}) => {
-    const initVal = gv(path);
-    const [local, setLocal] = useState(initVal);
-    // Sync if parent resets
-    useEffect(() => { setLocal(gv(path)); }, [path, draft]);
-    const commit = () => upd(path, local);
-    return (
-      <div className="cf">
-        <label className="cl">{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
-        {ta
-          ? <textarea className="ci" rows={3} value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
-          : <input    className="ci"          value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
-        }
-      </div>
-    );
-  };
-
-  const Sec = ({id, icon, label, children, onAdd, addLabel}) => (
-    <div className="csc">
-      <div className="csh" style={{userSelect:"none"}}>
-        {/* Clicking the left part toggles open/close */}
-        <div onClick={()=>setExp(e=>({...e,[id]:!e[id]}))} style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
-          <span style={{fontSize:"1.2rem",flexShrink:0}}>{icon}</span>
-          <span style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:"var(--dt)",fontSize:".95rem",flex:1}}>{label}</span>
-          <span style={{color:"var(--tm)",fontSize:".8rem",flexShrink:0,marginRight:8}}>{exp[id]?"▲":"▼"}</span>
-        </div>
-        {/* Add button always visible in header */}
-        {onAdd && (
-          <button
-            onClick={e=>{ e.stopPropagation(); onAdd(); if(!exp[id]) setExp(e=>({...e,[id]:true})); }}
-            style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"2px solid var(--sf)",background:"#FFF4EC",color:"var(--sf)",fontWeight:700,fontSize:".75rem",cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s"}}
-            onMouseEnter={e=>e.currentTarget.style.background="#FFE8D6"}
-            onMouseLeave={e=>e.currentTarget.style.background="#FFF4EC"}>
-            + {addLabel||"Add"}
-          </button>
-        )}
-      </div>
-      {exp[id] && <div className="csb">{children}</div>}
-    </div>
-  );
-
-  const G2 = ({children}) => <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 16px"}}>{children}</div>;
 
   return (
+    <EditorContext.Provider value={{ draft, gv, upd, moveItem, delItem, addItem, exp, setExp, mob }}>
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div>
@@ -2629,6 +2638,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
         </div>
       )}
     </div>
+    </EditorContext.Provider>
   );
 }
 
