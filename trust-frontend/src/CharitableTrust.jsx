@@ -1608,11 +1608,16 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("amountTotal", `Rs. ${r.amount.toLocaleString()}`, 1.15);
     drawText("amountWords", numberToWords(r.amount), 1, 0.45); // wrap at 45% of image width
     drawText("date", r.date, 1);
-    drawText("receiptNo", r.receiptNo || r.id, 1);
+    const displayReceiptNo = r.receiptNo ? r.receiptNo : "Processing...";
+    drawText("receiptNo", displayReceiptNo, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
     drawText("purpose", `Towards ${r.program || "General"} purpose`, 1);
     drawText("paymentMode", "Online Payment Transfer", 1);
-    drawText("systemGenerated", "This receipt is system generated.", 0.7);
+    
+    const sysGenText = r.receiptNo 
+      ? "This receipt is system generated." 
+      : "Payment Under Verification. Official receipt pending.";
+    drawText("systemGenerated", sysGenText, 0.7);
     drawText("transactionId", r.razorpay_payment_id ? `TXN: ${r.razorpay_payment_id}` : "", 0.85);
 
     if (action === "view") {
