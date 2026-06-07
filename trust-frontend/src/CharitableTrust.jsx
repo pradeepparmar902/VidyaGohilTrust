@@ -3878,11 +3878,10 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
         </>
       )}
       <Footer C={C} onFooterLinkClick={handleFooterLinkClick}/>
-      <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
-      {mob && globalProfile && (
-        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",top:68,right:12,zIndex:999,background:"var(--sf)",color:"white",border:"none",padding:"6px 8px",borderRadius:12,fontSize:".65rem",fontWeight:700,boxShadow:"0 4px 16px rgba(232,101,10,.3)",display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}} title="My Dashboard">
-          <span style={{fontSize:".9rem"}}>👤</span> 
-          <span style={{textAlign:"center",lineHeight:1.1}}>Dashboard</span>
+      <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}} title="Donate Now">❤️</button>
+      {globalProfile && (
+        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",bottom:90,right:24,zIndex:999,background:"var(--dt)",color:"white",border:"border:1px solid #B8D8E8",width:52,height:52,borderRadius:"50%",fontSize:"1.2rem",boxShadow:"0 8px 28px rgba(13,75,94,.35)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .2s"}} title="My Dashboard">
+          👤
         </button>
       )}
       {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin("")} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); const intent = showUserLogin; setShowUserLogin(""); if(intent === "nav") setShowDashboard(true);}}/>}
