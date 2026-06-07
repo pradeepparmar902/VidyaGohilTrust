@@ -339,6 +339,7 @@ const G = () => (
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     @keyframes oin{from{opacity:0}to{opacity:1}}
     @keyframes pin{from{transform:translateX(100%)}to{transform:translateX(0)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
     .fu{animation:fadeUp .6s ease both}.fl{animation:float 3s ease-in-out infinite}.sp{animation:spin 20s linear infinite}
     .hbg{background:linear-gradient(135deg,#0D4B5E 0%,#1A6B87 40%,#0D4B5E 70%,#C8860A22 100%);position:relative;overflow:hidden}
     .ch{transition:transform .3s,box-shadow .3s}.ch:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.12)}
@@ -745,7 +746,11 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
     if (step === 1) {
-      if (!prog) return setProgErr(true);
+      if (!prog) {
+        setProgErr(true);
+        setTimeout(() => setProgErr(false), 5000);
+        return;
+      }
       setProgErr(false);
       if (!globalAuthToken) {
         onShowUserLogin();
@@ -833,8 +838,17 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
                 ))}
               </div>
               {step===1 && <>
+                {progErr && (
+                  <div style={{animation:"shake 0.4s ease-in-out, fadeUp 0.3s ease-out",background:"#FEF0EF",border:"1.5px solid #F5B8B8",borderRadius:12,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",gap:14,color:"#C0392B",boxShadow:"0 8px 24px rgba(192,57,43,.15)"}}>
+                    <span style={{fontSize:"1.6rem",animation:"float 2s ease-in-out infinite"}}>🎯</span>
+                    <div>
+                      <div style={{fontWeight:800,fontSize:".95rem",letterSpacing:.5,textTransform:"uppercase"}}>Purpose Required</div>
+                      <div style={{fontSize:".82rem",marginTop:3,fontWeight:500,opacity:0.9}}>Please select a program below to direct your donation.</div>
+                    </div>
+                  </div>
+                )}
                 <div style={{marginBottom:18}}>
-                  <label style={{fontSize:".82rem",fontWeight:600,color:progErr?"#C0392B":"var(--tx)",marginBottom:8,display:"block",transition:"color .3s"}}>Donate to Program {progErr && <span style={{color:"#C0392B",fontWeight:400,fontSize:".75rem",marginLeft:4}}>— Please select a purpose</span>}</label>
+                  <label style={{fontSize:".82rem",fontWeight:600,color:progErr?"#C0392B":"var(--tx)",marginBottom:8,display:"block",transition:"color .3s"}}>Donate to Program</label>
                   <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                     {["General","Education","Healthcare","Women","Environment","Relief"].map(p=><button key={p} onClick={()=>{setProg(p);setProgErr(false);}} style={{padding:"5px 12px",borderRadius:20,fontSize:".78rem",fontWeight:500,background:prog===p?"var(--dt)":"var(--tl)",color:prog===p?"white":"var(--dt)",border:`1px solid ${prog===p?"var(--dt)":progErr?"#F5B8B8":"var(--bd)"}`,cursor:"pointer",transition:"all .2s"}}>{p}</button>)}
                   </div>
