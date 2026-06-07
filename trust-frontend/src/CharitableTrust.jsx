@@ -1550,14 +1550,16 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       return;
     }
     
-    const map = C?.donate?.receiptMap || {
+    const defaultMap = {
       donorName: { x: 50, y: 50, visible: true },
       amount: { x: 50, y: 60, visible: true },
       amountWords: { x: 50, y: 70, visible: true },
       date: { x: 80, y: 20, visible: true },
       receiptNo: { x: 80, y: 15, visible: true },
-      pan: { x: 50, y: 80, visible: true }
+      pan: { x: 50, y: 80, visible: true },
+      purpose: { x: 50, y: 90, visible: true }
     };
+    const map = C?.donate?.receiptMap ? { ...defaultMap, ...C.donate.receiptMap, purpose: C.donate.receiptMap.purpose || defaultMap.purpose } : defaultMap;
     
     const baseFontSize = C?.donate?.receiptFontSize || 14;
     
@@ -1589,6 +1591,7 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("date", r.date, 1);
     drawText("receiptNo", r.id, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
+    drawText("purpose", r.program || "General", 1);
 
     if (action === "view") {
       return doc.output("bloburl");
@@ -1605,13 +1608,17 @@ export const generateReceiptPDF = async (r, C, action="download") => {
 };
 
 function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
-  const [fields, setFields] = useState(mapData || {
-    donorName: { x: 50, y: 50, visible: true },
-    amount: { x: 50, y: 60, visible: true },
-    amountWords: { x: 50, y: 70, visible: true },
-    date: { x: 80, y: 20, visible: true },
-    receiptNo: { x: 80, y: 15, visible: true },
-    pan: { x: 50, y: 80, visible: true }
+  const [fields, setFields] = useState(() => {
+    const defaultFields = {
+      donorName: { x: 50, y: 50, visible: true },
+      amount: { x: 50, y: 60, visible: true },
+      amountWords: { x: 50, y: 70, visible: true },
+      date: { x: 80, y: 20, visible: true },
+      receiptNo: { x: 80, y: 15, visible: true },
+      pan: { x: 50, y: 80, visible: true },
+      purpose: { x: 50, y: 90, visible: true }
+    };
+    return mapData ? { ...defaultFields, ...mapData, purpose: mapData.purpose || defaultFields.purpose } : defaultFields;
   });
 
   const [fSize, setFSize] = useState(fontSize || 14);
