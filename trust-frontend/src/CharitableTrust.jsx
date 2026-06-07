@@ -4109,16 +4109,16 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
         onClick={e=>e.stopPropagation()}>
         
         {/* Header */}
-        <div style={{padding:"20px 32px",background:"linear-gradient(135deg, #1e3a8a, #312e81)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
-          <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,marginBottom:4}}>My Portal</h2>
-            <div style={{fontSize:".8rem",opacity:.8}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
+        <div style={{padding:mob?"16px 16px":"20px 32px",background:"linear-gradient(135deg, #1e3a8a, #312e81)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+          <div style={{flex:1, minWidth:0, paddingRight:12}}>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.2rem":"1.6rem",fontWeight:700,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>My Portal</h2>
+            <div style={{fontSize:mob?".7rem":".8rem",opacity:.8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
           </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setIsFullScreen(!isFullScreen)} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:"1.1rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title={isFullScreen?"Exit Fullscreen":"Fullscreen"}
+          <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button onClick={()=>setIsFullScreen(!isFullScreen)} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,width:mob?32:36,height:mob?32:36,cursor:"pointer",fontSize:mob?".9rem":"1.1rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title={isFullScreen?"Exit Fullscreen":"Fullscreen"}
               onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
               onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>{isFullScreen ? "🗗" : "🗖"}</button>
-            <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:10,width:36,height:36,cursor:"pointer",fontSize:"1.2rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title="Close"
+            <button onClick={onClose} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,width:mob?32:36,height:mob?32:36,cursor:"pointer",fontSize:mob?"1rem":"1.2rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title="Close"
               onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
               onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>✕</button>
           </div>
