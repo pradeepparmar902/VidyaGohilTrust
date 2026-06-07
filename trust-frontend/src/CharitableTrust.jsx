@@ -3221,10 +3221,11 @@ function Donations({ mob, auth, C }) {
                 <input type="text" defaultValue={r.pan || ""} onBlur={(e)=>handlePanChange(r, e.target.value)} placeholder="PAN No." style={{fontSize:".75rem", padding:"4px 8px", borderRadius:6, border:"1px solid var(--bd)", width: 100, outline:"none"}} />
               </td>
               <td style={{padding:"10px 12px"}}>
-                <select value={r.status || "Pending"} onChange={(e) => handleStatusChange(r, e.target.value)} style={{fontSize:".72rem",padding:"3px 6px",borderRadius:6,border:"1px solid var(--bd)",fontWeight:600,background:r.status==="Verified"?"#EDFAF1":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":"#C8860A",cursor:"pointer",outline:"none"}}>
+                <select value={r.status || "Pending"} onChange={(e) => handleStatusChange(r, e.target.value)} style={{fontSize:".72rem",padding:"3px 6px",borderRadius:6,border:"1px solid var(--bd)",fontWeight:600,background:r.status==="Verified"?"#EDFAF1":r.status==="Rejected"?"#FEF0EF":"#FEF9EC",color:r.status==="Verified"?"#1A7A3E":r.status==="Rejected"?"#C0392B":"#C8860A",cursor:"pointer",outline:"none"}}>
                   <option value="Pending (Payment Link)">Pending (Payment Link)</option>
                   <option value="Pending">Pending</option>
                   <option value="Verified">Verified</option>
+                  <option value="Rejected">Rejected</option>
                 </select>
               </td>
               <td style={{padding:"10px 12px"}}>
