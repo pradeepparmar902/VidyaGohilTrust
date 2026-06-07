@@ -2471,7 +2471,6 @@ function ContentEditor({ C, setC, setPage, auth }) {
             <span style={{fontSize:".75rem",color:"var(--mu)"}}>Upload a blank PNG/JPG template. Text will be overlaid automatically.</span>
           </div>
         </div>
-        </div>
       </Sec>
       
       {draft.donate.receiptTemplate && (
