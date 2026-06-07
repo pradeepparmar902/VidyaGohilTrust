@@ -638,7 +638,7 @@ function Hero({ C, lang }) {
   return (
     <section id="home" className="hbg" style={{minHeight:mob?"auto":"88vh",display:"flex",alignItems:"center",position:"relative",paddingBottom:mob?60:80}}>
       <div style={{position:"absolute",top:"10%",right:"5%",width:200,height:200,borderRadius:"50%",border:"1px solid rgba(200,134,10,.15)",opacity:.4}} className="sp"/>
-      <div style={{maxWidth:1200,margin:"0 auto",padding:mob?"40px 20px 60px":"60px 32px",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:56,alignItems:"center",width:"100%"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",padding:mob?"80px 20px 60px":"60px 32px",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:56,alignItems:"center",width:"100%"}}>
         <div className="fu">
           <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(200,134,10,.2)",border:"1px solid rgba(200,134,10,.4)",borderRadius:20,padding:"5px 14px",marginBottom:20}}>
             <span style={{color:"#F9A14E",fontSize:".75rem",fontWeight:600,letterSpacing:1}}>{h.badge}</span>
@@ -3614,7 +3614,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       <Footer C={C} onFooterLinkClick={handleFooterLinkClick}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
       {mob && globalProfile && (
-        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",top:150,right:12,zIndex:999,background:"var(--sf)",color:"white",border:"none",padding:"6px 8px",borderRadius:12,fontSize:".65rem",fontWeight:700,boxShadow:"0 4px 16px rgba(232,101,10,.3)",display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}} title="My Dashboard">
+        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",top:68,right:12,zIndex:999,background:"var(--sf)",color:"white",border:"none",padding:"6px 8px",borderRadius:12,fontSize:".65rem",fontWeight:700,boxShadow:"0 4px 16px rgba(232,101,10,.3)",display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer"}} title="My Dashboard">
           <span style={{fontSize:".9rem"}}>👤</span> 
           <span style={{textAlign:"center",lineHeight:1.1}}>Dashboard</span>
         </button>
