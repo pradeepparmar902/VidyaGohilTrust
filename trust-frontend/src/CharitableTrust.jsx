@@ -721,7 +721,7 @@ function About({ C, lang }) {
 
 // ── DONATION ──────────────────────────────────────────────────────────────────
 function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
-  const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState("");
+  const [amt, setAmt] = useState(1100); const [cAmt, setCamt] = useState(""); const [prog, setProg] = useState(""); const [progErr, setProgErr] = useState(false);
   const [rec, setRec] = useState(false); const [step, setStep] = useState(1); 
   const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [form, setForm] = useState({
@@ -745,7 +745,8 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   const final = cAmt ? parseInt(cAmt)||0 : amt; const d = C.donate || {};
   const go = async () => {
     if (step === 1) {
-      if (!prog) return alert("Please consciously select a purpose for your donation from the 'Donate to Program' options above.");
+      if (!prog) return setProgErr(true);
+      setProgErr(false);
       if (!globalAuthToken) {
         onShowUserLogin();
         return;
@@ -833,9 +834,9 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
               </div>
               {step===1 && <>
                 <div style={{marginBottom:18}}>
-                  <label style={{fontSize:".82rem",fontWeight:600,color:"var(--tx)",marginBottom:8,display:"block"}}>Donate to Program</label>
+                  <label style={{fontSize:".82rem",fontWeight:600,color:progErr?"#C0392B":"var(--tx)",marginBottom:8,display:"block",transition:"color .3s"}}>Donate to Program {progErr && <span style={{color:"#C0392B",fontWeight:400,fontSize:".75rem",marginLeft:4}}>— Please select a purpose</span>}</label>
                   <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-                    {["General","Education","Healthcare","Women","Environment","Relief"].map(p=><button key={p} onClick={()=>setProg(p)} style={{padding:"5px 12px",borderRadius:20,fontSize:".78rem",fontWeight:500,background:prog===p?"var(--dt)":"var(--tl)",color:prog===p?"white":"var(--dt)",border:`1px solid ${prog===p?"var(--dt)":"var(--bd)"}`,cursor:"pointer",transition:"all .2s"}}>{p}</button>)}
+                    {["General","Education","Healthcare","Women","Environment","Relief"].map(p=><button key={p} onClick={()=>{setProg(p);setProgErr(false);}} style={{padding:"5px 12px",borderRadius:20,fontSize:".78rem",fontWeight:500,background:prog===p?"var(--dt)":"var(--tl)",color:prog===p?"white":"var(--dt)",border:`1px solid ${prog===p?"var(--dt)":progErr?"#F5B8B8":"var(--bd)"}`,cursor:"pointer",transition:"all .2s"}}>{p}</button>)}
                   </div>
                 </div>
                 <div style={{marginBottom:18}}>
