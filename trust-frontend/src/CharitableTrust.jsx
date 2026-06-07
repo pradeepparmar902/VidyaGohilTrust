@@ -1429,6 +1429,16 @@ function Gallery({ C }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedImage, filtered]);
 
+  useEffect(() => {
+    if(!selectedImage) return;
+    const idx = filtered.findIndex(g=>g.id===selectedImage.id);
+    if(idx === -1) return;
+    const nextIdx = (idx + 1) % filtered.length;
+    const prevIdx = (idx - 1 + filtered.length) % filtered.length;
+    const img1 = new Image(); img1.src = filtered[nextIdx].url;
+    const img2 = new Image(); img2.src = filtered[prevIdx].url;
+  }, [selectedImage, filtered]);
+
   return (
     <>
     <section id="gallery" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
@@ -1438,12 +1448,12 @@ function Gallery({ C }) {
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:w<640?"1.6rem":"2rem",color:"var(--dt)",marginTop:8,fontWeight:700}} className="sh">Gallery</h2>
         </div>
         <div style={{display:"flex",gap:7,justifyContent:"center",flexWrap:"wrap",marginBottom:28}}>
-          {cats.map(c=><button key={c} onClick={()=>setActive(c)} style={{padding:"7px 14px",borderRadius:20,fontSize:".78rem",fontWeight:600,cursor:"pointer",background:active===c?"var(--dt)":"white",color:active===c?"white":"var(--tm2)",border:`1px solid ${active===c?"var(--dt)":"var(--bd)"}`}}>{c}</button>)}
+          {cats.map(c=><button key={c} onClick={()=>setActive(c)} style={{padding:"7px 14px",borderRadius:20,fontSize:".78rem",fontWeight:600,cursor:"pointer",background:active===c?"var(--dt)":"white",color:active===c?"white":"var(--tm2)",border:`1px solid ${active===c?"var(--dt)":"var(--bd)"}`,touchAction:"manipulation"}}>{c}</button>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:w<640?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
           {filtered.length === 0 && <div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--mu)"}}>No photos uploaded yet.</div>}
           {filtered.map(g=>(
-            <div key={g.id} onClick={()=>setSelectedImage(g)} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer"}}>
+            <div key={g.id} onClick={()=>setSelectedImage(g)} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
               <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none"}}>
                 <div style={{fontSize:".85rem",fontWeight:600}}>{g.title}</div>
                 <div style={{fontSize:".7rem",opacity:.9}}>{g.category}</div>
@@ -1459,22 +1469,22 @@ function Gallery({ C }) {
         onClick={()=>setSelectedImage(null)}>
         
         <button onClick={(e)=>{e.stopPropagation(); navigate(-1);}}
-          style={{position:"absolute",left:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)"}}>
+          style={{position:"absolute",left:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)",touchAction:"manipulation"}}>
           &#10094;
         </button>
 
         <button onClick={(e)=>{e.stopPropagation(); navigate(1);}}
-          style={{position:"absolute",right:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)"}}>
+          style={{position:"absolute",right:w<640?10:20,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:w<640?"8px 12px":"12px 18px",borderRadius:8,zIndex:1001,backdropFilter:"blur(4px)",touchAction:"manipulation"}}>
           &#10095;
         </button>
 
         <div style={{position:"relative",maxWidth:"100%",maxHeight:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}
           onClick={e=>e.stopPropagation()}>
           <button onClick={()=>setSelectedImage(null)}
-            style={{position:"absolute",top:-40,right:0,background:"none",border:"none",color:"white",fontSize:"2rem",cursor:"pointer",lineHeight:1}}>
+            style={{position:"absolute",top:-40,right:0,background:"none",border:"none",color:"white",fontSize:"2rem",cursor:"pointer",lineHeight:1,touchAction:"manipulation"}}>
             &times;
           </button>
-          <img src={selectedImage.url} alt={selectedImage.title} style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
+          <img key={selectedImage.url} src={selectedImage.url} alt={selectedImage.title} style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
           <div style={{marginTop:16,color:"white",textAlign:"center"}}>
             <div style={{fontSize:"1.2rem",fontWeight:600}}>{selectedImage.title}</div>
             <div style={{fontSize:".9rem",opacity:.8,marginTop:4}}>{selectedImage.category}</div>
