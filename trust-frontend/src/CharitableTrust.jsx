@@ -3828,10 +3828,10 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:isFullScreen?0:(mob?16:32),zIndex:9999,transition:"all 0.3s"}}
+    <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:isFullScreen?0:(mob?"32px 16px":32),zIndex:9999,transition:"all 0.3s"}}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       
-      <div style={{background:"#F8F9FA",borderRadius:isFullScreen?0:(mob?16:24),width:isFullScreen?"100%":"95%",maxWidth:isFullScreen?"100%":1000,height:isFullScreen?"100%":"85vh",display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden",transition:"all 0.3s"}}
+      <div style={{background:"#F8F9FA",borderRadius:isFullScreen?0:(mob?16:24),width:isFullScreen?"100%":"95%",maxWidth:isFullScreen?"100%":1000,height:isFullScreen?"100%":(mob?"75vh":"85vh"),display:"flex",flexDirection:"column",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative",overflow:"hidden",transition:"all 0.3s"}}
         onClick={e=>e.stopPropagation()}>
         
         {/* Header */}
