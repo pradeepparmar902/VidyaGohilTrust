@@ -3614,8 +3614,9 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
       <Footer C={C} onFooterLinkClick={handleFooterLinkClick}/>
       <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}}>❤️</button>
       {mob && globalProfile && (
-        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",top:80,right:16,zIndex:999,background:"var(--sf)",color:"white",border:"none",padding:"8px 16px",borderRadius:24,fontSize:".8rem",fontWeight:700,boxShadow:"0 4px 16px rgba(232,101,10,.3)",display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} title="My Dashboard">
-          <span style={{fontSize:".95rem"}}>👤</span> My Dashboard
+        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",top:80,right:12,zIndex:999,background:"var(--sf)",color:"white",border:"none",padding:"8px 10px",borderRadius:12,fontSize:".65rem",fontWeight:700,boxShadow:"0 4px 16px rgba(232,101,10,.3)",display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} title="My Dashboard">
+          <span style={{fontSize:"1rem"}}>👤</span> 
+          <span style={{textAlign:"center",lineHeight:1.1}}>My<br/>Dashboard</span>
         </button>
       )}
       {showUserLogin && <UserLoginModal onClose={()=>setShowUserLogin("")} onPublicLogin={(t, p)=>{handlePublicLogin(t,p); const intent = showUserLogin; setShowUserLogin(""); if(intent === "nav") setShowDashboard(true);}}/>}
