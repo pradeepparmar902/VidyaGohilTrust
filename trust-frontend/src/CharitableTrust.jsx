@@ -1606,7 +1606,7 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     drawText("amountTotal", `Rs. ${r.amount.toLocaleString()}`, 1.15);
     drawText("amountWords", numberToWords(r.amount), 1, 0.45); // wrap at 45% of image width
     drawText("date", r.date, 1);
-    drawText("receiptNo", r.id, 1);
+    drawText("receiptNo", r.receiptNo || r.id, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
     drawText("purpose", `Towards ${r.program || "General"} purpose`, 1);
     drawText("paymentMode", "Online Payment Transfer", 1);
@@ -2543,6 +2543,31 @@ function ContentEditor({ C, setC, setPage, auth }) {
         </div>
       )}
 
+      <div style={{background:"white", borderRadius:12, border:"1px solid var(--bd)", padding:20, marginBottom:32, boxShadow:"0 4px 16px rgba(0,0,0,0.05)"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:"var(--dt)",fontSize:"1.2rem",marginTop:0,marginBottom:16}}>Sequential Receipt Numbering</h3>
+        <div style={{display:"flex", gap: 16, flexWrap:"wrap"}}>
+          <label style={{display:"flex", flexDirection:"column", gap:8, fontSize:".85rem", fontWeight:600, color:"var(--dt)"}}>
+             Prefix
+             <input type="text" className="it" value={draft.donate?.receiptPrefix || ""} onChange={e => upd("donate.receiptPrefix", e.target.value)} placeholder="e.g. VGCT/" style={{width: 100}} />
+          </label>
+          <label style={{display:"flex", flexDirection:"column", gap:8, fontSize:".85rem", fontWeight:600, color:"var(--dt)"}}>
+             Include Year?
+             <input type="checkbox" checked={draft.donate?.receiptIncYear || false} onChange={e => upd("donate.receiptIncYear", e.target.checked)} />
+          </label>
+          <label style={{display:"flex", flexDirection:"column", gap:8, fontSize:".85rem", fontWeight:600, color:"var(--dt)"}}>
+             Next Number
+             <input type="number" className="it" value={draft.donate?.receiptNextNum || 1} onChange={e => upd("donate.receiptNextNum", parseInt(e.target.value) || 1)} style={{width: 100}} />
+          </label>
+          <label style={{display:"flex", flexDirection:"column", gap:8, fontSize:".85rem", fontWeight:600, color:"var(--dt)"}}>
+             Suffix
+             <input type="text" className="it" value={draft.donate?.receiptSuffix || ""} onChange={e => upd("donate.receiptSuffix", e.target.value)} placeholder="e.g. /80G" style={{width: 100}} />
+          </label>
+        </div>
+        <p style={{fontSize: ".8rem", color: "var(--mu)", marginTop: 12, marginBottom: 0}}>
+           Next receipt will be generated as: <strong style={{color:"var(--sf)"}}>{draft.donate?.receiptPrefix || ""}{draft.donate?.receiptIncYear ? `${new Date().getFullYear()}-${(new Date().getFullYear()+1).toString().slice(2)}/` : ""}{draft.donate?.receiptNextNum || 1}{draft.donate?.receiptSuffix || ""}</strong>
+        </p>
+      </div>
+
       <Sec id="contact" icon="📞" label="Contact and Volunteer">
         <F label="Volunteer Heading" path="contact.volunteerHeading"/>
         <F label="Volunteer Sub-text" path="contact.volunteerSub" ta/>
@@ -2840,6 +2865,38 @@ function Donations({ mob, auth, C }) {
     }
   };
 
+  const assignReceiptNumber = async (r) => {
+    if (!window.confirm("Assign the next sequential receipt number to this donation? This will increment the counter.")) return;
+    try {
+       const prefix = C.donate?.receiptPrefix || "";
+       const suffix = C.donate?.receiptSuffix || "";
+       const nextNo = C.donate?.receiptNextNum || 1;
+       const incYear = C.donate?.receiptIncYear || false;
+       let yearStr = "";
+       if (incYear) {
+          const y = new Date().getFullYear();
+          yearStr = `${y}-${(y+1).toString().slice(2)}/`;
+       }
+       const finalId = `${prefix}${yearStr}${nextNo}${suffix}`;
+       
+       const updated = { ...r, receiptNo: finalId };
+       
+       const targetId = r._docId || r.id;
+       await fbUpdateDonation(targetId, updated, auth?.idToken);
+       
+       const newC = JSON.parse(JSON.stringify(C));
+       if (!newC.donate) newC.donate = {};
+       newC.donate.receiptNextNum = nextNo + 1;
+       await fbSave(newC, auth?.idToken);
+       
+       setData(prev => prev.map(x => (x._docId && x._docId === r._docId) || (!x._docId && x.id === r.id) ? updated : x));
+       alert(`Receipt number ${finalId} assigned! Reloading config...`);
+       window.location.reload();
+    } catch (e) {
+       alert("Failed to assign receipt number: " + e.message);
+    }
+  };
+
   const handleStatusChange = async (r, newStatus) => {
     try {
       let updated = { ...r, status: newStatus };
@@ -3032,7 +3089,10 @@ function Donations({ mob, auth, C }) {
           </thead>
           <tbody>{rows.map((r,i)=>(
             <tr key={i} style={{borderBottom:"1px solid var(--bd)"}}>
-              <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>{r.id}</td>
+              <td style={{padding:"10px 12px",color:"var(--mu)",fontFamily:"monospace",fontSize:".75rem"}}>
+                <strong style={{color:"var(--dt)"}}>{r.receiptNo || r.id}</strong>
+                {r.receiptNo && <div style={{fontSize:".65rem",color:"#aaa"}}>{r.id}</div>}
+              </td>
               <td style={{padding:"10px 12px",fontWeight:600}}>{r.name}</td>
               <td style={{padding:"10px 12px",fontWeight:700,color:"var(--sf)"}}>Rs.{r.amount.toLocaleString()}</td>
               <td style={{padding:"10px 12px"}}><span style={{fontSize:".72rem",padding:"3px 9px",borderRadius:12,background:"var(--tl)",color:"var(--dt)",fontWeight:600}}>{r.program}</span></td>
@@ -3048,7 +3108,10 @@ function Donations({ mob, auth, C }) {
                 </select>
               </td>
               <td style={{padding:"10px 12px"}}>
-                <div style={{display:"flex",gap:4, flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:4, flexWrap:"wrap", alignItems: "center"}}>
+                  {!r.receiptNo && r.status === "Verified" && (
+                    <button onClick={()=>assignReceiptNumber(r)} style={{padding:"4px 9px",borderRadius:6,background:"var(--sf)",border:"none",color:"white",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Assign No.</button>
+                  )}
                   <button onClick={()=>generateReceipt(r, 'view')} style={{padding:"4px 9px",borderRadius:6,background:"#EDFAF1",border:"none",color:"#1A7A3E",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>View</button>
                   <button onClick={()=>generateReceipt(r, 'download')} style={{padding:"4px 9px",borderRadius:6,background:"#FFF4EC",border:"none",color:"var(--sf)",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Download</button>
                   {r.status === "Verified" && (
