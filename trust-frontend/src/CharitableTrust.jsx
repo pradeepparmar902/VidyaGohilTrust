@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { jsPDF } from "jspdf";
+import { initializeApp } from "firebase/app";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const FB = {
@@ -10,6 +12,13 @@ const FB = {
 const FS_URL  = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/content/main`;
 const AUTH_URL= `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB.apiKey}`;
 const STG_URL = `https://firebasestorage.googleapis.com/v0/b/${FB.bucket}/o`;
+
+const fbApp = initializeApp({
+  apiKey: FB.apiKey,
+  projectId: FB.projectId,
+  authDomain: `${FB.projectId}.firebaseapp.com`
+});
+const fbAuth = getAuth(fbApp);
 
 // ── FIREBASE HELPERS ──────────────────────────────────────────────────────────
 // Firestore stores everything as one JSON string field for simplicity
@@ -952,7 +961,7 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
   // Auth State
   const [authStep, setAuthStep] = useState(0); // 0 = login/register, 1 = form
   const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
+
   const [regName, setRegName] = useState("");
   const [regAddress, setRegAddress] = useState("");
   const [regGender, setRegGender] = useState("");
@@ -978,30 +987,67 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
 
   const getForm = (id) => C.forms?.find(f => f.id === id) || { fields: [] };
 
-  const handleAuth = async (e, isRegister) => {
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(fbAuth, 'recaptcha-container-event', {
+        'size': 'invisible',
+        'callback': (response) => { }
+      });
+    }
+  }, []);
+
+  const handleSendOtp = async (e, isRegister) => {
     e.preventDefault();
-    if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
+    if (!mobile || mobile.length < 10) { setAuthError("Please enter a valid 10-digit mobile number"); return; }
     if (isRegister && (!regName || !regAddress || !regGender)) { setAuthError("Please fill out Name, Address, and Gender."); return; }
+    
     setSubmitting(true); setAuthError("");
     try {
-      const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
-      const res = isRegister ? await fbSignUp(email, password) : await fbLogin(email, password);
+      const phoneNumber = `+91${mobile.replace(/\D/g, '').slice(-10)}`;
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(fbAuth, phoneNumber, appVerifier);
+      setConfirmationResult(result);
+      setOtpSent(true);
+      setAuthError("");
+    } catch (error) {
+      console.error(error);
+      setAuthError(error.message.includes("auth/billing-not-enabled") ? "SMS quota exceeded. Please contact admin." : error.message.includes("auth/invalid-phone-number") ? "Invalid phone number." : error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e, isRegister) => {
+    e.preventDefault();
+    if (!otp) return;
+    setSubmitting(true); setAuthError("");
+    try {
+      const result = await confirmationResult.confirm(otp);
+      const user = result.user;
+      const idToken = await user.getIdToken();
       
       let profileData = { name: regName, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
       
       if (isRegister) {
         if (regImageFile) {
-          profileData.photoUrl = await fbUploadPublicFile(regImageFile, res.idToken).catch(()=>"");
+          profileData.photoUrl = await fbUploadPublicFile(regImageFile, idToken).catch(()=>"");
         }
-        await fbUpdateProfile(res.idToken, regName, profileData.photoUrl).catch(()=>null);
-        await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
+        await fbUpdateProfile(idToken, regName, profileData.photoUrl).catch(()=>null);
+        await fbSaveUserProfile(user.uid, profileData, idToken).catch(()=>null);
       } else {
-        const pData = await fbFetchUserProfile(res.localId, res.idToken);
+        const pData = await fbFetchUserProfile(user.uid, idToken);
         if (pData) profileData = { ...profileData, ...pData };
+        else if(!pData && isRegister) {
+            await fbSaveUserProfile(user.uid, profileData, idToken).catch(()=>null);
+        }
       }
 
-      setAuthToken(res.idToken);
-      if (onPublicLogin) onPublicLogin(res.idToken, profileData);
+      setAuthToken(idToken);
+      if (onPublicLogin) onPublicLogin(idToken, profileData);
       setAuthStep(1);
       
       // Auto-fill form
@@ -1017,7 +1063,7 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
       });
       setFormData(newForm);
     } catch(err) {
-      setAuthError(err.message.includes("INVALID") ? "Invalid mobile or password." : err.message.includes("EXISTS") ? "Account exists. Please click Login." : err.message);
+      setAuthError(err.message.includes("invalid-verification-code") ? "Invalid OTP code." : err.message);
     } finally {
       setSubmitting(false);
     }
@@ -1138,28 +1184,41 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
                     <p style={{fontSize:".85rem",color:"var(--mu)"}}>Redirecting to WhatsApp to send your confirmation...</p>
                   </div>
                 ) : authStep === 0 ? (
-                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
-                    <p style={{fontSize:".9rem",color:"var(--dt)",marginBottom:8, fontWeight:500}}>Please log in to continue.</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <p style={{fontSize:".9rem",color:"var(--dt)",marginBottom:8, fontWeight:500}}>Please log in securely to continue.</p>
                     {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"8px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>{authError}</div>}
-                    <div>
-                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
-                      <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
-                    </div>
-                    <div>
-                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Password <span style={{color:"red"}}>*</span></label>
-                      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="Enter your password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
-                    </div>
-                    <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
-                      {submitting ? "Logging in..." : "Login"}
-                    </button>
+                    <div id="recaptcha-container-event"></div>
+                    
+                    {!otpSent ? (
+                    <form onSubmit={e=>handleSendOtp(e, false)} style={{display:"flex",flexDirection:"column",gap:12}}>
+                      <div>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Mobile Number <span style={{color:"red"}}>*</span></label>
+                        <input type="tel" required value={mobile} onChange={e=>setMobile(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="e.g. 9876543210" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      </div>
+                      <button type="submit" className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
+                        {submitting ? "Processing..." : "Send OTP"}
+                      </button>
+                    </form>
+                    ) : (
+                    <form onSubmit={e=>handleVerifyOtp(e, false)} style={{display:"flex",flexDirection:"column",gap:12}}>
+                      <div>
+                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Enter 6-digit OTP <span style={{color:"red"}}>*</span></label>
+                        <input type="text" required value={otp} onChange={e=>setOtp(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:"1.1rem",letterSpacing:4,textAlign:"center", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="------" maxLength={6} onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      </div>
+                      <button type="submit" className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
+                        {submitting ? "Verifying..." : "Verify & Login"}
+                      </button>
+                    </form>
+                    )}
+                    
                     <div style={{textAlign:"center", marginTop: 4}}>
-                      <span onClick={()=>{setAuthStep('register');setAuthError("");}} style={{color:"var(--mu)",fontSize:".8rem",cursor:"pointer"}}>
+                      <span onClick={()=>{setAuthStep('register');setAuthError("");setOtpSent(false);}} style={{color:"var(--mu)",fontSize:".8rem",cursor:"pointer"}}>
                         Don't have an account? <strong style={{color:"var(--dt)"}}>Create one</strong>
                       </span>
                     </div>
-                  </form>
+                  </div>
                 ) : authStep === 'register' ? (
-                  <form style={{display:"flex",flexDirection:"column",gap:12}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
                     <div style={{background:"#f4f9ff", border:"1px solid #d0e3ff", padding: "10px 14px", borderRadius:8}}>
                       <p style={{fontSize:".8rem",color:"#0056b3",margin:0, fontWeight: 500}}>Create a complete profile to speed up future registrations.</p>
                     </div>
@@ -1191,10 +1250,6 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
                           <option value="Other">Other</option>
                         </select>
                       </div>
-                      <div>
-                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Create Password <span style={{color:"red"}}>*</span></label>
-                        <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Secure password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
-                      </div>
                     </div>
 
                     <div>
@@ -1213,7 +1268,7 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
                         Already have an account? <strong style={{color:"var(--dt)"}}>Log In</strong>
                       </span>
                     </div>
-                  </form>
+                  </div>
                 ) : (
                   <form onSubmit={submitForm} style={{display:"flex",flexDirection:"column",gap:12}}>
                     {getForm(selectedEvent.event.formId).fields.length === 0 && <p style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields. You can still register to send a blank confirmation.</p>}
@@ -3894,7 +3949,10 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
 function UserLoginModal({ onClose, onPublicLogin }) {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regAddress, setRegAddress] = useState("");
@@ -3904,31 +3962,64 @@ function UserLoginModal({ onClose, onPublicLogin }) {
   const [submitting, setSubmitting] = useState(false);
   const w = useW(); const mob = w < 640;
 
-  const handleAuth = async (e) => {
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(fbAuth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => { }
+      });
+    }
+  }, []);
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!mobile || !password) { setAuthError("Please enter mobile and password"); return; }
+    if (!mobile || mobile.length < 10) { setAuthError("Please enter a valid 10-digit mobile number"); return; }
     if (!isLoginMode && (!regName || !regAddress || !regGender || !regEmail)) { setAuthError("Please fill out Name, Email, Address, and Gender."); return; }
+    
     setSubmitting(true); setAuthError("");
     try {
-      const email = `${mobile.replace(/\D/g,'')}@vidyagohil.com`;
-      const res = !isLoginMode ? await fbSignUp(email, password) : await fbLogin(email, password);
+      const phoneNumber = `+91${mobile.replace(/\D/g, '').slice(-10)}`;
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(fbAuth, phoneNumber, appVerifier);
+      setConfirmationResult(result);
+      setOtpSent(true);
+      setAuthError("");
+    } catch (error) {
+      console.error(error);
+      setAuthError(error.message.includes("auth/billing-not-enabled") ? "SMS quota exceeded. Please contact admin." : error.message.includes("auth/invalid-phone-number") ? "Invalid phone number." : error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp) return;
+    setSubmitting(true); setAuthError("");
+    try {
+      const result = await confirmationResult.confirm(otp);
+      const user = result.user;
+      const idToken = await user.getIdToken();
       
       let profileData = { name: regName, email: regEmail, address: regAddress, gender: regGender, mobile: mobile, photoUrl: "" };
       
       if (!isLoginMode) {
         if (regImageFile) {
-          profileData.photoUrl = await fbUploadPublicFile(regImageFile, res.idToken).catch(()=>"");
+          profileData.photoUrl = await fbUploadPublicFile(regImageFile, idToken).catch(()=>"");
         }
-        await fbUpdateProfile(res.idToken, regName, profileData.photoUrl || "").catch(()=>null);
-        await fbSaveUserProfile(res.localId, profileData, res.idToken).catch(()=>null);
+        await fbUpdateProfile(idToken, regName, profileData.photoUrl || "").catch(()=>null);
+        await fbSaveUserProfile(user.uid, profileData, idToken).catch(()=>null);
       } else {
-        const pData = await fbFetchUserProfile(res.localId, res.idToken);
+        const pData = await fbFetchUserProfile(user.uid, idToken);
         if (pData) profileData = { ...profileData, ...pData };
+        else if(!pData && !isLoginMode) {
+            await fbSaveUserProfile(user.uid, profileData, idToken).catch(()=>null);
+        }
       }
-      if (onPublicLogin) onPublicLogin(res.idToken, profileData);
+      if (onPublicLogin) onPublicLogin(idToken, profileData);
       onClose();
     } catch(err) {
-      setAuthError(err.message.includes("INVALID") ? "Invalid mobile or password." : err.message.includes("EXISTS") ? "Account exists. Please click Login." : err.message);
+      setAuthError(err.message.includes("invalid-verification-code") ? "Invalid OTP code." : err.message);
     } finally {
       setSubmitting(false);
     }
@@ -3939,19 +4030,17 @@ function UserLoginModal({ onClose, onPublicLogin }) {
       <div style={{background:"white",borderRadius:24,width:"100%",maxWidth:400,padding:"24px",boxShadow:"0 32px 80px rgba(0,0,0,.3)",position:"relative"}}>
         <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:"var(--dt)"}}>✕</button>
         <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",color:"var(--dt)",marginBottom:6,fontWeight:700}}>{isLoginMode ? "Welcome Back" : "Create Profile"}</h2>
-        <p style={{color:"var(--mu)",fontSize:".85rem",marginBottom:20}}>{isLoginMode ? "Login to access your dashboard and event registrations." : "Register once to easily apply for events and awards."}</p>
+        <p style={{color:"var(--mu)",fontSize:".85rem",marginBottom:20}}>{isLoginMode ? "Login securely via SMS OTP." : "Register once to easily apply for events and awards."}</p>
         
         {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"10px 14px",borderRadius:10,fontSize:".8rem",marginBottom:16,fontWeight:600}}>{authError}</div>}
+        <div id="recaptcha-container"></div>
         
-        <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:16,textAlign:"left"}}>
+        {!otpSent ? (
+        <form onSubmit={handleSendOtp} style={{display:"flex",flexDirection:"column",gap:16,textAlign:"left"}}>
           <div style={{display:"flex",gap:12,flexDirection:mob?"column":"row"}}>
             <div style={{flex:1}}>
               <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>📱 Mobile Number *</label>
               <input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="10-digit number"/>
-            </div>
-            <div style={{flex:1}}>
-              <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>🔒 Password *</label>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="••••••"/>
             </div>
           </div>
           
@@ -3993,13 +4082,24 @@ function UserLoginModal({ onClose, onPublicLogin }) {
           )}
 
           <button type="submit" disabled={submitting} style={{background:"linear-gradient(135deg, var(--sf), var(--gd))",color:"white",padding:"14px",borderRadius:12,fontWeight:800,fontSize:"1rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:8,boxShadow:"0 8px 20px rgba(232,101,10,.3)",transition:"all .2s",letterSpacing:.5}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-            {submitting ? "Processing..." : isLoginMode ? "Login to Dashboard" : "Create Profile & Login"}
+            {submitting ? "Processing..." : "Send OTP"}
           </button>
         </form>
+        ) : (
+        <form onSubmit={handleVerifyOtp} style={{display:"flex",flexDirection:"column",gap:16,textAlign:"left"}}>
+          <div>
+            <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>🔐 Enter 6-digit OTP *</label>
+            <input type="text" value={otp} onChange={e=>setOtp(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:"1.1rem",letterSpacing:4,textAlign:"center",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="------" maxLength={6}/>
+          </div>
+          <button type="submit" disabled={submitting} style={{background:"linear-gradient(135deg, var(--sf), var(--gd))",color:"white",padding:"14px",borderRadius:12,fontWeight:800,fontSize:"1rem",border:"none",cursor:submitting?"not-allowed":"pointer",marginTop:8,boxShadow:"0 8px 20px rgba(232,101,10,.3)",transition:"all .2s",letterSpacing:.5}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+            {submitting ? "Verifying..." : "Verify & Login"}
+          </button>
+        </form>
+        )}
         
         <div style={{textAlign:"center",marginTop:16,fontSize:".85rem",color:"var(--mu)"}}>
           {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={()=>{setIsLoginMode(!isLoginMode);setAuthError("");}} style={{background:"none",border:"none",color:"var(--sf)",fontWeight:700,cursor:"pointer",fontSize:".85rem"}}>
+          <button onClick={()=>{setIsLoginMode(!isLoginMode);setAuthError("");setOtpSent(false);}} style={{background:"none",border:"none",color:"var(--sf)",fontWeight:700,cursor:"pointer",fontSize:".85rem"}}>
             {isLoginMode ? "Create Profile" : "Login Instead"}
           </button>
         </div>
