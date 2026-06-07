@@ -1927,7 +1927,13 @@ const G2 = ({children}) => {
 
 // ── CONTENT EDITOR ────────────────────────────────────────────────────────────
 function ContentEditor({ C, setC, setPage, auth }) {
-  const [draft, setDraft] = useState(()=>JSON.parse(JSON.stringify(C)));
+  const getDraft = (C) => {
+    const d = JSON.parse(JSON.stringify(C));
+    if(!d.donate) d.donate = {};
+    if(!d.donate.programs) d.donate.programs = ["General","Education","Healthcare","Women","Environment","Relief"];
+    return d;
+  };
+  const [draft, setDraft] = useState(()=>getDraft(C));
   const [toast,    setToast]    = useState(null); // null | "saving" | "saved" | "error"
   const [toastMsg, setToastMsg] = useState("");
   const [exp, setExp] = useState({sections:true,nav:true,trust:true,hero:true,stats:true,about:true,programs:true,events:true,donate:true,contact:true});
@@ -1935,7 +1941,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
   const fileRef = useRef();
   const w = useW(); const mob = w<768;
 
-  useEffect(()=>{ setDraft(JSON.parse(JSON.stringify(C))); },[C]);
+  useEffect(()=>{ setDraft(getDraft(C)); },[C]);
 
   const showToast = (type, msg) => { setToast(type); setToastMsg(msg); setTimeout(()=>setToast(null),3500); };
 
@@ -2589,13 +2595,13 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <div className="cf">
           <label className="cl">Donation Program Categories</label>
           <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
-            {draft.donate.programs && draft.donate.programs.map((pt,i)=>(
+            {(draft.donate.programs || []).map((pt,i)=>(
               <div key={i} style={{display:"flex",gap:6}}>
                 <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={pt} onCommit={v=>upd(`donate.programs.${i}`,v)}/>
                 <button type="button" onClick={()=>moveItem("donate.programs",i,-1)} disabled={i===0}
                   style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===0?"#f5f5f5":"white",cursor:i===0?"not-allowed":"pointer",fontSize:".8rem",color:i===0?"#ccc":"var(--dt)",flexShrink:0}}>↑</button>
-                <button type="button" onClick={()=>moveItem("donate.programs",i,1)} disabled={i===draft.donate.programs.length-1}
-                  style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===draft.donate.programs.length-1?"#f5f5f5":"white",cursor:i===draft.donate.programs.length-1?"not-allowed":"pointer",fontSize:".8rem",color:i===draft.donate.programs.length-1?"#ccc":"var(--dt)",flexShrink:0}}>↓</button>
+                <button type="button" onClick={()=>moveItem("donate.programs",i,1)} disabled={i===(draft.donate.programs||[]).length-1}
+                  style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===(draft.donate.programs||[]).length-1?"#f5f5f5":"white",cursor:i===(draft.donate.programs||[]).length-1?"not-allowed":"pointer",fontSize:".8rem",color:i===(draft.donate.programs||[]).length-1?"#ccc":"var(--dt)",flexShrink:0}}>↓</button>
                 <button type="button" onClick={()=>delItem("donate.programs",i)}
                   style={{padding:"8px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",color:"#C0392B",cursor:"pointer",fontSize:".8rem",flexShrink:0}}>✕</button>
               </div>
