@@ -1553,6 +1553,7 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     const defaultMap = {
       donorName: { x: 50, y: 50, visible: true },
       amount: { x: 50, y: 60, visible: true },
+      amountTotal: { x: 80, y: 90, visible: true },
       amountWords: { x: 50, y: 70, visible: true },
       date: { x: 80, y: 20, visible: true },
       receiptNo: { x: 80, y: 15, visible: true },
@@ -1566,7 +1567,8 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       ...C.donate.receiptMap, 
       purpose: C.donate.receiptMap.purpose || defaultMap.purpose,
       paymentMode: C.donate.receiptMap.paymentMode || defaultMap.paymentMode,
-      systemGenerated: C.donate.receiptMap.systemGenerated || defaultMap.systemGenerated
+      systemGenerated: C.donate.receiptMap.systemGenerated || defaultMap.systemGenerated,
+      amountTotal: C.donate.receiptMap.amountTotal || defaultMap.amountTotal
     } : defaultMap;
     
     const baseFontSize = C?.donate?.receiptFontSize || 14;
@@ -1585,17 +1587,20 @@ export const generateReceiptPDF = async (r, C, action="download") => {
     doc.setTextColor(40, 40, 40);
     doc.setFont("helvetica", "bold");
 
-    const drawText = (key, text, sizeMultiplier=1) => {
+    const drawText = (key, text, sizeMultiplier=1, maxWidthRatio=null) => {
       if (!map[key] || !map[key].visible || !text) return;
       doc.setFontSize(baseFontSize * sizeMultiplier);
       const px = (map[key].x / 100) * img.width;
       const py = (map[key].y / 100) * img.height;
-      doc.text(text, px, py, { align: 'center' });
+      const opts = { align: 'center' };
+      if (maxWidthRatio) opts.maxWidth = img.width * maxWidthRatio;
+      doc.text(text, px, py, opts);
     };
 
     drawText("donorName", r.name || "Donor", 1.15);
     drawText("amount", `Rs. ${r.amount.toLocaleString()}`, 1.15);
-    drawText("amountWords", numberToWords(r.amount), 1);
+    drawText("amountTotal", `Rs. ${r.amount.toLocaleString()}`, 1.15);
+    drawText("amountWords", numberToWords(r.amount), 1, 0.45); // wrap at 45% of image width
     drawText("date", r.date, 1);
     drawText("receiptNo", r.id, 1);
     drawText("pan", r.pan ? `PAN: ${r.pan.toUpperCase()}` : "", 1);
@@ -1622,6 +1627,7 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
     const defaultFields = {
       donorName: { x: 50, y: 50, visible: true },
       amount: { x: 50, y: 60, visible: true },
+      amountTotal: { x: 80, y: 90, visible: true },
       amountWords: { x: 50, y: 70, visible: true },
       date: { x: 80, y: 20, visible: true },
       receiptNo: { x: 80, y: 15, visible: true },
@@ -1635,7 +1641,8 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
       ...mapData, 
       purpose: mapData.purpose || defaultFields.purpose,
       paymentMode: mapData.paymentMode || defaultFields.paymentMode,
-      systemGenerated: mapData.systemGenerated || defaultFields.systemGenerated
+      systemGenerated: mapData.systemGenerated || defaultFields.systemGenerated,
+      amountTotal: mapData.amountTotal || defaultFields.amountTotal
     } : defaultFields;
   });
 
