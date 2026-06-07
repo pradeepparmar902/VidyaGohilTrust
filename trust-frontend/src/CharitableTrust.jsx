@@ -843,7 +843,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
                     <span style={{fontSize:"1.6rem",animation:"float 2s ease-in-out infinite"}}>🎯</span>
                     <div>
                       <div style={{fontWeight:800,fontSize:".95rem",letterSpacing:.5,textTransform:"uppercase"}}>Purpose Required</div>
-                      <div style={{fontSize:".82rem",marginTop:3,fontWeight:500,opacity:0.9}}>Please select a program below to direct your donation.</div>
+                      <div style={{fontSize:".82rem",marginTop:3,fontWeight:500,opacity:0.9}}>Please select a program below to direct your donation (e.g. Education / Health / Women etc).</div>
                     </div>
                   </div>
                 )}
