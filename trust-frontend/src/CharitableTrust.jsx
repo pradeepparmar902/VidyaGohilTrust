@@ -541,12 +541,14 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
         )}
 
         {/* Right controls */}
-        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-          {mob && <button onClick={()=>setLang(lang==="en"?"gu":"en")} style={{background:"var(--tl)",border:"1px solid #B8D8E8",color:"var(--dt)",padding:"5px 10px",borderRadius:20,cursor:"pointer",fontSize:".78rem",fontWeight:700}}>{lang==="en"?"Gu":"EN"}</button>}
+        <div style={{display:"flex",gap:mob?6:8,alignItems:"center",flexShrink:0}}>
+          {mob && <button onClick={()=>setLang(lang==="en"?"gu":"en")} style={{background:"var(--tl)",border:"1px solid #B8D8E8",color:"var(--dt)",padding:"4px 8px",borderRadius:20,cursor:"pointer",fontSize:".75rem",fontWeight:700}}>{lang==="en"?"Gu":"EN"}</button>}
           
-          <button className="bs" onClick={()=>go("donate")} style={{padding:mob?"7px 12px":"8px 24px",borderRadius:8,fontSize:mob?".78rem":".85rem",fontWeight:700}}>Donate Now</button>
+          <button className="bs" onClick={()=>go("donate")} style={{padding:mob?"6px 10px":"8px 24px",borderRadius:8,fontSize:mob?".75rem":".85rem",fontWeight:700}}>Donate Now</button>
 
-          {mob && <button onClick={()=>setDrawer(true)} style={{background:"none",border:"1px solid var(--bd)",borderRadius:8,width:36,height:36,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,cursor:"pointer",padding:0}}>{[0,1,2].map(i=><span key={i} style={{display:"block",width:16,height:2,background:"var(--dt)",borderRadius:2}}/>)}</button>}
+          {mob && globalProfile && <button onClick={onShowDashboard} style={{background:"var(--sf)",border:"none",color:"white",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",cursor:"pointer",boxShadow:"0 2px 8px rgba(232,101,10,.3)"}} title="My Dashboard">👤</button>}
+
+          {mob && <button onClick={()=>setDrawer(true)} style={{background:"none",border:"1px solid var(--bd)",borderRadius:8,width:32,height:32,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,cursor:"pointer",padding:0}}>{[0,1,2].map(i=><span key={i} style={{display:"block",width:14,height:2,background:"var(--dt)",borderRadius:2}}/>)}</button>}
         </div>
       </nav>
 
