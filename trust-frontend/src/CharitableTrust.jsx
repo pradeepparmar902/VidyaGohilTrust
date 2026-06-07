@@ -2464,7 +2464,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <F label="Security Note" path="donate.note"/>
         <F label="Recurring Toggle Label" path="donate.recurringLabel"/>
         <F label="Recurring Note" path="donate.recurringNote"/>
-        <F label="Razorpay Test Key ID" path="donate.razorpayKey"/>
+        <F label="Razorpay API Key ID (Live or Test)" path="donate.razorpayKey"/>
         
         <div className="cf">
           <label className="cl">80G Receipt Template Image</label>
