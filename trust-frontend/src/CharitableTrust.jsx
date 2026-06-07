@@ -373,7 +373,7 @@ const G = () => (
 );
 
 const DC = {
-  trust:{name:"Vidya Gohil Charitable Trust",nameGu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ",phone:"+91 98765 43210",email:"info@vidyagohiltrust.org",address:"12, Gokuldham Society, Near Sardar Bridge, Ahmedabad – 380 006, Gujarat",hours:"Mon–Sat: 9:00 AM – 6:00 PM",estd:"2004",reg80G:"CIT(E)/12A/2004/123",panNo:"AACVG1234E",cin:"U85300GJ2004NPL045678",
+  trust:{name:"Vidya Gohil Charitable Trust",nameGu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ",subtitle:"CHARITABLE TRUST",phone:"+91 98765 43210",email:"info@vidyagohiltrust.org",address:"12, Gokuldham Society, Near Sardar Bridge, Ahmedabad – 380 006, Gujarat",hours:"Mon–Sat: 9:00 AM – 6:00 PM",estd:"2004",reg80G:"CIT(E)/12A/2004/123",panNo:"AACVG1234E",cin:"U85300GJ2004NPL045678",
     logo:{
       visible:  true,
       type:     "text",       // "text" | "image"
@@ -522,7 +522,7 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
           <LogoMark logo={C.trust.logo} mob={mob}/>
           <div style={{flexShrink:1,minWidth:0}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:mob?".85rem":".95rem",color:"var(--dt)",lineHeight:1.2,wordBreak:"break-word"}}>{lang==="en"?C.trust.name:C.trust.nameGu}</div>
-            {!mob && <div style={{fontSize:".6rem",color:"var(--mu)",letterSpacing:"1px",textTransform:"uppercase"}}>Charitable Trust</div>}
+            {(!mob && C.trust.subtitle) && <div style={{fontSize:".6rem",color:"var(--mu)",letterSpacing:"1px",textTransform:"uppercase"}}>{C.trust.subtitle}</div>}
           </div>
         </div>
 
@@ -2344,6 +2344,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <G2>
           <F label="Trust Name (English)" path="trust.name"/>
           <F label="Trust Name (Gujarati)" path="trust.nameGu"/>
+          <F label="Trust Subtitle (Under Name)" path="trust.subtitle"/>
           <F label="Phone Number" path="trust.phone"/>
           <F label="Email Address" path="trust.email"/>
           <F label="Office Hours" path="trust.hours"/>
