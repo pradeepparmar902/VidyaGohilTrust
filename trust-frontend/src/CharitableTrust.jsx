@@ -1403,11 +1403,14 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
 
 // ── GALLERY ───────────────────────────────────────────────────────────────────
 function Gallery({ C }) {
-  const [active, setActive] = useState("All"); const w = useW();
+  const [active, setActive] = useState("All"); 
+  const [selectedImage, setSelectedImage] = useState(null);
+  const w = useW();
   const items = C.galleryItems || [];
   const cats = ["All", ...new Set(items.map(g=>g.category).filter(Boolean))];
   const filtered = active==="All" ? items : items.filter(g=>g.category===active);
   return (
+    <>
     <section id="gallery" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
@@ -1420,8 +1423,8 @@ function Gallery({ C }) {
         <div style={{display:"grid",gridTemplateColumns:w<640?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
           {filtered.length === 0 && <div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--mu)"}}>No photos uploaded yet.</div>}
           {filtered.map(g=>(
-            <div key={g.id} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden"}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white"}}>
+            <div key={g.id} onClick={()=>setSelectedImage(g)} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer"}}>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none"}}>
                 <div style={{fontSize:".85rem",fontWeight:600}}>{g.title}</div>
                 <div style={{fontSize:".7rem",opacity:.9}}>{g.category}</div>
               </div>
@@ -1430,6 +1433,25 @@ function Gallery({ C }) {
         </div>
       </div>
     </section>
+
+    {selectedImage && (
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,zIndex:1000,backdropFilter:"blur(4px)"}}
+        onClick={()=>setSelectedImage(null)}>
+        <div style={{position:"relative",maxWidth:"100%",maxHeight:"100%",display:"flex",flexDirection:"column",alignItems:"center"}}
+          onClick={e=>e.stopPropagation()}>
+          <button onClick={()=>setSelectedImage(null)}
+            style={{position:"absolute",top:-40,right:0,background:"none",border:"none",color:"white",fontSize:"2rem",cursor:"pointer",lineHeight:1}}>
+            &times;
+          </button>
+          <img src={selectedImage.url} alt={selectedImage.title} style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
+          <div style={{marginTop:16,color:"white",textAlign:"center"}}>
+            <div style={{fontSize:"1.2rem",fontWeight:600}}>{selectedImage.title}</div>
+            <div style={{fontSize:".9rem",opacity:.8,marginTop:4}}>{selectedImage.category}</div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
