@@ -881,6 +881,45 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
               <p style={{textAlign:"center",fontSize:".72rem",color:"var(--mu)",marginTop:10}}>{d.note}</p>
             </>
           )}
+
+          {/* ── PAYMENT POPUP MODAL ── */}
+          {showPaymentPopup && (
+            <div style={{position:"fixed",inset:0,background:"rgba(13,75,94,.8)",display:"flex",alignItems:"center",justifyContent:"center",padding:24,zIndex:9999,backdropFilter:"blur(6px)"}}>
+              <div style={{background:"white",borderRadius:24,width:"100%",maxWidth:400,padding:"32px",boxShadow:"0 32px 80px rgba(0,0,0,.3)",textAlign:"center",position:"relative"}}>
+                <div style={{fontSize:"3.5rem",marginBottom:16}}>💳</div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:12,fontWeight:700}}>Redirecting to Payment Gateway</h3>
+                <p style={{color:"var(--mu)",fontSize:".9rem",lineHeight:1.6,marginBottom:24}}>
+                  You will now be redirected to Razorpay to complete your transaction.<br/><br/>
+                  <strong>Note:</strong> If you see a "Payment Completed" screen from a previous donation, please open the payment link in an <strong>Incognito/Private</strong> window to make a new payment.
+                </p>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  <button onClick={async () => {
+                    setShowPaymentPopup(false);
+                    const rzpKey = C.donate?.razorpayKey || "rzp_test_DummyKeyForTest";
+                    try {
+                      await fbSubmitDonation({
+                        name: form.name, phone: form.phone, email: form.email, pan: form.pan,
+                        amount: final, program: prog, status: "Pending (Payment Link)",
+                        date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
+                        id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
+                        razorpay_payment_id: "Off-site Link"
+                      });
+                      window.open(rzpKey, "_blank");
+                      setStep(3);
+                    } catch(e) {
+                      console.error(e); alert("Failed to save record.");
+                    }
+                  }} style={{background:"var(--sf)",color:"white",border:"none",padding:"14px",borderRadius:12,fontWeight:700,fontSize:"1rem",cursor:"pointer",transition:"all .2s"}}>
+                    Proceed to Payment
+                  </button>
+                  <button onClick={() => setShowPaymentPopup(false)} style={{background:"#F5F5F5",color:"var(--dt)",border:"none",padding:"14px",borderRadius:12,fontWeight:700,fontSize:"1rem",cursor:"pointer",transition:"all .2s"}}>
+                    Back to Home
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </section>
