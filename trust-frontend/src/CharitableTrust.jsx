@@ -1148,6 +1148,17 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
                     <div>
                       <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Password <span style={{color:"red"}}>*</span></label>
                       <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none"}} placeholder="Enter your password" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
+                      <div style={{marginTop: 6, textAlign: "right"}}>
+                        <button type="button" onClick={() => {
+                          if(!mobile) { setAuthError("Please enter your mobile number first to request a password reset."); return; }
+                          const n = C?.trust?.phone?.replace(/\D/g,'') || "919224369217";
+                          const num = n.length === 10 ? `91${n}` : n;
+                          const msg = encodeURIComponent(`Hello, I forgot the password for my Vidya Gohil Trust account (Mobile: ${mobile}). Please help me reset it.`);
+                          window.open(`https://wa.me/${num}?text=${msg}`, "_blank");
+                        }} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".7rem",fontWeight:600,cursor:"pointer",textDecoration:"underline",padding:0}}>
+                          Forgot Password?
+                        </button>
+                      </div>
                     </div>
                     <button type="button" onClick={e=>handleAuth(e, false)} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
                       {submitting ? "Logging in..." : "Login"}
@@ -3952,6 +3963,18 @@ function UserLoginModal({ onClose, onPublicLogin }) {
             <div style={{flex:1}}>
               <label style={{fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:6,display:"block"}}>🔒 Password *</label>
               <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"#F8F9FA",transition:"all .2s"}} placeholder="••••••"/>
+              {isLoginMode && (
+                <div style={{marginTop: 6, textAlign: "right"}}>
+                  <button type="button" onClick={() => {
+                    if(!mobile) { setAuthError("Please enter your mobile number first to request a password reset."); return; }
+                    const n = "919224369217"; // using the trust's active whatsapp
+                    const msg = encodeURIComponent(`Hello, I forgot the password for my Vidya Gohil Trust account (Mobile: ${mobile}). Please help me reset it.`);
+                    window.open(`https://wa.me/${n}?text=${msg}`, "_blank");
+                  }} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer",textDecoration:"underline",padding:0}}>
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           
