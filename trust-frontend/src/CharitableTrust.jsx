@@ -991,24 +991,25 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
   const [otpSent, setOtpSent] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
 
-  useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(fbAuth, 'recaptcha-container-event', {
-        'size': 'invisible',
-        'callback': (response) => { }
-      });
-    }
-  }, []);
-
   const handleSendOtp = async (e, isRegister) => {
     e.preventDefault();
     if (!mobile || mobile.length < 10) { setAuthError("Please enter a valid 10-digit mobile number"); return; }
     if (isRegister && (!regName || !regAddress || !regGender)) { setAuthError("Please fill out Name, Address, and Gender."); return; }
     
+    if (!window.recaptchaVerifierEvent) {
+      try {
+        window.recaptchaVerifierEvent = new RecaptchaVerifier(fbAuth, 'recaptcha-container-event', {
+          'size': 'invisible',
+        });
+      } catch (err) {
+        console.error("Recaptcha Init Error:", err);
+      }
+    }
+    
     setSubmitting(true); setAuthError("");
     try {
       const phoneNumber = `+91${mobile.replace(/\D/g, '').slice(-10)}`;
-      const appVerifier = window.recaptchaVerifier;
+      const appVerifier = window.recaptchaVerifierEvent;
       const result = await signInWithPhoneNumber(fbAuth, phoneNumber, appVerifier);
       setConfirmationResult(result);
       setOtpSent(true);
@@ -3962,24 +3963,25 @@ function UserLoginModal({ onClose, onPublicLogin }) {
   const [submitting, setSubmitting] = useState(false);
   const w = useW(); const mob = w < 640;
 
-  useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(fbAuth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response) => { }
-      });
-    }
-  }, []);
-
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!mobile || mobile.length < 10) { setAuthError("Please enter a valid 10-digit mobile number"); return; }
     if (!isLoginMode && (!regName || !regAddress || !regGender || !regEmail)) { setAuthError("Please fill out Name, Email, Address, and Gender."); return; }
     
+    if (!window.recaptchaVerifierLogin) {
+      try {
+        window.recaptchaVerifierLogin = new RecaptchaVerifier(fbAuth, 'recaptcha-container-login', {
+          'size': 'invisible',
+        });
+      } catch (err) {
+        console.error("Recaptcha Init Error:", err);
+      }
+    }
+    
     setSubmitting(true); setAuthError("");
     try {
       const phoneNumber = `+91${mobile.replace(/\D/g, '').slice(-10)}`;
-      const appVerifier = window.recaptchaVerifier;
+      const appVerifier = window.recaptchaVerifierLogin;
       const result = await signInWithPhoneNumber(fbAuth, phoneNumber, appVerifier);
       setConfirmationResult(result);
       setOtpSent(true);
@@ -4033,7 +4035,7 @@ function UserLoginModal({ onClose, onPublicLogin }) {
         <p style={{color:"var(--mu)",fontSize:".85rem",marginBottom:20}}>{isLoginMode ? "Login securely via SMS OTP." : "Register once to easily apply for events and awards."}</p>
         
         {authError && <div style={{background:"#FEF0F0",color:"#C0392B",padding:"10px 14px",borderRadius:10,fontSize:".8rem",marginBottom:16,fontWeight:600}}>{authError}</div>}
-        <div id="recaptcha-container"></div>
+        <div id="recaptcha-container-login"></div>
         
         {!otpSent ? (
         <form onSubmit={handleSendOtp} style={{display:"flex",flexDirection:"column",gap:16,textAlign:"left"}}>
