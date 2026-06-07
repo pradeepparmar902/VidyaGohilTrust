@@ -2668,7 +2668,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
       {mob && open && <div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:199}}/>}
       <div className="as" style={{width:sw,transition:"width .3s",position:"fixed",top:0,left:0,bottom:0,zIndex:200,overflowX:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"16px 12px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:10,justifyContent:open?"flex-start":"center"}}>
-          <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",fontWeight:700,color:"white",flexShrink:0}}>{C.trust.logo?.text || "Om"}</div>
+          <LogoMark logo={{...C.trust.logo, size: 34, visible: true}} />
           {open && <div style={{fontFamily:"'Playfair Display',serif",color:"white",fontWeight:700,fontSize:".82rem",whiteSpace:"nowrap"}}>{C.trust.adminHeader || "Trust Admin"}</div>}
         </div>
         <div style={{flex:1,padding:"10px 6px",overflowY:"auto"}}>
