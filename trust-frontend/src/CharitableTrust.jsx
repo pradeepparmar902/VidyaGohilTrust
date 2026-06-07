@@ -1592,9 +1592,13 @@ export const generateReceiptPDF = async (r, C, action="download") => {
       doc.setFontSize(baseFontSize * sizeMultiplier);
       const px = (map[key].x / 100) * img.width;
       const py = (map[key].y / 100) * img.height;
-      const opts = { align: 'center' };
-      if (maxWidthRatio) opts.maxWidth = img.width * maxWidthRatio;
-      doc.text(text, px, py, opts);
+      let lines = text;
+      if (maxWidthRatio) {
+        const maxWidthPx = img.width * maxWidthRatio;
+        lines = doc.splitTextToSize(text, maxWidthPx);
+      }
+      
+      doc.text(lines, px, py, { align: 'center' });
     };
 
     drawText("donorName", r.name || "Donor", 1.15);
