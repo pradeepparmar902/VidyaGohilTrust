@@ -4734,8 +4734,9 @@ function AdminAccess({ C, setC, master, auth }) {
   }, [master, auth?.idToken]);
 
   const handleAdd = () => {
-    if (!selectedUser) return alert("Please select an existing user from the dropdown.");
-    const email = selectedUser;
+    if (!selectedUser) return alert("Please enter or select an email address.");
+    const email = selectedUser.trim();
+    if (!email.includes("@")) return alert("Please enter a valid email address.");
     if (roles.find(r => r.email.toLowerCase() === email.toLowerCase())) {
       return alert("User already exists in access control.");
     }
@@ -4766,12 +4767,20 @@ function AdminAccess({ C, setC, master, auth }) {
           <p style={{fontSize:".85rem",color:"var(--mu)"}}>Grant specific tab access to registered staff members.</p>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <select value={selectedUser} onChange={e=>setSelectedUser(e.target.value)} disabled={loading} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",minWidth:220}}>
-            <option value="">{loading ? "Loading users..." : "-- Select Registered User --"}</option>
+          <input 
+            type="email"
+            list="registered-users"
+            value={selectedUser} 
+            onChange={e=>setSelectedUser(e.target.value)} 
+            disabled={loading} 
+            placeholder={loading ? "Loading users..." : "Enter or select email..."}
+            style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",minWidth:220}}
+          />
+          <datalist id="registered-users">
             {allUsers.map(u => (
               <option key={u.id} value={u.email}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
             ))}
-          </select>
+          </datalist>
           <button onClick={handleAdd} disabled={loading || !selectedUser} className="btn-primary" style={{padding:"8px 16px",fontSize:".85rem",opacity:!selectedUser||loading?.5:1}}>+ Add User</button>
         </div>
       </div>
