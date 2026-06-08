@@ -282,6 +282,22 @@ const fbSaveUserProfile = async (localId, data, idToken) => {
   return await res.json();
 };
 
+const fbFetchAllUsers = async (idToken) => {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users?pageSize=100`, {
+    headers: { "Authorization": `Bearer ${idToken}` }
+  });
+  if (!res.ok) return [];
+  const doc = await res.json();
+  if (!doc || !doc.documents) return [];
+  return doc.documents.map(d => {
+    const obj = { id: d.name.split('/').pop() };
+    if (d.fields) {
+      for(const [k,v] of Object.entries(d.fields)) obj[k] = v.stringValue || "";
+    }
+    return obj;
+  });
+};
+
 const fbUploadLogo = async (file, idToken) => {
   const ext  = file.name.split(".").pop();
   const name = encodeURIComponent(`logos/logo_${Date.now()}.${ext}`);
@@ -4697,19 +4713,34 @@ function LoginScreen({ onLogin, onSkip }) {
 }
 
 // ── ADMIN REGISTRATIONS ────────────────────────────────────────────────────────
-function AdminAccess({ C, setC, master }) {
+function AdminAccess({ C, setC, master, auth }) {
   if (!master) return <div style={{padding:40,textAlign:"center"}}>Access Denied.</div>;
 
   const roles = C.access?.roles || [];
   const allPerms = ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings"];
 
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (master && auth?.idToken) {
+      setLoading(true);
+      fbFetchAllUsers(auth.idToken).then(users => {
+        setAllUsers(users.filter(u => u.email));
+        setLoading(false);
+      });
+    }
+  }, [master, auth?.idToken]);
+
   const handleAdd = () => {
-    const email = prompt("Enter email of the new staff member:");
-    if (!email) return;
+    if (!selectedUser) return alert("Please select an existing user from the dropdown.");
+    const email = selectedUser;
     if (roles.find(r => r.email.toLowerCase() === email.toLowerCase())) {
       return alert("User already exists in access control.");
     }
     setC({...C, access: { ...C.access, roles: [...roles, { email: email.toLowerCase(), permissions: [] }] }});
+    setSelectedUser("");
   };
 
   const handleRemove = (email) => {
@@ -4729,12 +4760,20 @@ function AdminAccess({ C, setC, master }) {
 
   return (
     <div className="card">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:16}}>
         <div>
           <h2 className="sh" style={{fontSize:"1.4rem",color:"var(--dt)",marginBottom:4}}>Access Control</h2>
-          <p style={{fontSize:".85rem",color:"var(--mu)"}}>Grant specific tab access to other staff members.</p>
+          <p style={{fontSize:".85rem",color:"var(--mu)"}}>Grant specific tab access to registered staff members.</p>
         </div>
-        <button onClick={handleAdd} className="btn-primary" style={{padding:"8px 16px",fontSize:".85rem"}}>+ Add User</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <select value={selectedUser} onChange={e=>setSelectedUser(e.target.value)} disabled={loading} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",minWidth:220}}>
+            <option value="">{loading ? "Loading users..." : "-- Select Registered User --"}</option>
+            {allUsers.map(u => (
+              <option key={u.id} value={u.email}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
+            ))}
+          </select>
+          <button onClick={handleAdd} disabled={loading || !selectedUser} className="btn-primary" style={{padding:"8px 16px",fontSize:".85rem",opacity:!selectedUser||loading?.5:1}}>+ Add User</button>
+        </div>
       </div>
 
       <div className="admin-table-wrapper" style={{overflowX:"auto"}}>
