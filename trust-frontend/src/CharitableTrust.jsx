@@ -418,6 +418,7 @@ const DC = {
   },
   customSections:[],
   galleryItems:[],
+  access:{roles:[]},
 };
 
 const EMOJIS = ["📚","🏥","🌾","🤝","🌊","🌱","🏛️","💡","🎓","🏃","🌍","⭐","❤️","🎯","🔬","🎨"];
@@ -2844,13 +2845,35 @@ const ANAV = [
   {id:"volunteers",icon:"🤝",label:"Volunteers"},
   {id:"gallery",icon:"🖼️",label:"Gallery"},
   {id:"settings",icon:"⚙️",label:"Settings"},
+  {id:"access",icon:"🔐",label:"Access Control"},
 ];
 
 function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
-  const [tab, setTab] = useState("content");
+  const isMasterAdmin = (email) => ["admin@vidyagohiltrust.org", "pradeepparmar902@yahoo.com"].includes(email?.toLowerCase());
+  const master = auth?.email ? isMasterAdmin(auth.email) : false;
+  const userRole = C.access?.roles?.find(r => r.email.toLowerCase() === auth?.email?.toLowerCase());
+
+  let hasAccess = [];
+  if (auth?.email) {
+    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings", "access"] : (userRole?.permissions || []);
+  } else {
+    // Unauthenticated local preview
+    hasAccess = ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings"];
+  }
+
+  const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
+  const [tab, setTab] = useState(visibleNav.length > 0 ? visibleNav[0].id : "");
   const [open, setOpen] = useState(true);
   const w = useW(); const mob = w<768;
+  
   useEffect(()=>{ if(mob) setOpen(false); else setOpen(true); },[mob]);
+  
+  useEffect(() => {
+    if (visibleNav.length > 0 && !visibleNav.find(n => n.id === tab)) {
+      setTab(visibleNav[0].id);
+    }
+  }, [auth?.email, C.access?.roles]);
+
   const sw = open?(mob?240:220):56;
 
   return (
@@ -2862,7 +2885,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {open && <div style={{fontFamily:"'Playfair Display',serif",color:"white",fontWeight:700,fontSize:".82rem",whiteSpace:"nowrap"}}>{C.trust.adminHeader || "Trust Admin"}</div>}
         </div>
         <div style={{flex:1,padding:"10px 6px",overflowY:"auto"}}>
-          {ANAV.map(item=>(
+          {visibleNav.map(item=>(
             <div key={item.id} onClick={()=>{setTab(item.id);if(mob)setOpen(false);}}
               style={{display:"flex",alignItems:"center",gap:10,padding:"10px 10px",borderRadius:10,cursor:"pointer",marginBottom:3,background:tab===item.id?"rgba(232,101,10,.25)":"transparent",borderLeft:tab===item.id?"3px solid var(--sf)":"3px solid transparent",transition:"all .2s",justifyContent:open?"flex-start":"center"}}
               onMouseEnter={e=>{if(tab!==item.id)e.currentTarget.style.background="rgba(255,255,255,.07)"}}
@@ -2935,14 +2958,22 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           </div>
         </div>
         <div style={{padding:mob?"16px":"24px"}}>
-          {tab==="content"   && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
-          {tab==="overview"  && <Overview mob={mob} C={C} auth={auth}/>}
-          {tab==="donations" && <Donations mob={mob} auth={auth} C={C}/>}
-          {tab==="events"    && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
-          {tab==="registrations" && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
-          {tab==="volunteers"&& <Volunteers mob={mob} auth={auth} C={C}/>}
-          {tab==="gallery"   && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
-          {tab==="settings"  && <Settings mob={mob} C={C}/>}
+          {visibleNav.length === 0 && (
+            <div style={{textAlign:"center",padding:40,color:"var(--mu)",background:"white",borderRadius:12}}>
+              <h2 style={{fontSize:"1.5rem",color:"#C0392B",marginBottom:10}}>Access Denied</h2>
+              <p>Your account ({auth?.email}) does not have permission to view any Admin modules.</p>
+              <p>Please contact the Master Admin to request access.</p>
+            </div>
+          )}
+          {tab==="content"   && hasAccess.includes("content") && <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth}/>}
+          {tab==="overview"  && hasAccess.includes("overview") && <Overview mob={mob} C={C} auth={auth}/>}
+          {tab==="donations" && hasAccess.includes("donations") && <Donations mob={mob} auth={auth} C={C}/>}
+          {tab==="events"    && hasAccess.includes("events") && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
+          {tab==="registrations" && hasAccess.includes("registrations") && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
+          {tab==="volunteers"&& hasAccess.includes("volunteers") && <Volunteers mob={mob} auth={auth} C={C}/>}
+          {tab==="gallery"   && hasAccess.includes("gallery") && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
+          {tab==="settings"  && hasAccess.includes("settings") && <Settings mob={mob} C={C}/>}
+          {tab==="access"    && hasAccess.includes("access") && <AdminAccess C={C} setC={setC} master={master}/>}
         </div>
       </div>
     </div>
@@ -4666,6 +4697,86 @@ function LoginScreen({ onLogin, onSkip }) {
 }
 
 // ── ADMIN REGISTRATIONS ────────────────────────────────────────────────────────
+function AdminAccess({ C, setC, master }) {
+  if (!master) return <div style={{padding:40,textAlign:"center"}}>Access Denied.</div>;
+
+  const roles = C.access?.roles || [];
+  const allPerms = ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings"];
+
+  const handleAdd = () => {
+    const email = prompt("Enter email of the new staff member:");
+    if (!email) return;
+    if (roles.find(r => r.email.toLowerCase() === email.toLowerCase())) {
+      return alert("User already exists in access control.");
+    }
+    setC({...C, access: { ...C.access, roles: [...roles, { email: email.toLowerCase(), permissions: [] }] }});
+  };
+
+  const handleRemove = (email) => {
+    if(!confirm("Remove access for " + email + "?")) return;
+    setC({...C, access: { ...C.access, roles: roles.filter(r => r.email !== email) }});
+  };
+
+  const togglePerm = (email, perm) => {
+    setC({...C, access: { ...C.access, roles: roles.map(r => {
+      if (r.email === email) {
+        const perms = r.permissions.includes(perm) ? r.permissions.filter(p => p !== perm) : [...r.permissions, perm];
+        return { ...r, permissions: perms };
+      }
+      return r;
+    })}});
+  };
+
+  return (
+    <div className="card">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+          <h2 className="sh" style={{fontSize:"1.4rem",color:"var(--dt)",marginBottom:4}}>Access Control</h2>
+          <p style={{fontSize:".85rem",color:"var(--mu)"}}>Grant specific tab access to other staff members.</p>
+        </div>
+        <button onClick={handleAdd} className="btn-primary" style={{padding:"8px 16px",fontSize:".85rem"}}>+ Add User</button>
+      </div>
+
+      <div className="admin-table-wrapper" style={{overflowX:"auto"}}>
+        <table className="admin-table" style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
+          <thead>
+            <tr>
+              <th style={{padding:"12px 16px",textAlign:"left"}}>Email</th>
+              <th style={{padding:"12px 16px",textAlign:"left"}}>Permissions</th>
+              <th style={{padding:"12px 16px",textAlign:"right"}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roles.length === 0 && <tr><td colSpan={3} style={{padding:20,textAlign:"center",color:"var(--mu)"}}>No additional users have been granted access.</td></tr>}
+            {roles.map(r => (
+              <tr key={r.email}>
+                <td style={{padding:"16px",fontWeight:600}}>{r.email}</td>
+                <td style={{padding:"16px"}}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                    {allPerms.map(p => (
+                      <label key={p} style={{display:"flex",alignItems:"center",gap:4,fontSize:".75rem",background:r.permissions.includes(p)?"#E8F4F8":"#f5f5f5",padding:"4px 8px",borderRadius:4,cursor:"pointer",border:r.permissions.includes(p)?"1px solid #B8D8E8":"1px solid transparent"}}>
+                        <input type="checkbox" checked={r.permissions.includes(p)} onChange={()=>togglePerm(r.email, p)} style={{margin:0,cursor:"pointer"}}/>
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+                </td>
+                <td style={{padding:"16px",textAlign:"right"}}>
+                  <button onClick={()=>handleRemove(r.email)} style={{background:"#FEF0EF",border:"1px solid #F5B8B8",color:"#C0392B",padding:"4px 8px",borderRadius:6,fontSize:".75rem",cursor:"pointer"}}>Remove</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{marginTop:20,background:"#FFF4EC",padding:16,borderRadius:8,fontSize:".8rem",color:"var(--sf)"}}>
+        <strong>Super Admins:</strong> <code>admin@vidyagohiltrust.org</code> and <code>pradeepparmar902@yahoo.com</code> automatically have full access to all tabs.
+      </div>
+    </div>
+  );
+}
+
 function AdminRegistrations({ mob, C, auth }) {
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
