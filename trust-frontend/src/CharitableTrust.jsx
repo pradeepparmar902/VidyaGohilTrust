@@ -1991,9 +1991,37 @@ const F = ({label, path, ta, rtf, hint}) => {
   const [local, setLocal] = useState(getInitial);
   useEffect(() => { setLocal(getInitial()); }, [path, draft]);
   const commit = () => upd(path, local);
+
+  const engPath = path.endsWith("Gu") ? path.slice(0, -2) : null;
+  const [translating, setTranslating] = useState(false);
+  const handleTranslate = async () => {
+    if (!engPath) return;
+    const engText = gv(engPath);
+    if (!engText) return;
+    setTranslating(true);
+    try {
+      const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=' + encodeURIComponent(engText));
+      const data = await res.json();
+      const translated = data[0].map(x => x[0]).join('');
+      setLocal(translated);
+      upd(path, translated);
+    } catch (e) {
+      alert("Translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
     <div className="cf">
-      <label className="cl">{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:4}}>
+        <label className="cl" style={{marginBottom:0}}>{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
+        {engPath && (
+          <button onClick={handleTranslate} disabled={translating} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".75rem",cursor:"pointer",fontWeight:600,padding:0}}>
+            {translating ? "Translating..." : "Auto Translate"}
+          </button>
+        )}
+      </div>
       {rtf
         ? <div style={{background:"white"}}><ReactQuill theme="snow" modules={quillModules} value={local} onChange={(content) => { setLocal(content); upd(path, content); }} /></div>
         : ta
@@ -2666,17 +2694,31 @@ function ContentEditor({ C, setC, setPage, auth }) {
         <div className="cf">
           <label className="cl">Key Bullet Points</label>
           {draft.about.points.map((pt,i)=>(
-            <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-              <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={pt} onCommit={v=>upd(`about.points.${i}`,v)}/>
-              <button onClick={()=>moveItem("about.points",i,-1)} disabled={i===0}
-                style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===0?"#f5f5f5":"white",cursor:i===0?"not-allowed":"pointer",fontSize:".8rem",color:i===0?"#ccc":"var(--dt)",flexShrink:0}}>↑</button>
-              <button onClick={()=>moveItem("about.points",i,1)} disabled={i===draft.about.points.length-1}
-                style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===draft.about.points.length-1?"#f5f5f5":"white",cursor:i===draft.about.points.length-1?"not-allowed":"pointer",fontSize:".8rem",color:i===draft.about.points.length-1?"#ccc":"var(--dt)",flexShrink:0}}>↓</button>
-              <button onClick={()=>delItem("about.points",i)}
-                style={{padding:"8px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",flexShrink:0,fontWeight:700}}>Del</button>
+            <div key={i} style={{marginBottom:16, padding:12, border:"1px solid var(--bd)", borderRadius:8, background:"#FAFAFA"}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                <span style={{fontSize:".75rem",fontWeight:600,color:"#666",width:60}}>English</span>
+                <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={pt} onCommit={v=>upd(`about.points.${i}`,v)}/>
+                <button onClick={()=>moveItem("about.points",i,-1)} disabled={i===0}
+                  style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===0?"#f5f5f5":"white",cursor:i===0?"not-allowed":"pointer",fontSize:".8rem",color:i===0?"#ccc":"var(--dt)",flexShrink:0}}>↑</button>
+                <button onClick={()=>moveItem("about.points",i,1)} disabled={i===draft.about.points.length-1}
+                  style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--bd)",background:i===draft.about.points.length-1?"#f5f5f5":"white",cursor:i===draft.about.points.length-1?"not-allowed":"pointer",fontSize:".8rem",color:i===draft.about.points.length-1?"#ccc":"var(--dt)",flexShrink:0}}>↓</button>
+                <button onClick={()=>{ delItem("about.points",i); delItem("about.pointsGu",i); }}
+                  style={{padding:"8px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",flexShrink:0,fontWeight:700}}>Del</button>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <span style={{fontSize:".75rem",fontWeight:600,color:"#666",width:60}}>Gujarati</span>
+                <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={draft.about.pointsGu?.[i] || ""} onCommit={v=>upd(`about.pointsGu.${i}`,v)}/>
+                <button onClick={async () => {
+                  try {
+                    const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=' + encodeURIComponent(pt));
+                    const data = await res.json();
+                    upd(`about.pointsGu.${i}`, data[0].map(x => x[0]).join(''));
+                  } catch(e) { alert("Translation failed"); }
+                }} style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate</button>
+              </div>
             </div>
           ))}
-          <AddBtn label="Bullet Point" onClick={()=>addItem("about.points","New point")}/>
+          <AddBtn label="Bullet Point" onClick={()=>{ addItem("about.points","New point"); addItem("about.pointsGu",""); }}/>
         </div>
       </Sec>
 
