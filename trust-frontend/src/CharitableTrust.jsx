@@ -1489,8 +1489,10 @@ function Gallery({ C }) {
         <div style={{display:"grid",gridTemplateColumns:w<640?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
           {filtered.length === 0 && <div style={{gridColumn:"1/-1",textAlign:"center",padding:40,color:"var(--mu)"}}>No photos uploaded yet.</div>}
           {filtered.map(g=>(
-            <div key={g.id} onClick={()=>setSelectedImage(g)} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none"}}>
+            <div key={g.id} onClick={()=>setSelectedImage(g)} className="gi ch" style={{aspectRatio:"4/3",background:"#eee",backgroundImage:g.type==='video'?'none':`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
+              {g.type === 'video' && <video src={g.url} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}} muted playsInline preload="metadata" />}
+              {g.type === 'video' && <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.3)",zIndex:1}}><span style={{fontSize:"3rem",color:"white"}}>▶</span></div>}
+              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none",zIndex:2}}>
                 <div style={{fontSize:".85rem",fontWeight:600}}>{g.title}</div>
                 <div style={{fontSize:".7rem",opacity:.9}}>{g.category}</div>
               </div>
@@ -1520,7 +1522,11 @@ function Gallery({ C }) {
             style={{position:"absolute",top:-40,right:0,background:"none",border:"none",color:"white",fontSize:"2rem",cursor:"pointer",lineHeight:1,touchAction:"manipulation"}}>
             &times;
           </button>
-          <img key={selectedImage.url} src={selectedImage.url} alt={selectedImage.title} style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
+          {selectedImage.type === 'video' ? (
+            <video key={selectedImage.url} src={selectedImage.url} controls autoPlay style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
+          ) : (
+            <img key={selectedImage.url} src={selectedImage.url} alt={selectedImage.title} style={{maxWidth:"100%",maxHeight:"80vh",objectFit:"contain",borderRadius:8,boxShadow:"0 16px 40px rgba(0,0,0,.5)"}} />
+          )}
           <div style={{marginTop:16,color:"white",textAlign:"center"}}>
             <div style={{fontSize:"1.2rem",fontWeight:600}}>{selectedImage.title}</div>
             <div style={{fontSize:".9rem",opacity:.8,marginTop:4}}>{selectedImage.category}</div>
@@ -4099,11 +4105,12 @@ function AdminGallery({ mob, C, setC, auth }) {
   const uploadPhoto = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!auth?.idToken) { alert("Please login to upload images."); return; }
+    if (!auth?.idToken) { alert("Please login to upload media."); return; }
     setLoading(true);
     try {
       const url = await fbUploadPhoto(file, auth.idToken);
-      const newItem = { id: Date.now().toString(), url, title: "New Photo", category: "General" };
+      const isVideo = file.type.startsWith("video/");
+      const newItem = { id: Date.now().toString(), url, title: isVideo ? "New Video" : "New Photo", category: "General", type: isVideo ? "video" : "image" };
       upd([newItem, ...items]);
     } catch(err) {
       alert("Upload failed: " + err.message);
@@ -4130,14 +4137,18 @@ function AdminGallery({ mob, C, setC, auth }) {
       </datalist>
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
         <label className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",cursor:"pointer",opacity:loading?0.5:1}}>
-          {loading ? "Uploading..." : "Upload Photo"}
-          <input type="file" accept="image/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+          {loading ? "Uploading..." : "Upload Media"}
+          <input type="file" accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
         </label>
       </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:14}}>
         {items.map(g=>(
           <div key={g.id} className="ac" style={{overflow:"hidden",padding:0}}>
-            <div style={{height:140,background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center"}}/>
+            {g.type === 'video' ? (
+              <video src={g.url} style={{width:"100%", height:140, objectFit:"cover", display:"block"}} muted playsInline preload="metadata" />
+            ) : (
+              <div style={{height:140,background:"#eee",backgroundImage:`url(${g.url})`,backgroundSize:"cover",backgroundPosition:"center"}}/>
+            )}
             <div style={{padding:"12px"}}>
               <input type="text" value={g.title} onChange={e=>updateItem(g.id,"title",e.target.value)} placeholder="Photo Title" style={{width:"100%",padding:"4px 8px",marginBottom:6,border:"1px solid var(--bd)",borderRadius:6,fontSize:".82rem",fontFamily:"inherit"}}/>
               <input type="text" list="gallery-categories" value={g.category} onChange={e=>updateItem(g.id,"category",e.target.value)} placeholder="Category (e.g. Events)" style={{width:"100%",padding:"4px 8px",marginBottom:10,border:"1px solid var(--bd)",borderRadius:6,fontSize:".75rem",fontFamily:"inherit",color:"var(--mu)"}}/>
@@ -4148,8 +4159,8 @@ function AdminGallery({ mob, C, setC, auth }) {
           </div>
         ))}
         <label style={{border:"2px dashed var(--bd)",borderRadius:12,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:180,cursor:"pointer",color:"var(--mu)",gap:7,transition:"all .2s",opacity:loading?0.5:1}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--mu)"}}>
-          <span style={{fontSize:"1.8rem"}}>📤</span><span style={{fontSize:".82rem",fontWeight:600}}>Upload Photos</span>
-          <input type="file" accept="image/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+          <span style={{fontSize:"1.8rem"}}>📤</span><span style={{fontSize:".82rem",fontWeight:600}}>Upload Media</span>
+          <input type="file" accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
         </label>
       </div>
     </div>
