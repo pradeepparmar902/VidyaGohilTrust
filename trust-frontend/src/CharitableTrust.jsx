@@ -733,7 +733,7 @@ function Programs({ C }) {
           <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--dt)",marginBottom:12,textAlign:"center"}}>{activeProg.title}</h3>
           <div style={{width:60,height:4,background:"var(--sf)",borderRadius:2,margin:"0 auto 20px"}}/>
           <style>{`
-            .md-content { font-size: .95rem; color: var(--tm2); line-height: 1.7; text-align: left; }
+            .md-content { font-size: .95rem; color: var(--tm2); line-height: 1.7; text-align: left; word-break: break-word; overflow-wrap: break-word; max-width: 100%; overflow-x: hidden; }
             .md-content h1, .md-content h2, .md-content h3, .md-content h4 { color: var(--dt); margin-top: 1.5em; margin-bottom: .5em; font-family: 'Playfair Display', serif; }
             .md-content h1 { font-size: 1.5rem; }
             .md-content h2 { font-size: 1.3rem; }
