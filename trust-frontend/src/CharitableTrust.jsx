@@ -2740,7 +2740,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
                     const data = await res.json();
                     upd(`about.pointsGu.${i}`, data[0].map(x => x[0]).join(''));
                   } catch(err) { alert("Translation failed"); }
-                }} style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate</button>
+                }} style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate v2</button>
               </div>
             </div>
           ))}
