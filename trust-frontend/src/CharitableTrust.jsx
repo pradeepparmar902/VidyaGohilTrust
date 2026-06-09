@@ -782,7 +782,10 @@ function About({ C, lang }) {
           <p style={{color:"var(--tm2)",lineHeight:1.8,marginBottom:14,fontSize:".93rem"}}>{lang==="en"?a.body1:a.body1Gu}</p>
           <p style={{color:"var(--tm2)",lineHeight:1.8,marginBottom:24,fontSize:".93rem"}}>{lang==="en"?a.body2:a.body2Gu}</p>
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:24}}>
-            {a.points.map(v=><div key={v} style={{display:"flex",alignItems:"center",gap:8,fontSize:".875rem"}}><span style={{color:"var(--sf)"}}>✓</span>{v}</div>)}
+            {a.points.map((v, i)=>{
+              const text = lang === "gu" ? (a.pointsGu?.[i] || v) : v;
+              return <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:".875rem"}}><span style={{color:"var(--sf)"}}>✓</span>{text}</div>
+            })}
           </div>
           <button className="bt" style={{padding:"11px 22px",borderRadius:10,fontWeight:600,fontSize:".875rem"}}>{a.cta}</button>
         </div>
