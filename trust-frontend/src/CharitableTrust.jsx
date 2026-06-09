@@ -765,9 +765,15 @@ function About({ C, lang }) {
       <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:60,alignItems:"center"}}>
         {!mob && <div style={{position:"relative"}}>
           <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)"}}>🙏</div>
-          <div style={{position:"absolute",bottom:-20,right:-16,background:"white",borderRadius:16,padding:"18px 22px",boxShadow:"0 12px 40px rgba(0,0,0,.1)",border:"1px solid var(--bd)"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,color:"var(--sf)"}}>20+</div>
-            <div style={{fontSize:".78rem",color:"var(--tm2)"}}>{a.yearsLabel}</div>
+          <div style={{position:"absolute",bottom:-20,right:-16,background:"white",borderRadius:16,padding:a.badgeImage?"12px":"18px 22px",boxShadow:"0 12px 40px rgba(0,0,0,.1)",border:"1px solid var(--bd)"}}>
+            {a.badgeImage ? (
+              <img src={a.badgeImage} alt="Badge" style={{height: 70, objectFit:"contain", display:"block"}}/>
+            ) : (
+              <>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,color:"var(--sf)"}}>20+</div>
+                <div style={{fontSize:".78rem",color:"var(--tm2)"}}>{a.yearsLabel}</div>
+              </>
+            )}
           </div>
         </div>}
         <div>
@@ -1998,6 +2004,36 @@ const F = ({label, path, ta, rtf, hint}) => {
   );
 };
 
+const ImgUpload = ({ label, path, auth }) => {
+  const { gv, upd } = useContext(EditorContext);
+  const val = gv(path);
+  const [uploading, setUploading] = useState(false);
+  const handleUp = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!auth?.idToken) { alert("Please login to upload images."); return; }
+    setUploading(true);
+    try {
+      const url = await fbUploadLogo(file, auth.idToken);
+      upd(path, url);
+    } catch (err) { alert(err.message); }
+    finally { setUploading(false); }
+  };
+  return (
+    <div className="cf">
+      <label className="cl">{label}</label>
+      <div style={{display:"flex", alignItems:"center", gap:12}}>
+        {val && <img src={val} style={{height:40, objectFit:"contain"}} alt=""/>}
+        <label style={{padding:"6px 12px", background:"white", border:"1px solid var(--bd)", borderRadius:6, cursor:"pointer", fontSize:".8rem", fontWeight:600, color:"var(--dt)"}}>
+          {uploading ? "..." : "Upload Image"}
+          <input type="file" accept="image/*" style={{display:"none"}} onChange={handleUp} disabled={uploading}/>
+        </label>
+        {val && <button onClick={()=>upd(path,"")} style={{background:"none",border:"none",color:"#C0392B",fontSize:".8rem",cursor:"pointer",fontWeight:600}}>Remove</button>}
+      </div>
+    </div>
+  );
+};
+
 const Sec = ({id, icon, label, children, onAdd, addLabel}) => {
   const { exp, setExp } = useContext(EditorContext);
   return (
@@ -2622,7 +2658,10 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <F label="Paragraph 2" path="about.body2" ta hint="English"/>
           <F label="Paragraph 2" path="about.body2Gu" ta hint="Gujarati"/>
         </G2>
-        <F label="Years Label" path="about.yearsLabel"/>
+        <G2>
+          <F label="Years Label" path="about.yearsLabel"/>
+          <ImgUpload label="Floating Badge Image (Overrides Years Label)" path="about.badgeImage" auth={auth}/>
+        </G2>
         <F label="CTA Button Text" path="about.cta"/>
         <div className="cf">
           <label className="cl">Key Bullet Points</label>
