@@ -2872,9 +2872,6 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
   let hasAccess = [];
   if (auth?.email) {
     hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings", "access"] : (userRole?.permissions || []);
-  } else {
-    // Unauthenticated local preview
-    hasAccess = ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings"];
   }
 
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
@@ -2888,7 +2885,25 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
     if (visibleNav.length > 0 && !visibleNav.find(n => n.id === tab)) {
       setTab(visibleNav[0].id);
     }
-  }, [auth?.email, C.access?.roles]);
+  }, [visibleNav, tab]);
+
+  if (!auth?.email) {
+    return (
+      <div style={{minHeight:"100vh",background:"#f4f6f8",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"white",padding:"40px 30px",borderRadius:24,boxShadow:"0 12px 40px rgba(0,0,0,0.08)",textAlign:"center",maxWidth:400,width:"100%"}}>
+          <div style={{width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.8rem",margin:"0 auto 20px",boxShadow:"0 6px 20px rgba(232,101,10,.3)",color:"white"}}>🔒</div>
+          <h2 style={{fontSize:"1.6rem",color:"var(--dt)",marginBottom:10}}>Admin Access Required</h2>
+          <p style={{color:"var(--mu)",fontSize:".95rem",marginBottom:24,lineHeight:1.5}}>You must be logged in with an authorized account to access the Vidya Gohil Charitable Trust admin portal.</p>
+          <button onClick={onShowLogin} className="btn-primary" style={{width:"100%",padding:"12px",fontSize:"1rem",fontWeight:600}}>
+            Login to Firebase
+          </button>
+          <button onClick={()=>setPage("home")} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".9rem",fontWeight:600,cursor:"pointer",marginTop:16}}>
+            ← Return to Website
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const sw = open?(mob?240:220):56;
 
