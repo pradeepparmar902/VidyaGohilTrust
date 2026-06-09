@@ -16,8 +16,8 @@ class ErrorBoundary extends React.Component {
       return (
         <div style={{padding: 40, fontFamily: "sans-serif", color: "#333"}}>
           <h1 style={{color: "red"}}>Something went wrong.</h1>
-          <pre style={{background: "#f4f4f4", padding: 20, overflow: "auto"}}>
-            {this.state.error?.toString()}
+          <pre style={{background: "#f4f4f4", padding: 20, overflow: "auto", fontSize: 14}}>
+            {this.state.error?.stack || this.state.error?.toString()}
           </pre>
         </div>
       );

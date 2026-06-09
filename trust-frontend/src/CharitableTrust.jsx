@@ -2099,6 +2099,11 @@ function ContentEditor({ C, setC, setPage, auth }) {
     const d = JSON.parse(JSON.stringify(C));
     if(!d.donate) d.donate = {};
     if(!d.donate.programs) d.donate.programs = ["General","Education","Healthcare","Women","Environment","Relief"];
+    if(!d.about) d.about = {};
+    if(!d.about.points) d.about.points = [];
+    if(!d.about.pointsGu || d.about.pointsGu.length !== d.about.points.length) {
+      d.about.pointsGu = d.about.points.map((p, i) => (d.about.pointsGu && d.about.pointsGu[i]) || "");
+    }
     if(!d.footer) d.footer = {
       description: `Serving humanity with compassion since ${d.trust?.estd || "2004"}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`,
       copyrightYear: new Date().getFullYear().toString(),
@@ -2155,11 +2160,17 @@ function ContentEditor({ C, setC, setPage, auth }) {
 
   const upd = (path, value) => {
     setDraft(prev=>{
-      const next=JSON.parse(JSON.stringify(prev));
-      const keys=path.split("."); let obj=next;
-      for(let i=0;i<keys.length-1;i++){const k=isNaN(keys[i])?keys[i]:parseInt(keys[i]);obj=obj[k];}
-      const lk=isNaN(keys[keys.length-1])?keys[keys.length-1]:parseInt(keys[keys.length-1]);
-      obj[lk]=value; return next;
+      try {
+        const next=JSON.parse(JSON.stringify(prev || {}));
+        const keys=path.split("."); let obj=next;
+        for(let i=0;i<keys.length-1;i++){
+          const k=isNaN(keys[i])?keys[i]:parseInt(keys[i]);
+          if(!obj[k] || typeof obj[k] !== 'object') obj[k] = isNaN(keys[i+1]) ? {} : [];
+          obj=obj[k];
+        }
+        const lk=isNaN(keys[keys.length-1])?keys[keys.length-1]:parseInt(keys[keys.length-1]);
+        if(obj) obj[lk]=value; return next;
+      } catch(e) { return prev; }
     });
   };
 
@@ -2169,31 +2180,44 @@ function ContentEditor({ C, setC, setPage, auth }) {
   const getArr = (next, path) => {
     const keys = path.split(".");
     let o = next;
-    for (const k of keys) o = o[isNaN(k)?k:parseInt(k)];
+    for (const k of keys) {
+      const pk=isNaN(k)?k:parseInt(k);
+      if(!o[pk] || typeof o[pk] !== 'object') o[pk] = [];
+      o = o[pk];
+    }
     return o;
   };
   const addItem = (arrPath, newItem) => {
     setDraft(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
-      getArr(next, arrPath).push(newItem);
-      return next;
+      try {
+        const next = JSON.parse(JSON.stringify(prev || {}));
+        const arr = getArr(next, arrPath);
+        if(Array.isArray(arr)) arr.push(newItem);
+        return next;
+      } catch(e) { return prev; }
     });
   };
   const delItem = (arrPath, idx) => {
     setDraft(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
-      getArr(next, arrPath).splice(idx, 1);
-      return next;
+      try {
+        const next = JSON.parse(JSON.stringify(prev || {}));
+        const arr = getArr(next, arrPath);
+        if(Array.isArray(arr)) arr.splice(idx, 1);
+        return next;
+      } catch(e) { return prev; }
     });
   };
   const moveItem = (arrPath, idx, dir) => {
     setDraft(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
-      const arr = getArr(next, arrPath);
-      const to = idx + dir;
-      if (to < 0 || to >= arr.length) return prev;
-      [arr[idx], arr[to]] = [arr[to], arr[idx]];
-      return next;
+      try {
+        const next = JSON.parse(JSON.stringify(prev || {}));
+        const arr = getArr(next, arrPath);
+        if(!Array.isArray(arr)) return next;
+        const to = idx + dir;
+        if (to < 0 || to >= arr.length) return next;
+        [arr[idx], arr[to]] = [arr[to], arr[idx]];
+        return next;
+      } catch(e) { return prev; }
     });
   };
 
