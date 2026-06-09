@@ -2897,7 +2897,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           <button onClick={onShowLogin} className="btn-primary" style={{width:"100%",padding:"12px",fontSize:"1rem",fontWeight:600}}>
             Login to Firebase
           </button>
-          <button onClick={()=>setPage("home")} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".9rem",fontWeight:600,cursor:"pointer",marginTop:16}}>
+          <button onClick={()=>setPage("public")} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".9rem",fontWeight:600,cursor:"pointer",marginTop:16}}>
             ← Return to Website
           </button>
         </div>
