@@ -5327,6 +5327,7 @@ export default function App() {
   const handleLogin = (authData) => {
     setAuth(authData);
     setShowLogin(false);
+    setPage("admin");
   };
 
   const handleLogout = () => {
