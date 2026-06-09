@@ -4124,6 +4124,14 @@ function AdminGallery({ mob, C, setC, auth }) {
     upd(items.filter(g => g.id !== id));
   };
 
+  const move = (idx, dir) => {
+    const to = idx + dir;
+    if (to < 0 || to >= items.length) return;
+    const newItems = [...items];
+    [newItems[idx], newItems[to]] = [newItems[to], newItems[idx]];
+    upd(newItems);
+  };
+
   const updateItem = (id, field, val) => {
     upd(items.map(g => g.id === id ? {...g, [field]: val} : g));
   };
@@ -4142,7 +4150,7 @@ function AdminGallery({ mob, C, setC, auth }) {
         </label>
       </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:14}}>
-        {items.map(g=>(
+        {items.map((g, i)=>(
           <div key={g.id} className="ac" style={{overflow:"hidden",padding:0}}>
             {g.type === 'video' ? (
               <video src={g.url} style={{width:"100%", height:140, objectFit:"cover", display:"block"}} muted playsInline preload="metadata" />
@@ -4152,7 +4160,11 @@ function AdminGallery({ mob, C, setC, auth }) {
             <div style={{padding:"12px"}}>
               <input type="text" value={g.title} onChange={e=>updateItem(g.id,"title",e.target.value)} placeholder="Photo Title" style={{width:"100%",padding:"4px 8px",marginBottom:6,border:"1px solid var(--bd)",borderRadius:6,fontSize:".82rem",fontFamily:"inherit"}}/>
               <input type="text" list="gallery-categories" value={g.category} onChange={e=>updateItem(g.id,"category",e.target.value)} placeholder="Category (e.g. Events)" style={{width:"100%",padding:"4px 8px",marginBottom:10,border:"1px solid var(--bd)",borderRadius:6,fontSize:".75rem",fontFamily:"inherit",color:"var(--mu)"}}/>
-              <div style={{display:"flex",justifyContent:"flex-end"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{display:"flex",gap:4}}>
+                  <button onClick={()=>move(i, -1)} disabled={i===0} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--bd)",background:i===0?"#f5f5f5":"white",cursor:i===0?"not-allowed":"pointer",color:i===0?"#ccc":"var(--dt)",fontSize:".8rem"}}>←</button>
+                  <button onClick={()=>move(i, 1)} disabled={i===items.length-1} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--bd)",background:i===items.length-1?"#f5f5f5":"white",cursor:i===items.length-1?"not-allowed":"pointer",color:i===items.length-1?"#ccc":"var(--dt)",fontSize:".8rem"}}>→</button>
+                </div>
                 <button onClick={()=>remove(g.id)} style={{padding:"4px 9px",borderRadius:6,background:"#FEF0EF",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".72rem",fontWeight:600}}>Delete</button>
               </div>
             </div>
