@@ -2016,6 +2016,11 @@ function ContentEditor({ C, setC, setPage, auth }) {
     const d = JSON.parse(JSON.stringify(C));
     if(!d.donate) d.donate = {};
     if(!d.donate.programs) d.donate.programs = ["General","Education","Healthcare","Women","Environment","Relief"];
+    if(!d.footer) d.footer = {
+      description: `Serving humanity with compassion since ${d.trust?.estd || "2004"}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`,
+      copyrightYear: new Date().getFullYear().toString(),
+      tagline: "Designed with love for humanity"
+    };
     return d;
   };
   const [draft, setDraft] = useState(()=>getDraft(C));
