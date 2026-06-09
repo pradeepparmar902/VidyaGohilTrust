@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { jsPDF } from "jspdf";
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, sendPasswordResetEmail } from "firebase/auth";
 import { marked } from "marked";
@@ -391,6 +393,9 @@ const G = () => (
     .cl{font-size:.75rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px}
     .ci{width:100%;padding:10px 13px;border-radius:8px;border:1.5px solid var(--bd);font-size:.875rem;font-family:inherit;color:var(--tx);transition:all .2s;background:white;resize:vertical}
     .ci:focus{border-color:var(--sf);box-shadow:0 0 0 3px rgba(232,101,10,.08);outline:none}
+    .ql-toolbar { border-color: var(--bd)!important; border-top-left-radius: 8px; border-top-right-radius: 8px; background: #F8F9FA }
+    .ql-container { border-color: var(--bd)!important; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; font-family: inherit!important; }
+    .ql-editor { min-height: 150px; font-size: .875rem; color: var(--tx) }
     .csc{background:white;border-radius:16px;border:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,.05);margin-bottom:14px;overflow:hidden}
     .csh{padding:14px 18px;background:var(--tl);border-bottom:1px solid #B8D8E8;display:flex;align-items:center;gap:10px;cursor:pointer}
     .csb{padding:18px 20px}
@@ -1963,18 +1968,31 @@ const AddBtn = ({ label, onClick }) => (
   </button>
 );
 
-const F = ({label, path, ta, hint}) => {
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }, { 'size': ['small', false, 'large', 'huge'] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'align': [] }],
+    ['link', 'clean']
+  ]
+};
+
+const F = ({label, path, ta, rtf, hint}) => {
   const { gv, upd, draft } = useContext(EditorContext);
   const initVal = gv(path);
-  const [local, setLocal] = useState(initVal);
-  useEffect(() => { setLocal(gv(path)); }, [path, draft]);
+  const getInitial = () => rtf && initVal && typeof initVal === "string" && !initVal.trim().startsWith("<") ? marked.parse(initVal) : initVal;
+  const [local, setLocal] = useState(getInitial);
+  useEffect(() => { setLocal(getInitial()); }, [path, draft]);
   const commit = () => upd(path, local);
   return (
     <div className="cf">
       <label className="cl">{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
-      {ta
-        ? <textarea className="ci" rows={3} value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
-        : <input    className="ci"          value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
+      {rtf
+        ? <div style={{background:"white"}}><ReactQuill theme="snow" modules={quillModules} value={local} onChange={setLocal} onBlur={(r,s,e)=>upd(path, e.getHTML())} /></div>
+        : ta
+          ? <textarea className="ci" rows={3} value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
+          : <input    className="ci"          value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
       }
     </div>
   );
@@ -2647,7 +2665,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
               </div>
               <F label="Program Title" path={`programs.${i}.title`}/>
               <F label="Short Description" path={`programs.${i}.sub`}/>
-              <F label="Full Details (Popup)" path={`programs.${i}.details`} multi={true}/>
+              <F label="Full Details (Popup)" path={`programs.${i}.details`} rtf={true}/>
             </div>
           </div>
         ))}
