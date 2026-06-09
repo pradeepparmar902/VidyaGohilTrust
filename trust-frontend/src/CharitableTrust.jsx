@@ -1989,7 +1989,7 @@ const F = ({label, path, ta, rtf, hint}) => {
     <div className="cf">
       <label className="cl">{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
       {rtf
-        ? <div style={{background:"white"}}><ReactQuill theme="snow" modules={quillModules} value={local} onChange={setLocal} onBlur={(r,s,e)=>upd(path, e.getHTML())} /></div>
+        ? <div style={{background:"white"}}><ReactQuill theme="snow" modules={quillModules} value={local} onChange={(content) => { setLocal(content); upd(path, content); }} /></div>
         : ta
           ? <textarea className="ci" rows={3} value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
           : <input    className="ci"          value={local} onChange={e=>setLocal(e.target.value)} onBlur={commit}/>
