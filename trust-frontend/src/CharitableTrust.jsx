@@ -4733,6 +4733,14 @@ function AdminAccess({ C, setC, master, auth }) {
     }
   }, [master, auth?.idToken]);
 
+  const saveToFirebase = async (newC) => {
+    try {
+      await fbSave(newC, auth.idToken);
+    } catch(e) {
+      alert("Failed to save access control changes to Firebase: " + e.message);
+    }
+  };
+
   const handleAdd = () => {
     if (!selectedUser) return alert("Please enter or select an email address.");
     const email = selectedUser.trim();
@@ -4740,23 +4748,29 @@ function AdminAccess({ C, setC, master, auth }) {
     if (roles.find(r => r.email.toLowerCase() === email.toLowerCase())) {
       return alert("User already exists in access control.");
     }
-    setC({...C, access: { ...C.access, roles: [...roles, { email: email.toLowerCase(), permissions: [] }] }});
+    const newC = {...C, access: { ...C.access, roles: [...roles, { email: email.toLowerCase(), permissions: [] }] }};
+    setC(newC);
+    saveToFirebase(newC);
     setSelectedUser("");
   };
 
   const handleRemove = (email) => {
     if(!confirm("Remove access for " + email + "?")) return;
-    setC({...C, access: { ...C.access, roles: roles.filter(r => r.email !== email) }});
+    const newC = {...C, access: { ...C.access, roles: roles.filter(r => r.email !== email) }};
+    setC(newC);
+    saveToFirebase(newC);
   };
 
   const togglePerm = (email, perm) => {
-    setC({...C, access: { ...C.access, roles: roles.map(r => {
+    const newC = {...C, access: { ...C.access, roles: roles.map(r => {
       if (r.email === email) {
         const perms = r.permissions.includes(perm) ? r.permissions.filter(p => p !== perm) : [...r.permissions, perm];
         return { ...r, permissions: perms };
       }
       return r;
-    })}});
+    })}};
+    setC(newC);
+    saveToFirebase(newC);
   };
 
   return (
