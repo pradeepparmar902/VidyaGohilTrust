@@ -4143,7 +4143,8 @@ function AdminGallery({ mob, C, setC, auth }) {
       <datalist id="gallery-categories">
         {existingCats.map(c => <option key={c} value={c}/>)}
       </datalist>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16,gap:10}}>
+        <button onClick={() => upd([...items].sort((a,b) => (a.category||"").localeCompare(b.category||"")))} style={{padding:"8px 14px",borderRadius:8,border:"1px solid var(--bd)",background:"white",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--dt)"}}>Sort by Category</button>
         <label className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",cursor:"pointer",opacity:loading?0.5:1}}>
           {loading ? "Uploading..." : "Upload Media"}
           <input type="file" accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
