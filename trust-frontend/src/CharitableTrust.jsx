@@ -1994,7 +1994,8 @@ const F = ({label, path, ta, rtf, hint}) => {
 
   const engPath = path.endsWith("Gu") ? path.slice(0, -2) : null;
   const [translating, setTranslating] = useState(false);
-  const handleTranslate = async () => {
+  const handleTranslate = async (e) => {
+    e.preventDefault();
     if (!engPath) return;
     const engText = gv(engPath);
     if (!engText) return;
@@ -2005,7 +2006,7 @@ const F = ({label, path, ta, rtf, hint}) => {
       const translated = data[0].map(x => x[0]).join('');
       setLocal(translated);
       upd(path, translated);
-    } catch (e) {
+    } catch (err) {
       alert("Translation failed");
     } finally {
       setTranslating(false);
@@ -2017,7 +2018,7 @@ const F = ({label, path, ta, rtf, hint}) => {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:4}}>
         <label className="cl" style={{marginBottom:0}}>{label}{hint&&<span style={{color:"var(--tm)",marginLeft:6,fontWeight:400,textTransform:"none",fontSize:".7rem"}}>({hint})</span>}</label>
         {engPath && (
-          <button onClick={handleTranslate} disabled={translating} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".75rem",cursor:"pointer",fontWeight:600,padding:0}}>
+          <button type="button" onClick={handleTranslate} disabled={translating} style={{background:"none",border:"none",color:"var(--sf)",fontSize:".75rem",cursor:"pointer",fontWeight:600,padding:0}}>
             {translating ? "Translating..." : "Auto Translate"}
           </button>
         )}
@@ -2708,12 +2709,13 @@ function ContentEditor({ C, setC, setPage, auth }) {
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <span style={{fontSize:".75rem",fontWeight:600,color:"#666",width:60}}>Gujarati</span>
                 <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={draft.about.pointsGu?.[i] || ""} onCommit={v=>upd(`about.pointsGu.${i}`,v)}/>
-                <button onClick={async () => {
+                <button type="button" onClick={async (e) => {
+                  e.preventDefault();
                   try {
                     const res = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=' + encodeURIComponent(pt));
                     const data = await res.json();
                     upd(`about.pointsGu.${i}`, data[0].map(x => x[0]).join(''));
-                  } catch(e) { alert("Translation failed"); }
+                  } catch(err) { alert("Translation failed"); }
                 }} style={{padding:"8px 10px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".75rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate</button>
               </div>
             </div>
