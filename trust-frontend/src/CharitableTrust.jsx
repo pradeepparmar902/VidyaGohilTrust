@@ -2665,7 +2665,9 @@ function ContentEditor({ C, setC, setPage, auth }) {
               </div>
               <F label="Program Title" path={`programs.${i}.title`}/>
               <F label="Short Description" path={`programs.${i}.sub`}/>
-              <F label="Full Details (Popup)" path={`programs.${i}.details`} rtf={true}/>
+              <div style={{gridColumn: "1 / -1"}}>
+                <F label="Full Details (Popup)" path={`programs.${i}.details`} rtf={true}/>
+              </div>
             </div>
           </div>
         ))}
