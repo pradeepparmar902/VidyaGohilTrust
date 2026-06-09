@@ -2958,37 +2958,10 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
       </div>
 
       <div style={{marginLeft:sw,flex:1,transition:"margin-left .3s",minHeight:"100vh",minWidth:0}}>
-        <div style={{background:"white",borderBottom:"1px solid var(--bd)",padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            {mob && <button onClick={()=>setOpen(true)} style={{background:"none",border:"1px solid var(--bd)",borderRadius:8,width:34,height:34,cursor:"pointer",fontSize:"1rem"}}>☰</button>}
-            <div>
-              <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.15rem",color:"var(--dt)",fontWeight:700}}>{ANAV.find(n=>n.id===tab)?.icon} {ANAV.find(n=>n.id===tab)?.label}</h1>
-              {!mob && <p style={{fontSize:".72rem",color:"var(--mu)",marginTop:2}}>Vidya Gohil Charitable Trust</p>}
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            {!mob && <input placeholder="Search..." style={{padding:"7px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".8rem",width:170,fontFamily:"inherit"}}/>}
-
-            {auth?.email ? (
-              <>
-                {!mob && <span style={{fontSize:".75rem",color:"var(--mu)",maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{auth.email}</span>}
-                <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:".85rem"}} title={auth.email}>
-                  {auth.email[0].toUpperCase()}
-                </div>
-                <button onClick={onLogout} style={{padding:"6px 12px",borderRadius:8,background:"#FEF0EF",border:"1px solid #F5B8B8",color:"#C0392B",fontWeight:600,fontSize:".75rem",cursor:"pointer",whiteSpace:"nowrap"}}>
-                  {mob ? "Out" : "Logout"}
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={onShowLogin} style={{padding:"7px 14px",borderRadius:8,background:"linear-gradient(135deg,var(--sf),var(--gd))",border:"none",color:"white",fontWeight:700,fontSize:mob?".75rem":".78rem",cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(232,101,10,.3)"}}>
-                  {mob ? "🔑 Login" : "🔑 Login to Firebase"}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        <div style={{padding:mob?"16px":"24px"}}>
+        {mob && !open && (
+          <button onClick={()=>setOpen(true)} style={{position:"fixed",top:16,left:16,zIndex:100,background:"white",border:"1px solid var(--bd)",borderRadius:8,width:40,height:40,cursor:"pointer",fontSize:"1.2rem",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",display:"flex",alignItems:"center",justifyContent:"center"}}>☰</button>
+        )}
+        <div style={{padding:mob?"60px 16px 16px":"24px"}}>
           {visibleNav.length === 0 && (
             <div style={{textAlign:"center",padding:40,color:"var(--mu)",background:"white",borderRadius:12}}>
               <h2 style={{fontSize:"1.5rem",color:"#C0392B",marginBottom:10}}>Access Denied</h2>
