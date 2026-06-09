@@ -428,6 +428,11 @@ const DC = {
     {label:"Donate",    labelGu:"દાન",            sectionId:"donate",   icon:"❤️", visible:true},
     {label:"Contact",   labelGu:"સંપર્ક",          sectionId:"contact",  icon:"📞", visible:true},
   ],
+  footer: {
+    description: "Serving humanity with compassion since 2004. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.",
+    copyrightYear: "2025",
+    tagline: "Designed with love for humanity"
+  },
   builtinSections:{
     hero:true, about:true, programs:true,
     gallery:true, events:true, donate:true, contact:true,
@@ -1674,7 +1679,7 @@ function Footer({ C, onFooterLinkClick }) {
               <LogoMark logo={C.trust.logo} mob={false}/>
               <div style={{fontFamily:"'Playfair Display',serif",fontWeight:700,color:"white",fontSize:".9rem"}}>{C.trust.name}</div>
             </div>
-            <p style={{fontSize:".82rem",lineHeight:1.7,marginBottom:12}}>Serving humanity with compassion since {C.trust.estd}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.</p>
+            <p style={{fontSize:".82rem",lineHeight:1.7,marginBottom:12}}>{C.footer?.description || `Serving humanity with compassion since ${C.trust.estd}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`}</p>
             <div style={{fontSize:".72rem",color:"rgba(255,255,255,.4)"}}>CIN: {C.trust.cin}</div>
           </div>
           {[{title:"Quick Links",items:[{label:"About Us",id:"about"},{label:"Programs",id:"programs"},{label:"Events",id:"events"},{label:"Gallery",id:"gallery"},{label:"Contact",id:"contact"}]},{title:"Programs",items:[{label:"Education",id:"programs"},{label:"Healthcare",id:"programs"},{label:"Women Empowerment",id:"programs"},{label:"Environment",id:"programs"}]},{title:"Legal",items:[{label:"Privacy Policy",id:"privacy"},{label:"Terms of Use",id:"terms"},{label:"Refund Policy",id:"refund"},{label:"Admin Login",id:"admin_login"}]}].map(col=>(
@@ -1685,8 +1690,8 @@ function Footer({ C, onFooterLinkClick }) {
           ))}
         </div>
         <div style={{borderTop:"1px solid rgba(255,255,255,.1)",paddingTop:18,display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-          <div style={{fontSize:".75rem"}}>2025 {C.trust.name}. All rights reserved.</div>
-          <div style={{fontSize:".75rem"}}>Designed with love for humanity</div>
+          <div style={{fontSize:".75rem"}}>{C.footer?.copyrightYear || "2025"} {C.trust.name}. All rights reserved.</div>
+          <div style={{fontSize:".75rem"}}>{C.footer?.tagline || "Designed with love for humanity"}</div>
         </div>
       </div>
     </footer>
@@ -2824,6 +2829,13 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <AddBtn label="Social Link" onClick={()=>addItem("contact.socials","New Link")}/>
         </div>
       </Sec>
+
+      <Sec id="footer" icon="🦶" label="Footer Settings">
+        <F label="Footer Description" path="footer.description" ta/>
+        <F label="Copyright Year" path="footer.copyrightYear"/>
+        <F label="Footer Tagline" path="footer.tagline"/>
+      </Sec>
+
 
       <div style={{position:"sticky",bottom:16,background:"white",border:"1px solid var(--bd)",borderRadius:16,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 8px 32px rgba(0,0,0,.1)",marginTop:16,flexWrap:"wrap",gap:10}}>
         <div style={{fontSize:".82rem",color:"var(--mu)"}}>
