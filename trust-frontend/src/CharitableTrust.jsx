@@ -698,7 +698,7 @@ function Hero({ C, lang }) {
 }
 
 // ── PROGRAMS ──────────────────────────────────────────────────────────────────
-function Programs({ C }) {
+function Programs({ C, lang }) {
   const w = useW(); const cols = w<640?"1fr":w<960?"1fr 1fr":"1fr 1fr 1fr";
   const [activeProg, setActiveProg] = useState(null);
   return (
@@ -712,8 +712,8 @@ function Programs({ C }) {
         <div style={{display:"grid",gridTemplateColumns:cols,gap:18}}>
           {C.programs.map((p,i)=><div key={i} className="ch" style={{background:p.color,border:`1px solid ${p.border}`,borderRadius:16,padding:"24px 20px",cursor:"pointer"}} onClick={()=>setActiveProg(p)}>
             <div style={{fontSize:"2rem",marginBottom:12}}>{p.icon}</div>
-            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",fontWeight:700,color:"var(--dt)",marginBottom:7}}>{p.title}</h3>
-            <p style={{fontSize:".85rem",color:"var(--tm2)",lineHeight:1.6,margin:0}}>{p.sub}</p>
+            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1rem",fontWeight:700,color:"var(--dt)",marginBottom:7}}>{lang==="gu"&&p.titleGu?p.titleGu:p.title}</h3>
+            <p style={{fontSize:".85rem",color:"var(--tm2)",lineHeight:1.6,margin:0}}>{lang==="gu"&&p.subGu?p.subGu:p.sub}</p>
             <div style={{marginTop:14,color:"var(--sf)",fontSize:".8rem",fontWeight:600}}>Learn more</div>
           </div>)}
         </div>
@@ -730,7 +730,7 @@ function Programs({ C }) {
             ✕
           </button>
           <div style={{fontSize:"3rem",marginBottom:16,textAlign:"center"}}>{activeProg.icon}</div>
-          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--dt)",marginBottom:12,textAlign:"center"}}>{activeProg.title}</h3>
+          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",fontWeight:700,color:"var(--dt)",marginBottom:12,textAlign:"center"}}>{lang==="gu"&&activeProg.titleGu?activeProg.titleGu:activeProg.title}</h3>
           <div style={{width:60,height:4,background:"var(--sf)",borderRadius:2,margin:"0 auto 20px"}}/>
           <style>{`
             .md-content { font-size: .95rem; color: var(--tm2); line-height: 1.7; text-align: left; word-break: break-word; overflow-wrap: break-word; max-width: 100%; overflow-x: hidden; }
@@ -746,7 +746,7 @@ function Programs({ C }) {
             .md-content blockquote { border-left: 4px solid var(--sf); padding-left: 1em; margin-left: 0; color: #666; font-style: italic; }
             .md-content mark { background: #FFF4EC; color: var(--dt); padding: 0 4px; border-radius: 4px; font-weight: 600; }
           `}</style>
-          <div className="md-content" dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(activeProg.details || activeProg.sub))}} />
+          <div className="md-content" dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse((lang==="gu"&&activeProg.detailsGu?activeProg.detailsGu:activeProg.details) || (lang==="gu"&&activeProg.subGu?activeProg.subGu:activeProg.sub)))}} />
           <div style={{marginTop:30,textAlign:"center"}}>
             <button onClick={()=>setActiveProg(null)} style={{padding:"12px 30px",borderRadius:10,background:"var(--sf)",color:"white",border:"none",fontWeight:600,fontSize:".9rem",cursor:"pointer"}}>Close</button>
           </div>
@@ -2113,6 +2113,12 @@ function ContentEditor({ C, setC, setPage, auth }) {
     if(!d.about.pointsGu || d.about.pointsGu.length !== d.about.points.length) {
       d.about.pointsGu = d.about.points.map((p, i) => (d.about.pointsGu && d.about.pointsGu[i]) || "");
     }
+    if(!d.programs) d.programs = [];
+    d.programs.forEach(p => {
+      if(!p.titleGu) p.titleGu = "";
+      if(!p.subGu) p.subGu = "";
+      if(!p.detailsGu) p.detailsGu = "";
+    });
     if(!d.footer) d.footer = {
       description: `Serving humanity with compassion since ${d.trust?.estd || "2004"}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`,
       copyrightYear: new Date().getFullYear().toString(),
@@ -2779,10 +2785,63 @@ function ContentEditor({ C, setC, setPage, auth }) {
                   {COLORS.map(c=><div key={c.c} onClick={()=>{upd(`programs.${i}.color`,c.c);upd(`programs.${i}.border`,c.b);}} style={{width:32,height:32,borderRadius:8,background:c.c,border:`3px solid ${p.color===c.c?"var(--sf)":"var(--bd)"}`,cursor:"pointer",transition:"all .2s"}}/>)}
                 </div>
               </div>
-              <F label="Program Title" path={`programs.${i}.title`}/>
-              <F label="Short Description" path={`programs.${i}.sub`}/>
+              <div className="cf" style={{gridColumn: "1 / -1"}}>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Program Title</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(p.title)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`programs.${i}.titleGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".7rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                  <BlurInput className="ci" value={p.title} onCommit={v=>upd(`programs.${i}.title`,v)} placeholder="English Title"/>
+                  <BlurInput className="ci" value={p.titleGu||""} onCommit={v=>upd(`programs.${i}.titleGu`,v)} placeholder="Gujarati Title"/>
+                </div>
+              </div>
+
+              <div className="cf" style={{gridColumn: "1 / -1"}}>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Short Description</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(p.sub)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`programs.${i}.subGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".7rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                  <BlurInput className="ci" value={p.sub} onCommit={v=>upd(`programs.${i}.sub`,v)} placeholder="English Description"/>
+                  <BlurInput className="ci" value={p.subGu||""} onCommit={v=>upd(`programs.${i}.subGu`,v)} placeholder="Gujarati Description"/>
+                </div>
+              </div>
+
               <div style={{gridColumn: "1 / -1"}}>
-                <F label="Full Details (Popup)" path={`programs.${i}.details`} rtf={true}/>
+                <label className="cl">Full Details (Popup) - English</label>
+                <div style={{background:"white",borderRadius:8,border:"1px solid var(--bd)",marginBottom:14}}>
+                  <ReactQuill theme="snow" value={p.details||""} onChange={v=>upd(`programs.${i}.details`,v)} />
+                </div>
+                
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Full Details (Popup) - Gujarati</span>
+                  <button onClick={async()=>{
+                    try {
+                      const plainText = (p.details||"").replace(/<[^>]+>/g, ' ');
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(plainText)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`programs.${i}.detailsGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".7rem",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Auto Translate (Plain Text)</button>
+                </label>
+                <div style={{background:"white",borderRadius:8,border:"1px solid var(--bd)"}}>
+                  <ReactQuill theme="snow" value={p.detailsGu||""} onChange={v=>upd(`programs.${i}.detailsGu`,v)} />
+                </div>
               </div>
             </div>
           </div>
@@ -4253,7 +4312,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
         <>
           <Hero C={C} lang={lang}/>
           {bs.about    !== false && <About C={C} lang={lang}/>}
-          {bs.programs !== false && <Programs C={C}/>}
+          {bs.programs !== false && <Programs C={C} lang={lang}/>}
           {bs.gallery  !== false && <Gallery C={C}/>}
           {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
           {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
