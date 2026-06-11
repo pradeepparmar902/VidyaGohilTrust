@@ -2921,7 +2921,17 @@ function ContentEditor({ C, setC, setPage, auth }) {
               </div>
 
               <div className="cf">
-                <label className="cl">Year</label>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Year</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(ev.month)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`events.${i}.monthGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto</button>
+                </label>
                 <div style={{display:"flex",flexDirection:"column",gap:4}}>
                   <BlurInput className="ci" value={ev.month} onCommit={v=>upd(`events.${i}.month`,v)} placeholder="English Year"/>
                   <BlurInput className="ci" value={ev.monthGu||""} onCommit={v=>upd(`events.${i}.monthGu`,v)} placeholder="Gujarati Year"/>
