@@ -1017,7 +1017,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
   );
 }
 
-function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
+function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
   const w = useW(); const mob = w<700;
   const [selectedEvent, setSelectedEvent] = useState(null); // { type: 'register' | 'details', event }
   const [formData, setFormData] = useState({});
@@ -1179,14 +1179,14 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
           {C.events.map((ev,i)=>(
             <div key={i} className="ch" style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",display:"flex"}}>
               <div style={{background:"linear-gradient(180deg,var(--dt),var(--tm))",color:"white",padding:"18px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minWidth:72,flexShrink:0}}>
-                <div style={{fontSize:"1.6rem",fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1}}>{ev.date?.split(" ")[0]}</div>
-                <div style={{fontSize:".7rem",opacity:.8,marginTop:3}}>{ev.date?.split(" ")[1]}</div>
-                <div style={{fontSize:".65rem",opacity:.6}}>{ev.month}</div>
+                <div style={{fontSize:"1.6rem",fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1}}>{(lang==="gu"&&ev.dateGu?ev.dateGu:ev.date)?.split(" ")[0]}</div>
+                <div style={{fontSize:".7rem",opacity:.8,marginTop:3}}>{(lang==="gu"&&ev.dateGu?ev.dateGu:ev.date)?.split(" ")[1]}</div>
+                <div style={{fontSize:".65rem",opacity:.6}}>{lang==="gu"&&ev.monthGu?ev.monthGu:ev.month}</div>
               </div>
               <div style={{padding:"16px",flex:1,minWidth:0}}>
-                <span style={{fontSize:".7rem",fontWeight:700,padding:"3px 9px",borderRadius:20,display:"inline-block",marginBottom:8,background:ev.color,color:"var(--dt)",border:"1px solid var(--bd)"}}>{ev.tag}</span>
-                <h4 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:5}}>{ev.title}</h4>
-                <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{ev.location}</p>
+                <span style={{fontSize:".7rem",fontWeight:700,padding:"3px 9px",borderRadius:20,display:"inline-block",marginBottom:8,background:ev.color,color:"var(--dt)",border:"1px solid var(--bd)"}}>{lang==="gu"&&ev.tagGu?ev.tagGu:ev.tag}</span>
+                <h4 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:5}}>{lang==="gu"&&ev.titleGu?ev.titleGu:ev.title}</h4>
+                <p style={{fontSize:".78rem",color:"var(--mu)",marginBottom:12}}>{lang==="gu"&&ev.locationGu?ev.locationGu:ev.location}</p>
                 <div style={{display:"flex",gap:7}}>
                   {ev.formId ? (
                     <button onClick={()=>{
@@ -1227,12 +1227,16 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
             
             {selectedEvent.type === 'details' && (
               <div>
-                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:10,fontWeight:700,paddingRight:30}}>{selectedEvent.event.title}</h3>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:10,fontWeight:700,paddingRight:30}}>{lang==="gu"&&selectedEvent.event.titleGu?selectedEvent.event.titleGu:selectedEvent.event.title}</h3>
                 <div style={{display:"flex",gap:10,marginBottom:16}}>
-                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:selectedEvent.event.color||"var(--tl)",color:"var(--dt)"}}>{selectedEvent.event.tag}</span>
-                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:"#F5F5F5",color:"var(--mu)"}}>{selectedEvent.event.date} {selectedEvent.event.month}</span>
+                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:selectedEvent.event.color||"var(--tl)",color:"var(--dt)"}}>{lang==="gu"&&selectedEvent.event.tagGu?selectedEvent.event.tagGu:selectedEvent.event.tag}</span>
+                   <span style={{fontSize:".75rem",fontWeight:600,padding:"4px 10px",borderRadius:20,background:"#F5F5F5",color:"var(--mu)"}}>{lang==="gu"&&selectedEvent.event.dateGu?selectedEvent.event.dateGu:selectedEvent.event.date} {lang==="gu"&&selectedEvent.event.monthGu?selectedEvent.event.monthGu:selectedEvent.event.month}</span>
                 </div>
-                <p style={{fontSize:".9rem",color:"var(--tm2)",lineHeight:1.6}}>Join us at <strong>{selectedEvent.event.location}</strong> for this incredible event. We look forward to seeing you there!</p>
+                <p style={{fontSize:".9rem",color:"var(--tm2)",lineHeight:1.6}}>
+                  {lang === "gu" ? "આ ઇવેન્ટ માટે " : "Join us at "} 
+                  <strong>{lang==="gu"&&selectedEvent.event.locationGu?selectedEvent.event.locationGu:selectedEvent.event.location}</strong> 
+                  {lang === "gu" ? " માં જોડાઓ. અમે તમને ત્યાં જોવા માટે આતુર છીએ!" : " for this incredible event. We look forward to seeing you there!"}
+                </p>
               </div>
             )}
 
@@ -1242,7 +1246,7 @@ function Events({ C, globalAuthToken, globalProfile, onPublicLogin }) {
                   {authStep === 'register' ? 'New User Entry' : authStep === 0 ? 'User Login' : 'Event Registration'}
                 </h3>
                 <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:20}}>
-                  {authStep === 1 ? selectedEvent.event.title : 'Sign in or create a profile to continue'}
+                  {authStep === 1 ? (lang==="gu"&&selectedEvent.event.titleGu?selectedEvent.event.titleGu:selectedEvent.event.title) : 'Sign in or create a profile to continue'}
                 </p>
                 {done ? (
                   <div style={{textAlign:"center",padding:"30px 0"}}>
@@ -2119,6 +2123,14 @@ function ContentEditor({ C, setC, setPage, auth }) {
       if(!p.subGu) p.subGu = "";
       if(!p.detailsGu) p.detailsGu = "";
     });
+    if(!d.events) d.events = [];
+    d.events.forEach(ev => {
+      if(!ev.titleGu) ev.titleGu = "";
+      if(!ev.locationGu) ev.locationGu = "";
+      if(!ev.dateGu) ev.dateGu = "";
+      if(!ev.monthGu) ev.monthGu = "";
+      if(!ev.tagGu) ev.tagGu = "";
+    });
     if(!d.footer) d.footer = {
       description: `Serving humanity with compassion since ${d.trust?.estd || "2004"}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`,
       copyrightYear: new Date().getFullYear().toString(),
@@ -2854,15 +2866,86 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <div key={i} style={{border:"1px solid var(--bd)",borderRadius:12,padding:"16px",marginBottom:14,background:"#FAFAFA"}}>
             <RowBar arrPath="events" idx={i} total={draft.events.length} label="Event"/>
             <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 14px"}}>
-              <F label="Event Title" path={`events.${i}.title`}/>
-              <F label="Location" path={`events.${i}.location`}/>
-              <F label="Date (e.g. Jun 15)" path={`events.${i}.date`}/>
-              <F label="Year" path={`events.${i}.month`}/>
               <div className="cf">
-                <label className="cl">Category</label>
-                <select className="ci" value={ev.tag} onChange={e=>upd(`events.${i}.tag`,e.target.value)}>
-                  {["Health","Education","Environment","Empowerment","Relief","Community"].map(t=><option key={t}>{t}</option>)}
-                </select>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Event Title</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(ev.title)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`events.${i}.titleGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <BlurInput className="ci" value={ev.title} onCommit={v=>upd(`events.${i}.title`,v)} placeholder="English Title"/>
+                  <BlurInput className="ci" value={ev.titleGu||""} onCommit={v=>upd(`events.${i}.titleGu`,v)} placeholder="Gujarati Title"/>
+                </div>
+              </div>
+
+              <div className="cf">
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Location</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(ev.location)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`events.${i}.locationGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <BlurInput className="ci" value={ev.location} onCommit={v=>upd(`events.${i}.location`,v)} placeholder="English Location"/>
+                  <BlurInput className="ci" value={ev.locationGu||""} onCommit={v=>upd(`events.${i}.locationGu`,v)} placeholder="Gujarati Location"/>
+                </div>
+              </div>
+
+              <div className="cf">
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Date (e.g. Jun 15)</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(ev.date)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`events.${i}.dateGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto</button>
+                </label>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <BlurInput className="ci" value={ev.date} onCommit={v=>upd(`events.${i}.date`,v)} placeholder="English Date"/>
+                  <BlurInput className="ci" value={ev.dateGu||""} onCommit={v=>upd(`events.${i}.dateGu`,v)} placeholder="Gujarati Date"/>
+                </div>
+              </div>
+
+              <div className="cf">
+                <label className="cl">Year</label>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <BlurInput className="ci" value={ev.month} onCommit={v=>upd(`events.${i}.month`,v)} placeholder="English Year"/>
+                  <BlurInput className="ci" value={ev.monthGu||""} onCommit={v=>upd(`events.${i}.monthGu`,v)} placeholder="Gujarati Year"/>
+                </div>
+              </div>
+
+              <div className="cf">
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Category</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(ev.tag)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`events.${i}.tagGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto</button>
+                </label>
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                  <select className="ci" value={ev.tag} onChange={e=>upd(`events.${i}.tag`,e.target.value)}>
+                    {["Health","Education","Environment","Empowerment","Relief","Community"].map(t=><option key={t}>{t}</option>)}
+                  </select>
+                  <BlurInput className="ci" value={ev.tagGu||""} onCommit={v=>upd(`events.${i}.tagGu`,v)} placeholder="Gujarati Category"/>
+                </div>
               </div>
             </div>
           </div>
@@ -4314,7 +4397,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
           {bs.about    !== false && <About C={C} lang={lang}/>}
           {bs.programs !== false && <Programs C={C} lang={lang}/>}
           {bs.gallery  !== false && <Gallery C={C}/>}
-          {bs.events   !== false && <Events C={C} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
+          {bs.events   !== false && <Events C={C} lang={lang} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
           {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
           {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
           {bs.contact  !== false && <Contact C={C}/>}
