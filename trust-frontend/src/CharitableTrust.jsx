@@ -771,16 +771,11 @@ function About({ C, lang }) {
               "🙏"
             )}
           </div>
-          <div style={{position:"absolute",bottom:-20,right:-16,background:"white",borderRadius:16,padding:a.badgeImage?"12px":"18px 22px",boxShadow:"0 12px 40px rgba(0,0,0,.1)",border:"1px solid var(--bd)"}}>
-            {a.badgeImage ? (
+          {a.badgeImage && (
+            <div style={{position:"absolute",bottom:-20,right:-16,background:"white",borderRadius:16,padding:"12px",boxShadow:"0 12px 40px rgba(0,0,0,.1)",border:"1px solid var(--bd)"}}>
               <img src={a.badgeImage} alt="Badge" style={{height: 70, objectFit:"contain", display:"block"}}/>
-            ) : (
-              <>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:"1.8rem",fontWeight:700,color:"var(--sf)"}}>20+</div>
-                <div style={{fontSize:".78rem",color:"var(--tm2)"}}>{a.yearsLabel}</div>
-              </>
-            )}
-          </div>
+            </div>
+          )}
         </div>}
         <div>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>About the Trust</span>
