@@ -428,6 +428,7 @@ const DC = {
     {label:"Home",      labelGu:"ઘર",           sectionId:"home",     icon:"🏠", visible:true},
     {label:"About",     labelGu:"અમારા વિશે",    sectionId:"about",    icon:"ℹ️", visible:true},
     {label:"Programs",  labelGu:"કાર્યક્રમો",     sectionId:"programs", icon:"📋", visible:true},
+    {label:"Achievements",labelGu:"સિદ્ધિઓ",      sectionId:"achievements",icon:"🏆", visible:true},
     {label:"Gallery",   labelGu:"ગૅલેરી",         sectionId:"gallery",  icon:"🖼️", visible:true},
     {label:"Events",    labelGu:"ઘટનાઓ",          sectionId:"events",   icon:"📅", visible:true},
     {label:"Donate",    labelGu:"દાન",            sectionId:"donate",   icon:"❤️", visible:true},
