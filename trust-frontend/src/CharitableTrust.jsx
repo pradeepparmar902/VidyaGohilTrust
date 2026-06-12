@@ -766,7 +766,7 @@ function About({ C, lang }) {
         {!mob && <div style={{position:"relative"}}>
           <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)",overflow:"hidden"}}>
             {a.mainImage ? (
-              <img src={a.mainImage} alt="About Us" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} />
+              <img src={a.mainImage} alt="About Us" style={{width:"100%",height:"100%",objectFit:"contain",background:"white",display:"block"}} />
             ) : (
               "🙏"
             )}
