@@ -1456,19 +1456,11 @@ function Achievements({ C, lang }) {
         </div>
         <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fit, minmax(280px, 1fr))",gap:24}}>
           {items.map((item, i) => (
-            <div key={i} onClick={()=>setActiveItem(item)}
-              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-6px)"}
-              onMouseLeave={e=>e.currentTarget.style.transform="none"}
-              style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column",cursor:"pointer",transition:"transform .2s ease"}}>
-              {item.image && (
-                <div style={{width:"100%",aspectRatio:"4/3",background:"#F9F9F9",borderBottom:"1px solid var(--bd)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-                  <img src={item.image} alt={item.title} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",boxShadow:"0 4px 12px rgba(0,0,0,.08)",borderRadius:4}}/>
-                </div>
-              )}
-              <div style={{padding:"20px",flex:1,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center"}}>
-                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",color:"var(--dt)",fontWeight:700,margin:0,lineHeight:1.3}}>
-                  {lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}
-                </h3>
+            <div key={i} onClick={()=>setActiveItem(item)} className="gi ch"
+              style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${item.image||""})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.8),transparent)",padding:"32px 16px 16px",color:"white",pointerEvents:"none",zIndex:2,textAlign:"center"}}>
+                <div style={{fontSize:"1.1rem",fontWeight:700,textShadow:"0 2px 4px rgba(0,0,0,0.5)"}}>{lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}</div>
+                <div style={{fontSize:".8rem",opacity:.9,marginTop:4,textShadow:"0 1px 2px rgba(0,0,0,0.5)"}}>{lang==="en"?"Click to view":"જોવા માટે ક્લિક કરો"}</div>
               </div>
             </div>
           ))}
