@@ -1444,6 +1444,7 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
 
 // ── ACHIEVEMENTS ──────────────────────────────────────────────────────────────
 function Achievements({ C, lang }) {
+  const [activeItem, setActiveItem] = useState(null);
   const w = useW(); const mob = w<768; const items = C.achievements || [];
   if(items.length === 0) return null;
   return (
@@ -1453,26 +1454,49 @@ function Achievements({ C, lang }) {
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Recognition</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>{lang==="en"?"Achievements & Press Releases":"સિદ્ધિઓ અને અખબારી યાદીઓ"}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fit, minmax(320px, 1fr))",gap:24}}>
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fit, minmax(280px, 1fr))",gap:24}}>
           {items.map((item, i) => (
-            <div key={i} style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column"}}>
+            <div key={i} onClick={()=>setActiveItem(item)}
+              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-6px)"}
+              onMouseLeave={e=>e.currentTarget.style.transform="none"}
+              style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column",cursor:"pointer",transition:"transform .2s ease"}}>
               {item.image && (
                 <div style={{width:"100%",aspectRatio:"4/3",background:"#F9F9F9",borderBottom:"1px solid var(--bd)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
                   <img src={item.image} alt={item.title} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",boxShadow:"0 4px 12px rgba(0,0,0,.08)",borderRadius:4}}/>
                 </div>
               )}
-              <div style={{padding:"24px",flex:1,display:"flex",flexDirection:"column"}}>
-                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.25rem",color:"var(--dt)",fontWeight:700,marginBottom:12,lineHeight:1.3}}>
+              <div style={{padding:"20px",flex:1,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center"}}>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",color:"var(--dt)",fontWeight:700,margin:0,lineHeight:1.3}}>
                   {lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}
                 </h3>
-                {item.desc && <p style={{color:"var(--tm2)",fontSize:".9rem",lineHeight:1.6,margin:0,whiteSpace:"pre-wrap"}}>
-                  {lang==="en"?item.desc:item.descGu}
-                </p>}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {activeItem && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:40}}>
+          <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:800,maxHeight:"90vh",overflowY:"auto",position:"relative",display:"flex",flexDirection:"column",boxShadow:"0 24px 60px rgba(0,0,0,.4)"}}>
+            <button onClick={()=>setActiveItem(null)} style={{position:"absolute",top:16,right:16,width:36,height:36,borderRadius:"50%",background:"#f5f5f5",color:"#333",border:"none",fontSize:"1.2rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>✕</button>
+            {activeItem.image && (
+              <div style={{width:"100%",background:"#F4F6F8",padding:mob?16:32,display:"flex",justifyContent:"center",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
+                <img src={activeItem.image} alt={activeItem.title} style={{maxWidth:"100%",maxHeight:"60vh",objectFit:"contain",boxShadow:"0 8px 24px rgba(0,0,0,.12)",borderRadius:4}}/>
+              </div>
+            )}
+            <div style={{padding:mob?"24px 20px":"32px 40px"}}>
+              <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.6rem",color:"var(--dt)",fontWeight:700,marginBottom:16}}>
+                {lang==="en"?(activeItem.title||"Untitled"):(activeItem.titleGu||activeItem.title||"Untitled")}
+              </h3>
+              {activeItem.desc && (
+                <p style={{color:"var(--tm2)",fontSize:"1.05rem",lineHeight:1.7,margin:0,whiteSpace:"pre-wrap"}}>
+                  {lang==="en"?activeItem.desc:activeItem.descGu}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
