@@ -1454,13 +1454,13 @@ function Achievements({ C, lang }) {
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Recognition</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>{lang==="en"?"Achievements & Press Releases":"સિદ્ધિઓ અને અખબારી યાદીઓ"}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fit, minmax(280px, 1fr))",gap:24}}>
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
           {items.map((item, i) => (
             <div key={i} onClick={()=>setActiveItem(item)} className="gi ch"
               style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${item.image||""})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.8),transparent)",padding:"32px 16px 16px",color:"white",pointerEvents:"none",zIndex:2,textAlign:"center"}}>
-                <div style={{fontSize:"1.1rem",fontWeight:700,textShadow:"0 2px 4px rgba(0,0,0,0.5)"}}>{lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}</div>
-                <div style={{fontSize:".8rem",opacity:.9,marginTop:4,textShadow:"0 1px 2px rgba(0,0,0,0.5)"}}>{lang==="en"?"Click to view":"જોવા માટે ક્લિક કરો"}</div>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none",zIndex:2,textAlign:"center"}}>
+                <div style={{fontSize:".85rem",fontWeight:600}}>{lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}</div>
+                <div style={{fontSize:".7rem",opacity:.9,marginTop:2}}>{lang==="en"?"Click to view":"જોવા માટે ક્લિક કરો"}</div>
               </div>
             </div>
           ))}
