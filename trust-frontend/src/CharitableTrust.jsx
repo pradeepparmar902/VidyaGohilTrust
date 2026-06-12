@@ -1456,11 +1456,33 @@ function Achievements({ C, lang }) {
         </div>
         <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
           {items.map((item, i) => (
-            <div key={i} onClick={()=>setActiveItem(item)} className="gi ch"
-              style={{aspectRatio:"4/3",background:"#eee",backgroundImage:`url(${item.image||""})`,backgroundSize:"cover",backgroundPosition:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",borderRadius:12,overflow:"hidden",cursor:"pointer",touchAction:"manipulation"}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(to top,rgba(0,0,0,.7),transparent)",padding:"24px 12px 10px",color:"white",pointerEvents:"none",zIndex:2,textAlign:"center"}}>
-                <div style={{fontSize:".85rem",fontWeight:600}}>{lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}</div>
-                <div style={{fontSize:".7rem",opacity:.9,marginTop:2}}>{lang==="en"?"Click to view":"જોવા માટે ક્લિક કરો"}</div>
+            <div key={i} onClick={()=>setActiveItem(item)} className="gi"
+              onMouseEnter={e=>e.currentTarget.style.transform="translateY(-6px)"}
+              onMouseLeave={e=>e.currentTarget.style.transform="none"}
+              style={{background:"white",borderRadius:16,border:"1px solid #EAEAEA",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column",cursor:"pointer",transition:"all .3s ease"}}>
+              
+              {/* Image Area */}
+              <div style={{width:"100%",aspectRatio:"4/3",background:"#F9F9F9",borderBottom:"1px solid #EAEAEA",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+                {item.image ? (
+                  <img src={item.image} alt={item.title} style={{width:"100%",height:"100%",objectFit:"cover",transition:"transform .5s ease"}} className="ach-img"/>
+                ) : (
+                  <span style={{fontSize:"3rem",opacity:0.1}}>🏆</span>
+                )}
+              </div>
+
+              {/* Text Area (Yellow Box equivalent) */}
+              <div style={{padding:"20px",flex:1,display:"flex",flexDirection:"column",background:"white"}}>
+                <div style={{fontSize:".7rem",color:"var(--sf)",textTransform:"uppercase",fontWeight:700,letterSpacing:1,marginBottom:6}}>
+                  {lang==="en"?"Press Release / Certificate":"અખબારી યાદી / પ્રમાણપત્ર"}
+                </div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.2rem",color:"var(--dt)",fontWeight:700,margin:"0 0 10px 0",lineHeight:1.3}}>
+                  {lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}
+                </h3>
+                {item.desc && (
+                  <p style={{color:"var(--tm)",fontSize:".9rem",lineHeight:1.5,margin:0,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
+                    {lang==="en"?item.desc:item.descGu}
+                  </p>
+                )}
               </div>
             </div>
           ))}
