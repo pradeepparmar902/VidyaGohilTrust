@@ -1474,7 +1474,7 @@ function Achievements({ C, lang }) {
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Recognition</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>{lang==="en"?"Achievements & Press Releases":"સિદ્ધિઓ અને અખબારી યાદીઓ"}</h2>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:16}}>
           {items.map((item, i) => (
             <div key={i} onClick={()=>setActiveItem(item)} className="gi"
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-6px)"}
