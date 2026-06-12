@@ -3045,57 +3045,6 @@ function ContentEditor({ C, setC, setPage, auth }) {
         ))}
       </Sec>
 
-      <Sec id="achievements" icon="🏆" label="Achievements / Press Releases"
-        onAdd={()=>addItem("achievements",{title:"New Achievement",desc:""})} addLabel="Add Achievement">
-        {draft.achievements.map((a,i)=>(
-          <div key={i} style={{border:"1px solid var(--bd)",borderRadius:12,padding:"16px",marginBottom:14,background:"#FAFAFA"}}>
-            <RowBar arrPath="achievements" idx={i} total={draft.achievements.length} label="Achievement"/>
-            <G2>
-              <ImgUpload label="Certificate / Document Image" path={`achievements.${i}.image`} auth={auth}/>
-            </G2>
-            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 14px",marginTop:14}}>
-              <div className="cf" style={{gridColumn:"1/-1"}}>
-                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span>Title</span>
-                  <button onClick={async()=>{
-                    try {
-                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.title)}`);
-                      if(!res.ok) throw new Error();
-                      const data = await res.json();
-                      upd(`achievements.${i}.titleGu`, data[0].map(x => x[0]).join(''));
-                    } catch(err) { alert("Translation failed"); }
-                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
-                </label>
-                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
-                  <BlurInput className="ci" value={a.title||""} onCommit={v=>upd(`achievements.${i}.title`,v)} placeholder="English Title"/>
-                  <BlurInput className="ci" value={a.titleGu||""} onCommit={v=>upd(`achievements.${i}.titleGu`,v)} placeholder="Gujarati Title"/>
-                </div>
-              </div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 14px",marginTop:8}}>
-              <div className="cf" style={{gridColumn:"1/-1"}}>
-                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span>Description</span>
-                  <button onClick={async()=>{
-                    if(!a.desc) return;
-                    try {
-                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.desc)}`);
-                      if(!res.ok) throw new Error();
-                      const data = await res.json();
-                      upd(`achievements.${i}.descGu`, data[0].map(x => x[0]).join(''));
-                    } catch(err) { alert("Translation failed"); }
-                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
-                </label>
-                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
-                  <textarea className="ci" style={{minHeight:80,resize:"vertical",padding:"10px 14px"}} value={a.desc||""} onChange={e=>upd(`achievements.${i}.desc`,e.target.value)} placeholder="English Description"/>
-                  <textarea className="ci" style={{minHeight:80,resize:"vertical",padding:"10px 14px"}} value={a.descGu||""} onChange={e=>upd(`achievements.${i}.descGu`,e.target.value)} placeholder="Gujarati Description"/>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </Sec>
-
       <Sec id="donate" icon="❤️" label="Donation Section">
         <F label="Section Heading" path="donate.heading"/>
         <F label="Subtext" path="donate.subtext" ta/>
@@ -3299,6 +3248,7 @@ const ANAV = [
   {id:"registrations",icon:"📋",label:"Registrations"},
   {id:"volunteers",icon:"🤝",label:"Volunteers"},
   {id:"gallery",icon:"🖼️",label:"Gallery"},
+  {id:"achievements",icon:"🏆",label:"Achievements"},
   {id:"settings",icon:"⚙️",label:"Settings"},
   {id:"access",icon:"🔐",label:"Access Control"},
 ];
@@ -3310,7 +3260,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
 
   let hasAccess = [];
   if (auth?.email) {
-    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "settings", "access"] : (userRole?.permissions || []);
+    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "achievements", "settings", "access"] : (userRole?.permissions || []);
   }
 
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
@@ -4368,6 +4318,155 @@ function Volunteers({ mob, auth, C }) {
   );
 }
 
+// ── ADMIN ACHIEVEMENTS ───────────────────────────────────────────────────────
+function AdminAchievements({ mob, C, setC, auth }) {
+  const [items, setItems] = useState(C.achievements || []);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(null);
+
+  useEffect(() => setItems(C.achievements || []), [C.achievements]);
+
+  const saveToFb = async (newC) => {
+    if (!auth?.idToken) { alert("Login required to save"); return; }
+    setSaving(true);
+    try {
+      await fbSave(newC, auth.idToken);
+    } catch(e) {
+      alert("Save failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const upd = (newItems) => {
+    setItems(newItems);
+    const newC = {...C, achievements: newItems};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const addItem = () => {
+    const newItem = { title: "New Achievement", desc: "", image: "" };
+    upd([newItem, ...items]);
+  };
+
+  const updItem = (i, field, val) => {
+    const newItems = [...items];
+    newItems[i][field] = val;
+    upd(newItems);
+  };
+
+  const remove = (i) => {
+    if(confirm("Are you sure?")) {
+      const newItems = [...items];
+      newItems.splice(i, 1);
+      upd(newItems);
+    }
+  };
+
+  const move = (i, dir) => {
+    if(i+dir < 0 || i+dir >= items.length) return;
+    const newItems = [...items];
+    const temp = newItems[i];
+    newItems[i] = newItems[i+dir];
+    newItems[i+dir] = temp;
+    upd(newItems);
+  };
+
+  const uploadPhoto = async (e, i) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!auth?.idToken) { alert("Please login to upload media."); return; }
+    setUploading(i);
+    try {
+      const url = await fbUploadPhoto(file, auth.idToken);
+      updItem(i, "image", url);
+    } catch (err) {
+      alert("Upload failed: " + err.message);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  return (
+    <div style={{padding:mob?16:32,background:"#F4F6F8",minHeight:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+        <h2 style={{fontSize:"1.4rem",color:"var(--dt)",margin:0}}>Achievements & Press Releases</h2>
+        <div style={{display:"flex",gap:12}}>
+          {saving && <span style={{color:"var(--sf)",fontSize:".9rem",display:"flex",alignItems:"center"}}>Saving...</span>}
+          <button onClick={addItem} style={{background:"var(--dt)",color:"white",border:"none",padding:"10px 16px",borderRadius:8,cursor:"pointer",fontWeight:600}}>
+            + Add Achievement
+          </button>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        {items.length===0 && <div style={{padding:40,textAlign:"center",background:"white",borderRadius:12,color:"#888"}}>No achievements yet.</div>}
+        {items.map((a,i)=>(
+          <div key={i} style={{background:"white",borderRadius:12,padding:mob?16:24,boxShadow:"0 2px 8px rgba(0,0,0,.04)",position:"relative"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,borderBottom:"1px solid #eee",paddingBottom:12}}>
+              <span style={{fontWeight:600,color:"#555"}}>Item {i+1}</span>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>move(i,-1)} disabled={i===0} style={{padding:"4px 8px",cursor:i===0?"not-allowed":"pointer"}}>↑</button>
+                <button onClick={()=>move(i,1)} disabled={i===items.length-1} style={{padding:"4px 8px",cursor:i===items.length-1?"not-allowed":"pointer"}}>↓</button>
+                <button onClick={()=>remove(i)} style={{padding:"4px 8px",color:"red",cursor:"pointer"}}>✕</button>
+              </div>
+            </div>
+            
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"200px 1fr",gap:20}}>
+              <div>
+                <label style={{display:"block",fontSize:".8rem",fontWeight:600,marginBottom:8,color:"#666"}}>Image</label>
+                <div style={{width:"100%",aspectRatio:"4/3",background:"#f5f5f5",borderRadius:8,border:"1px dashed #ccc",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden",cursor:"pointer"}} onClick={()=>document.getElementById(`ach_img_${i}`).click()}>
+                  {a.image ? <img src={a.image} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{color:"#aaa"}}>{uploading===i?"Uploading...":"Click to Upload"}</span>}
+                  <input type="file" id={`ach_img_${i}`} style={{display:"none"}} accept="image/*" onChange={(e)=>uploadPhoto(e,i)}/>
+                </div>
+              </div>
+              
+              <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <label style={{fontSize:".8rem",fontWeight:600,color:"#666"}}>Title (EN/GU)</label>
+                    <button onClick={async()=>{
+                      try {
+                        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.title)}`);
+                        if(!res.ok) throw new Error();
+                        const data = await res.json();
+                        updItem(i, "titleGu", data[0].map(x => x[0]).join(''));
+                      } catch(err) { alert("Translation failed"); }
+                    }} style={{padding:"2px 6px",fontSize:".7rem",cursor:"pointer"}}>Auto Translate</button>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                    <input style={{padding:8,border:"1px solid #ccc",borderRadius:4}} value={a.title||""} onChange={e=>updItem(i,"title",e.target.value)} placeholder="English Title"/>
+                    <input style={{padding:8,border:"1px solid #ccc",borderRadius:4}} value={a.titleGu||""} onChange={e=>updItem(i,"titleGu",e.target.value)} placeholder="Gujarati Title"/>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <label style={{fontSize:".8rem",fontWeight:600,color:"#666"}}>Description (EN/GU)</label>
+                    <button onClick={async()=>{
+                      if(!a.desc) return;
+                      try {
+                        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.desc)}`);
+                        if(!res.ok) throw new Error();
+                        const data = await res.json();
+                        updItem(i, "descGu", data[0].map(x => x[0]).join(''));
+                      } catch(err) { alert("Translation failed"); }
+                    }} style={{padding:"2px 6px",fontSize:".7rem",cursor:"pointer"}}>Auto Translate</button>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                    <textarea style={{padding:8,border:"1px solid #ccc",borderRadius:4,minHeight:60,resize:"vertical"}} value={a.desc||""} onChange={e=>updItem(i,"desc",e.target.value)} placeholder="English Description"/>
+                    <textarea style={{padding:8,border:"1px solid #ccc",borderRadius:4,minHeight:60,resize:"vertical"}} value={a.descGu||""} onChange={e=>updItem(i,"descGu",e.target.value)} placeholder="Gujarati Description"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function AdminGallery({ mob, C, setC, auth }) {
   const [loading, setLoading] = useState(false);
