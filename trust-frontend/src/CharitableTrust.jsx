@@ -764,7 +764,13 @@ function About({ C, lang }) {
     <section id="about" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:60,alignItems:"center"}}>
         {!mob && <div style={{position:"relative"}}>
-          <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)"}}>🙏</div>
+          <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)",overflow:"hidden"}}>
+            {a.mainImage ? (
+              <img src={a.mainImage} alt="About Us" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} />
+            ) : (
+              "🙏"
+            )}
+          </div>
           <div style={{position:"absolute",bottom:-20,right:-16,background:"white",borderRadius:16,padding:a.badgeImage?"12px":"18px 22px",boxShadow:"0 12px 40px rgba(0,0,0,.1)",border:"1px solid var(--bd)"}}>
             {a.badgeImage ? (
               <img src={a.badgeImage} alt="Badge" style={{height: 70, objectFit:"contain", display:"block"}}/>
@@ -2739,10 +2745,13 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <F label="Paragraph 2" path="about.body2Gu" ta hint="Gujarati"/>
         </G2>
         <G2>
-          <F label="Years Label" path="about.yearsLabel"/>
+          <ImgUpload label="Main Image (Overrides 🙏)" path="about.mainImage" auth={auth}/>
           <ImgUpload label="Floating Badge Image (Overrides Years Label)" path="about.badgeImage" auth={auth}/>
         </G2>
-        <F label="CTA Button Text" path="about.cta"/>
+        <G2>
+          <F label="Years Label" path="about.yearsLabel"/>
+          <F label="CTA Button Text" path="about.cta"/>
+        </G2>
         <div className="cf">
           <label className="cl">Key Bullet Points</label>
           {draft.about.points.map((pt,i)=>(
