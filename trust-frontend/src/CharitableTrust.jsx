@@ -1491,15 +1491,15 @@ function Achievements({ C, lang }) {
               </div>
 
               {/* Text Area (Yellow Box equivalent) */}
-              <div style={{padding:"20px",flex:1,display:"flex",flexDirection:"column",background:"white"}}>
-                <div style={{fontSize:".7rem",color:"var(--sf)",textTransform:"uppercase",fontWeight:700,letterSpacing:1,marginBottom:6}}>
+              <div style={{padding:"12px 16px",flex:1,display:"flex",flexDirection:"column",background:"white"}}>
+                <div style={{fontSize:".65rem",color:"var(--sf)",textTransform:"uppercase",fontWeight:700,letterSpacing:1,marginBottom:4}}>
                   {lang==="en"?"Press Release / Certificate":"અખબારી યાદી / પ્રમાણપત્ર"}
                 </div>
-                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.2rem",color:"var(--dt)",fontWeight:700,margin:"0 0 10px 0",lineHeight:1.3}}>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.05rem",color:"var(--dt)",fontWeight:700,margin:"0 0 6px 0",lineHeight:1.3}}>
                   {lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}
                 </h3>
                 {item.desc && (
-                  <p style={{color:"var(--tm)",fontSize:".9rem",lineHeight:1.5,margin:0,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
+                  <p style={{color:"var(--tm)",fontSize:".85rem",lineHeight:1.4,margin:0,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>
                     {lang==="en"?item.desc:item.descGu}
                   </p>
                 )}
