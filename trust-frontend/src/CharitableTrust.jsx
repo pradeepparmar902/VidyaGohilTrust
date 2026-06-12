@@ -1446,6 +1446,26 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
 function Achievements({ C, lang }) {
   const [activeItem, setActiveItem] = useState(null);
   const w = useW(); const mob = w<768; const items = C.achievements || [];
+
+  const navigate = (dir) => {
+    if(!activeItem) return;
+    const idx = items.indexOf(activeItem);
+    if(idx === -1) return;
+    const nextIdx = (idx + dir + items.length) % items.length;
+    setActiveItem(items[nextIdx]);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if(!activeItem) return;
+      if(e.key === "ArrowLeft") navigate(-1);
+      if(e.key === "ArrowRight") navigate(1);
+      if(e.key === "Escape") setActiveItem(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeItem, items]);
+
   if(items.length === 0) return null;
   return (
     <section id="achievements" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
@@ -1491,7 +1511,9 @@ function Achievements({ C, lang }) {
 
       {activeItem && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:mob?16:40}}>
-          <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:800,maxHeight:"90vh",overflowY:"auto",position:"relative",display:"flex",flexDirection:"column",boxShadow:"0 24px 60px rgba(0,0,0,.4)"}}>
+          {items.length > 1 && <button onClick={(e)=>{e.stopPropagation(); navigate(-1);}} style={{position:"absolute",left:mob?10:40,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:mob?"8px 12px":"12px 18px",borderRadius:8,zIndex:10001,backdropFilter:"blur(4px)"}}>&#10094;</button>}
+          {items.length > 1 && <button onClick={(e)=>{e.stopPropagation(); navigate(1);}} style={{position:"absolute",right:mob?10:40,top:"50%",transform:"translateY(-50%)",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontSize:"1.5rem",cursor:"pointer",padding:mob?"8px 12px":"12px 18px",borderRadius:8,zIndex:10001,backdropFilter:"blur(4px)"}}>&#10095;</button>}
+          <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:800,maxHeight:"90vh",overflowY:"auto",position:"relative",display:"flex",flexDirection:"column",boxShadow:"0 24px 60px rgba(0,0,0,.4)",zIndex:10000}}>
             <button onClick={()=>setActiveItem(null)} style={{position:"absolute",top:16,right:16,width:36,height:36,borderRadius:"50%",background:"#f5f5f5",color:"#333",border:"none",fontSize:"1.2rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>✕</button>
             {activeItem.image && (
               <div style={{width:"100%",background:"#F4F6F8",padding:mob?16:32,display:"flex",justifyContent:"center",alignItems:"center",borderBottom:"1px solid var(--bd)"}}>
