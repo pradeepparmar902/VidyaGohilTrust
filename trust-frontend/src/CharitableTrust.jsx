@@ -1482,7 +1482,7 @@ function Achievements({ C, lang }) {
               style={{background:"white",borderRadius:16,border:"1px solid #EAEAEA",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column",cursor:"pointer",transition:"all .3s ease"}}>
               
               {/* Image Area */}
-              <div style={{width:"100%",aspectRatio:"4/3",background:"#F9F9F9",borderBottom:"1px solid #EAEAEA",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+              <div style={{width:"100%",aspectRatio:"16/9",background:"#F9F9F9",borderBottom:"1px solid #EAEAEA",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
                 {item.image ? (
                   <img src={item.image} alt={item.title} style={{width:"100%",height:"100%",objectFit:"cover",transition:"transform .5s ease"}} className="ach-img"/>
                 ) : (
