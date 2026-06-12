@@ -1442,6 +1442,41 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
   );
 }
 
+// ── ACHIEVEMENTS ──────────────────────────────────────────────────────────────
+function Achievements({ C, lang }) {
+  const w = useW(); const mob = w<768; const items = C.achievements || [];
+  if(items.length === 0) return null;
+  return (
+    <section id="achievements" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
+      <div style={{maxWidth:1200,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:mob?32:48}}>
+          <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Recognition</span>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>{lang==="en"?"Achievements & Press Releases":"સિદ્ધિઓ અને અખબારી યાદીઓ"}</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fit, minmax(320px, 1fr))",gap:24}}>
+          {items.map((item, i) => (
+            <div key={i} style={{background:"white",borderRadius:16,border:"1px solid var(--bd)",overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.04)",display:"flex",flexDirection:"column"}}>
+              {item.image && (
+                <div style={{width:"100%",aspectRatio:"4/3",background:"#F9F9F9",borderBottom:"1px solid var(--bd)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+                  <img src={item.image} alt={item.title} style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain",boxShadow:"0 4px 12px rgba(0,0,0,.08)",borderRadius:4}}/>
+                </div>
+              )}
+              <div style={{padding:"24px",flex:1,display:"flex",flexDirection:"column"}}>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.25rem",color:"var(--dt)",fontWeight:700,marginBottom:12,lineHeight:1.3}}>
+                  {lang==="en"?(item.title||"Untitled"):(item.titleGu||item.title||"Untitled")}
+                </h3>
+                {item.desc && <p style={{color:"var(--tm2)",fontSize:".9rem",lineHeight:1.6,margin:0,whiteSpace:"pre-wrap"}}>
+                  {lang==="en"?item.desc:item.descGu}
+                </p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── GALLERY ───────────────────────────────────────────────────────────────────
 function Gallery({ C }) {
   const [active, setActive] = useState("All"); 
@@ -2132,6 +2167,11 @@ function ContentEditor({ C, setC, setPage, auth }) {
       if(!ev.monthGu) ev.monthGu = "";
       if(!ev.tagGu) ev.tagGu = "";
     });
+    if(!d.achievements) d.achievements = [];
+    d.achievements.forEach(a => {
+      if(!a.titleGu) a.titleGu = "";
+      if(!a.descGu) a.descGu = "";
+    });
     if(!d.footer) d.footer = {
       description: `Serving humanity with compassion since ${d.trust?.estd || "2004"}. Registered under Gujarat Public Trust Act. 80G and FCRA Certified.`,
       copyrightYear: new Date().getFullYear().toString(),
@@ -2292,6 +2332,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
               {key:"hero",     label:"Hero / Banner",    icon:"🌟"},
               {key:"about",    label:"About Section",    icon:"ℹ️"},
               {key:"programs", label:"Programs",          icon:"📋"},
+              {key:"achievements", label:"Achievements",  icon:"🏆"},
               {key:"gallery",  label:"Gallery",           icon:"🖼️"},
               {key:"events",   label:"Events",            icon:"📅"},
               {key:"donate",   label:"Donation Section",  icon:"❤️"},
@@ -2518,7 +2559,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
                 <div className="cf">
                   <label className="cl">Section ID (scroll target)</label>
                   <select className="ci" value={item.sectionId} onChange={e=>upd(`nav.${i}.sectionId`,e.target.value)}>
-                    {["home","about","programs","gallery","events","donate","contact"].map(s=><option key={s} value={s}>{s}</option>)}
+                    {["home","about","programs","achievements","gallery","events","donate","contact"].map(s=><option key={s} value={s}>{s}</option>)}
                     <option value={item.sectionId}>{item.sectionId}</option>
                   </select>
                 </div>
@@ -2959,6 +3000,57 @@ function ContentEditor({ C, setC, setPage, auth }) {
                     {["Health","Education","Environment","Empowerment","Relief","Community"].map(t=><option key={t}>{t}</option>)}
                   </select>
                   <BlurInput className="ci" value={ev.tagGu||""} onCommit={v=>upd(`events.${i}.tagGu`,v)} placeholder="Gujarati Category"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </Sec>
+
+      <Sec id="achievements" icon="🏆" label="Achievements / Press Releases"
+        onAdd={()=>addItem("achievements",{title:"New Achievement",desc:""})} addLabel="Add Achievement">
+        {draft.achievements.map((a,i)=>(
+          <div key={i} style={{border:"1px solid var(--bd)",borderRadius:12,padding:"16px",marginBottom:14,background:"#FAFAFA"}}>
+            <RowBar arrPath="achievements" idx={i} total={draft.achievements.length} label="Achievement"/>
+            <G2>
+              <ImgUpload label="Certificate / Document Image" path={`achievements.${i}.image`} auth={auth}/>
+            </G2>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 14px",marginTop:14}}>
+              <div className="cf" style={{gridColumn:"1/-1"}}>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Title</span>
+                  <button onClick={async()=>{
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.title)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`achievements.${i}.titleGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                  <BlurInput className="ci" value={a.title||""} onCommit={v=>upd(`achievements.${i}.title`,v)} placeholder="English Title"/>
+                  <BlurInput className="ci" value={a.titleGu||""} onCommit={v=>upd(`achievements.${i}.titleGu`,v)} placeholder="Gujarati Title"/>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:"0 14px",marginTop:8}}>
+              <div className="cf" style={{gridColumn:"1/-1"}}>
+                <label className="cl" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span>Description</span>
+                  <button onClick={async()=>{
+                    if(!a.desc) return;
+                    try {
+                      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=gu&dt=t&q=${encodeURIComponent(a.desc)}`);
+                      if(!res.ok) throw new Error();
+                      const data = await res.json();
+                      upd(`achievements.${i}.descGu`, data[0].map(x => x[0]).join(''));
+                    } catch(err) { alert("Translation failed"); }
+                  }} style={{padding:"2px 6px",borderRadius:4,border:"1px solid var(--sf)",background:"#FFF7EC",color:"var(--sf)",fontSize:".65rem",fontWeight:600,cursor:"pointer"}}>Auto Translate</button>
+                </label>
+                <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:8}}>
+                  <textarea className="ci" style={{minHeight:80,resize:"vertical",padding:"10px 14px"}} value={a.desc||""} onChange={e=>upd(`achievements.${i}.desc`,e.target.value)} placeholder="English Description"/>
+                  <textarea className="ci" style={{minHeight:80,resize:"vertical",padding:"10px 14px"}} value={a.descGu||""} onChange={e=>upd(`achievements.${i}.descGu`,e.target.value)} placeholder="Gujarati Description"/>
                 </div>
               </div>
             </div>
@@ -4410,6 +4502,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
           <Hero C={C} lang={lang}/>
           {bs.about    !== false && <About C={C} lang={lang}/>}
           {bs.programs !== false && <Programs C={C} lang={lang}/>}
+          {bs.achievements !== false && <Achievements C={C} lang={lang}/>}
           {bs.gallery  !== false && <Gallery C={C}/>}
           {bs.events   !== false && <Events C={C} lang={lang} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
           {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
