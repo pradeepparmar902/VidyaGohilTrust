@@ -1633,13 +1633,15 @@ function Team({ C, lang }) {
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>Our Team</h2>
         </div>
 
-        {layout === "hierarchy" ? (
-          <div style={{overflowX:"auto", paddingBottom:40}}>
+        {items.filter(i => i.parentId === null).length > 0 && (
+          <div style={{overflowX:"auto", paddingBottom:40, marginBottom:40}}>
             <div style={{minWidth: mob?300:800, margin:"0 auto"}}>
                {renderHierarchy(null)}
             </div>
           </div>
-        ) : (
+        )}
+
+        {sortedPlainItems.length > 0 && (
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:24}}>
             {sortedPlainItems.map(item => (
               <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer"}}
