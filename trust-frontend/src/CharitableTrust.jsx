@@ -321,7 +321,10 @@ const fbUploadPhoto = async (file, idToken) => {
     headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
     body: file,
   });
-  if (!res.ok) throw new Error("Upload failed");
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Upload failed (${res.status}): ${errText}`);
+  }
   const data = await res.json();
   return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
 };
@@ -6510,7 +6513,7 @@ function DashboardProfile({ globalProfile, globalAuthToken, mob }) {
     if (!file) return;
     setUploading(true);
     try {
-      const url = await fbUploadPhoto(file, globalAuthToken);
+      const url = await fbUploadPublicFile(file, globalAuthToken);
       setData(prev => ({ ...prev, photo: url }));
     } catch(err) {
       alert("Upload failed: " + err.message);
