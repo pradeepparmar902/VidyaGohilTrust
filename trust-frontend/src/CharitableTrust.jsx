@@ -8,11 +8,7 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
-const FB = {
-  apiKey:    "AIzaSyD8S_dRHVNlmUnRV-AfOXocqR0EoPUh8k4",
-  projectId: "vdiyagohilcharitable",
-  bucket:    "vdiyagohilcharitable.firebasestorage.app",
-};
+const FB = window.FIREBASE_CONFIG || {};
 const FS_URL  = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/content/main`;
 const AUTH_URL= `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB.apiKey}`;
 const STG_URL = `https://firebasestorage.googleapis.com/v0/b/${FB.bucket}/o`;
