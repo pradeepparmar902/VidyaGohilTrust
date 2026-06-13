@@ -28,7 +28,7 @@ const fbAuth = getAuth(fbApp);
 // Firestore stores everything as one JSON string field for simplicity
 const fbLoad = async () => {
   try {
-    const res = await fetch(FS_URL);
+    const res = await fetch(`${FS_URL}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return null;
     const doc = await res.json();
     const raw = doc?.fields?.data?.stringValue;
