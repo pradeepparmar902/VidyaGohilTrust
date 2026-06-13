@@ -1544,11 +1544,26 @@ function Achievements({ C, lang }) {
 // ── GALLERY ───────────────────────────────────────────────────────────────────
 // ── PUBLIC TEAM ───────────────────────────────────────────────────────────────
 function Team({ C, lang }) {
+  const [activeMemberIdx, setActiveMemberIdx] = useState(null);
   const items = C.teamItems || [];
   const layout = C.teamLayout || "plain";
   const w = useW(); const mob = w<768;
 
   if(items.length === 0) return null;
+
+  const sortedPlainItems = layout === "plain" ? [...items].sort((a,b)=>(a.order||0)-(b.order||0)) : items;
+
+  const openModal = (item) => {
+    const idx = sortedPlainItems.findIndex(i => i.id === item.id);
+    setActiveMemberIdx(idx >= 0 ? idx : 0);
+  };
+
+  const navModal = (dir) => {
+    let n = activeMemberIdx + dir;
+    if(n < 0) n = sortedPlainItems.length - 1;
+    if(n >= sortedPlainItems.length) n = 0;
+    setActiveMemberIdx(n);
+  };
 
   const renderHierarchy = (parentId = null) => {
     let children = items.filter(i => i.parentId === parentId);
@@ -1586,8 +1601,8 @@ function Team({ C, lang }) {
               <div className="gi" style={{
                 background:"white", padding: mob?16:24, borderRadius: 16, borderTop: "4px solid var(--sf)", 
                 width: mob?140:200, textAlign:"center", boxShadow:"0 12px 30px rgba(0,0,0,0.08)",
-                transition:"transform .3s", position:"relative", zIndex:2
-              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-5px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                transition:"transform .3s", position:"relative", zIndex:2, cursor:"pointer"
+              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-5px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(node)}>
                 <div style={{width:mob?60:80, height:mob?60:80, margin:"0 auto 12px", borderRadius:"50%", overflow:"hidden", border:"3px solid #f0f0f0", background:"#eee"}}>
                   {node.image ? (
                     <img src={node.image} alt={node.name} style={{width:"100%", height:"100%", objectFit:"cover"}}/>
@@ -1597,7 +1612,6 @@ function Team({ C, lang }) {
                 </div>
                 <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 4px 0", fontSize:mob?".9rem":"1.1rem", fontWeight:700}}>{node.name}</h4>
                 <div style={{fontSize:mob?".7rem":".8rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
-                {node.desc && <p style={{fontSize:mob?".75rem":".85rem", color:"var(--tm)", margin:"8px 0 0 0", lineHeight:1.4}}>{node.desc}</p>}
               </div>
             </div>
 
@@ -1627,9 +1641,9 @@ function Team({ C, lang }) {
           </div>
         ) : (
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:24}}>
-            {[...items].sort((a,b)=>(a.order||0)-(b.order||0)).map(item => (
-              <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s"}}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+            {sortedPlainItems.map(item => (
+              <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer"}}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
                 <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
                   {item.image ? (
                     <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
@@ -1639,14 +1653,50 @@ function Team({ C, lang }) {
                 </div>
                 <div style={{padding:"24px 20px",textAlign:"center"}}>
                   <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
-                  <div style={{fontSize:".85rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>{item.position}</div>
-                  {item.desc && <p style={{color:"var(--tm)",fontSize:".9rem",lineHeight:1.5,margin:0}}>{item.desc}</p>}
+                  <div style={{fontSize:".85rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Member Detail Modal */}
+      {activeMemberIdx !== null && sortedPlainItems[activeMemberIdx] && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",width:"100%",maxWidth:600,borderRadius:24,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)", overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:"90vh"}}>
+            <button onClick={()=>setActiveMemberIdx(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.8)",border:"none",borderRadius:"50%",width:40,height:40,fontSize:"1.5rem",cursor:"pointer",color:"#333",zIndex:10, display:"flex",alignItems:"center",justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>✕</button>
+            
+            <div style={{background:"#f5f5f5", width:"100%", height: mob?200:300, position:"relative"}}>
+              {sortedPlainItems[activeMemberIdx].image ? (
+                <img src={sortedPlainItems[activeMemberIdx].image} style={{width:"100%", height:"100%", objectFit:"cover"}} alt=""/>
+              ) : (
+                <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"5rem", opacity:0.1}}>👤</div>
+              )}
+            </div>
+            
+            <div style={{padding:mob?24:40, overflowY:"auto"}}>
+              <h2 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 8px 0", fontSize:"2rem"}}>{sortedPlainItems[activeMemberIdx].name}</h2>
+              <div style={{color:"var(--sf)", fontWeight:700, fontSize:"1.1rem", textTransform:"uppercase", letterSpacing:1, marginBottom:24}}>{sortedPlainItems[activeMemberIdx].position}</div>
+              
+              <div style={{background:"#f8f9fa", padding:20, borderRadius:16, border:"1px solid var(--bd)"}}>
+                <h4 style={{margin:"0 0 12px 0", color:"var(--dt)", fontSize:"1rem"}}>Information</h4>
+                <p style={{color:"var(--tm)", lineHeight:1.6, fontSize:"1rem", margin:0, whiteSpace:"pre-wrap"}}>
+                  {sortedPlainItems[activeMemberIdx].desc || "No further details available."}
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Arrows */}
+            {sortedPlainItems.length > 1 && (
+              <>
+                <button onClick={(e)=>{e.stopPropagation(); navModal(-1);}} style={{position:"absolute",top:"50%",left:16,transform:"translateY(-50%)",background:"white",border:"none",borderRadius:"50%",width:48,height:48,fontSize:"1.5rem",cursor:"pointer",color:"var(--dt)",boxShadow:"0 4px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>←</button>
+                <button onClick={(e)=>{e.stopPropagation(); navModal(1);}} style={{position:"absolute",top:"50%",right:16,transform:"translateY(-50%)",background:"white",border:"none",borderRadius:"50%",width:48,height:48,fontSize:"1.5rem",cursor:"pointer",color:"var(--dt)",boxShadow:"0 4px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>→</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
