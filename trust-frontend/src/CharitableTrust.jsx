@@ -4780,7 +4780,7 @@ function AdminTeam({ mob, C, setC, auth }) {
   // Hierarchy actions
   const addRoot = () => {
     const root = { id: getNewId(), parentId: null, name: "New Member", position: "Role", desc: "", image: "", order: 0 };
-    updItems([root]);
+    updItems([...items, root]);
   };
 
   const addBoss = (node) => {
@@ -4970,10 +4970,11 @@ function AdminTeam({ mob, C, setC, auth }) {
 
       {layout === "hierarchy" ? (
         <div style={{background:"white",borderRadius:24,padding:32,boxShadow:"0 12px 40px rgba(0,0,0,0.04)", overflowX:"auto", minHeight: 400}}>
-          {items.length === 0 ? (
+          {items.filter(i => i.parentId === null).length === 0 ? (
             <div style={{textAlign:"center", padding: 60}}>
               <div style={{fontSize:"3rem", marginBottom:16}}>🌳</div>
               <h3 style={{color:"var(--dt)", marginBottom:16}}>Your Org Chart is Empty</h3>
+              <p style={{color:"var(--sf)", marginBottom:24}}>Start building your hierarchy by adding a top leader. Members created in Plain Layout can be recreated here using Auto-Fill.</p>
               <button className="btn-primary" onClick={addRoot} style={{padding:"12px 24px"}}>Add Top Leader</button>
             </div>
           ) : (
