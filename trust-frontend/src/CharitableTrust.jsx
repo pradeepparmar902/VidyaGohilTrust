@@ -453,7 +453,7 @@ const DC = {
 
 const EMOJIS = ["📚","🏥","🌾","🤝","🌊","🌱","🏛️","💡","🎓","🏃","🌍","⭐","❤️","🎯","🔬","🎨"];
 const COLORS = [{c:"#FFF4EC",b:"#FDDBB8"},{c:"#E8F4F8",b:"#B8D8E8"},{c:"#EDFAF1",b:"#B8E8CC"},{c:"#F9F0FF",b:"#D8B8E8"},{c:"#FEF9EC",b:"#F5E8B8"},{c:"#FFF0F0",b:"#F5B8B8"}];
-const SIDS = ["home","about","programs","gallery","events","donate","contact"];
+const SIDS = ["home","about","programs","team","achievements","gallery","events","donate","contact"];
 const DDATA = [
   {id:"DON001",name:"Ramesh Patel",amount:5000,date:"2025-05-20",program:"Education",status:"Verified",receipt:true},
   {id:"DON002",name:"Kiran Shah",amount:11000,date:"2025-05-18",program:"Healthcare",status:"Verified",receipt:true},
@@ -2734,7 +2734,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
                 <div className="cf">
                   <label className="cl">Section ID (scroll target)</label>
                   <select className="ci" value={item.sectionId} onChange={e=>upd(`nav.${i}.sectionId`,e.target.value)}>
-                    {["home","about","programs","achievements","gallery","events","donate","contact"].map(s=><option key={s} value={s}>{s}</option>)}
+                    {["home","about","programs","team","achievements","gallery","events","donate","contact"].map(s=><option key={s} value={s}>{s}</option>)}
                     <option value={item.sectionId}>{item.sectionId}</option>
                   </select>
                 </div>
