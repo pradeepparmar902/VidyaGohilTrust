@@ -1637,31 +1637,37 @@ function Team({ C, lang }) {
         </div>
 
         {items.filter(i => i.parentId === null).length > 0 && (
-          <div style={{overflowX:"auto", paddingBottom:40, marginBottom:40}}>
-            <div style={{minWidth: mob?300:800, margin:"0 auto"}}>
-               {renderHierarchy(null)}
+          <div style={{marginBottom:40}}>
+            <div style={{overflow:"auto", maxHeight:"600px", padding:"32px 16px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+              <div style={{minWidth: mob?300:800, margin:"0 auto"}}>
+                 {renderHierarchy(null)}
+              </div>
             </div>
           </div>
         )}
 
         {sortedPlainItems.length > 0 && (
-          <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24}}>
-            {sortedPlainItems.map(item => (
-              <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer"}}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
-                <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  ) : (
-                    <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
-                  )}
-                </div>
-                <div style={{padding:mob?16:20,textAlign:"center"}}>
-                  <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
-                  <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
-                </div>
+          <div>
+            <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"600px", padding:"32px 16px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+              <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24}}>
+                {sortedPlainItems.map(item => (
+                  <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
+                    onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
+                    <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                      ) : (
+                        <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
+                      )}
+                    </div>
+                    <div style={{padding:mob?16:20,textAlign:"center"}}>
+                      <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
+                      <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
