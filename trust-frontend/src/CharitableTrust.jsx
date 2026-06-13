@@ -420,7 +420,7 @@ const DC = {
       bgColor:  "gradient",   // "gradient" | "white" | "transparent"
     }
   },
-  hero:{badge:"ESTD. 2004 · REGISTERED TRUST",title:"Empowering Lives Through Education & Compassion",titleGu:"શિક્ષણ અને કરુણા દ્વારા જીવન સશક્ત",subtitle:"For over 20 years, we have been uplifting underprivileged communities through education, healthcare, and sustainable development.",subtitleGu:"20 વર્ષોથી, અમે શિક્ષણ, આરોગ્ય અને ટકાઉ વિકાસ દ્વારા સમુદાયોને ઉપર ઉઠાવ્યા છે.",cta1:"Donate Now",cta1Gu:"દાન આપો",cta2:"Our Programs",cta2Gu:"અમારા કાર્યક્રમો",badge1:"80G Certified",badge2:"FCRA Registered",badge3:"ISO Audited"},
+  hero:{badge:"ESTD. 2004 · REGISTERED TRUST",title:"Empowering Lives Through Education & Compassion",titleGu:"શિક્ષણ અને કરુણા દ્વારા જીવન સશક્ત",subtitle:"For over 20 years, we have been uplifting underprivileged communities through education, healthcare, and sustainable development.",subtitleGu:"20 વર્ષોથી, અમે શિક્ષણ, આરોગ્ય અને ટકાઉ વિકાસ દ્વારા સમુદાયોને ઉપર ઉઠાવ્યા છે.",cta1:"Donate Now",cta1Gu:"દાન આપો",cta2:"Our Programs",cta2Gu:"અમારા કાર્યક્રમો",badge1:"80G Certified",badge2:"FCRA Registered",badge3:"ISO Audited",showStats:true,showImage:false,image:"",showRegBtn:false,regBtnLabel:"Register Now",regBtnLabelGu:"હવે નોંધણી કરો",regBtnLink:"#events"},
   stats:[{num:"12,400+",label:"Lives Impacted",labelGu:"જીવો પ્રભાવિત"},{num:"Rs.2.8 Cr",label:"Funds Raised",labelGu:"ભંડોળ એકત્ર"},{num:"340+",label:"Volunteers",labelGu:"સ્વયંસેવકો"},{num:"28",label:"Active Programs",labelGu:"સક્રિય કાર્યક્રમો"}],
   about:{heading:"Rooted in Compassion, Driven by Purpose",headingGu:"કરુણામાં મૂળ, ઉદ્દેશ્ય દ્વારા ચાલિત",body1:"The Vidya Gohil Charitable Trust was founded in 2004 by Vidyaben Gohil with a vision to create a dignified life for every individual regardless of caste, creed, or economic status.",body1Gu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ 2004 માં વિદ્યાબેન ગોહિલ દ્વારા સ્થાપિત કરવામાં આવ્યો હતો.",body2:"Our work spans education, healthcare, women's empowerment, environmental conservation, and disaster relief through community participation and transparent governance.",body2Gu:"અમારું કાર્ય શિક્ષણ, આરોગ્ય, મહિલા સશક્તિકરણ, પર્યાવરણ સંરક્ષણ અને આપત્તિ રાહત સુધી ફેલાયેલું છે.",points:["Transparent Governance","Community-Led Programs","Annual Public Audit","Zero Admin Fee Policy"],yearsLabel:"Years of Service",cta:"Read Our Story"},
   programs:[{icon:"📚",title:"Education for All",sub:"Scholarships and learning centers for underprivileged children",details:"### Our Mission\nOur Education for All initiative focuses on providing quality education to children from marginalized communities. \n\n### What We Do\n- **Evening Centers**: We run evening learning centers for over 500 children.\n- **Scholarships**: We offer merit-based scholarships to help students pursue higher education.\n- **Free Supplies**: Distribute free school supplies, uniforms, and textbooks.\n\n> *\"Education is the most powerful weapon which you can use to change the world.\"*",color:"#FFF4EC",border:"#FDDBB8"},{icon:"🏥",title:"Health and Wellness",sub:"Free medical camps, medicines and health awareness drives",details:"### Healthcare for Everyone\nWe organize monthly free medical camps in rural areas, offering:\n\n1. General physical checkups\n2. Eye and dental exams\n3. Free basic medicines\n\nOur health awareness drives educate communities on hygiene, nutrition, and preventative care.",color:"#E8F4F8",border:"#B8D8E8"},{icon:"🌾",title:"Livelihood Support",sub:"Skill development and micro-finance for rural communities",details:"### Economic Independence\nTo foster economic independence, we provide skill development workshops in:\n- **Tailoring & Sewing**\n- **Computer Literacy**\n- **Basic Mechanics**\n\nWe also offer micro-finance support to help families start small sustainable businesses.",color:"#EDFAF1",border:"#B8E8CC"},{icon:"🤝",title:"Women Empowerment",sub:"Self-help groups, vocational training and legal aid",details:"### Empowering Women\nOur Women Empowerment programs create **self-help groups** where women can save and invest together.\n\nWe offer specialized vocational training and free legal aid to ensure women are aware of and can protect their rights.",color:"#F9F0FF",border:"#D8B8E8"},{icon:"🌊",title:"Disaster Relief",sub:"Rapid response support for flood and earthquake victims",details:"### Emergency Response\nIn times of natural calamities, our rapid response teams distribute:\n- Emergency ration kits\n- Clean drinking water\n- Temporary shelter materials\n\nWe work closely with local authorities to ensure aid reaches the most affected areas quickly.",color:"#FEF9EC",border:"#F5E8B8"},{icon:"🌱",title:"Environment",sub:"Tree plantation drives and clean water initiatives",details:"### A Greener Future\nCommitted to a greener future, we conduct regular **tree plantation drives** and maintain them with community support.\n\nWe also install water purification systems in schools and villages to ensure access to safe drinking water.",color:"#EDFAF1",border:"#B8E8CC"}],
@@ -692,11 +692,27 @@ function Hero({ C, lang }) {
             {[h.badge1,h.badge2,h.badge3].map(b=><div key={b} style={{display:"flex",alignItems:"center",gap:6,color:"rgba(255,255,255,.7)",fontSize:".78rem"}}><span style={{color:"#F9A14E"}}>✓</span>{b}</div>)}
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          {C.stats.map((s,i)=><div key={i} className="sb" style={{borderRadius:16,padding:mob?"20px 16px":"26px 22px",textAlign:"center"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.6rem":"2rem",fontWeight:700,color:"#F9A14E",marginBottom:6}}>{s.num}</div>
-            <div style={{color:"rgba(255,255,255,.75)",fontSize:mob?".78rem":".85rem",lineHeight:1.3}}>{lang==="en"?s.label:s.labelGu}</div>
-          </div>)}
+        <div style={{display:"flex",flexDirection:"column",gap:24}}>
+          {h.showStats !== false && (
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              {C.stats.map((s,i)=><div key={i} className="sb" style={{borderRadius:16,padding:mob?"20px 16px":"26px 22px",textAlign:"center"}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.6rem":"2rem",fontWeight:700,color:"#F9A14E",marginBottom:6}}>{s.num}</div>
+                <div style={{color:"rgba(255,255,255,.75)",fontSize:mob?".78rem":".85rem",lineHeight:1.3}}>{lang==="en"?s.label:s.labelGu}</div>
+              </div>)}
+            </div>
+          )}
+          {h.showImage && h.image && (
+            <div style={{width:"100%",borderRadius:16,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,0.3)"}}>
+              <img src={h.image} alt="Campaign" style={{width:"100%",display:"block",objectFit:"cover"}} />
+            </div>
+          )}
+          {h.showRegBtn && (
+            <div style={{textAlign:"center"}}>
+              <a href={h.regBtnLink || "#events"} style={{display:"inline-block",padding:"16px 32px",background:"#F9A14E",color:"white",borderRadius:12,fontSize:"1.1rem",fontWeight:700,textDecoration:"none",boxShadow:"0 8px 24px rgba(249, 161, 78, 0.4)",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                {lang==="en"?h.regBtnLabel:h.regBtnLabelGu}
+              </a>
+            </div>
+          )}
         </div>
       </div>
       <svg style={{position:"absolute",bottom:0,left:0,width:"100%",height:50}} viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,30 C360,60 1080,0 1440,30 L1440,50 L0,50 Z" fill="var(--cr)"/></svg>
@@ -2415,6 +2431,14 @@ const G2 = ({children}) => {
 function ContentEditor({ C, setC, setPage, auth }) {
   const getDraft = (C) => {
     const d = JSON.parse(JSON.stringify(C));
+    if(!d.hero) d.hero = {};
+    if(d.hero.showStats === undefined) d.hero.showStats = true;
+    if(d.hero.showImage === undefined) d.hero.showImage = false;
+    if(!d.hero.image) d.hero.image = "";
+    if(d.hero.showRegBtn === undefined) d.hero.showRegBtn = false;
+    if(!d.hero.regBtnLabel) d.hero.regBtnLabel = "Register Now";
+    if(!d.hero.regBtnLabelGu) d.hero.regBtnLabelGu = "હવે નોંધણી કરો";
+    if(!d.hero.regBtnLink) d.hero.regBtnLink = "#events";
     if(!d.donate) d.donate = {};
     if(!d.donate.programs) d.donate.programs = ["General","Education","Healthcare","Women","Environment","Relief"];
     if(!d.about) d.about = {};
@@ -3025,6 +3049,60 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <F label="Trust Badge 2" path="hero.badge2"/>
           <F label="Trust Badge 3" path="hero.badge3"/>
         </G2>
+
+        <div style={{marginTop: 32, paddingTop: 24, borderTop: "1px dashed var(--bd)"}}>
+          <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.1rem",color:"var(--dt)",marginBottom:16}}>Right Side Layout</h3>
+          
+          {/* Stats Toggle */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:draft.hero.showStats?"var(--tl)":"#f5f5f5",borderRadius:10,border:"1px solid "+(draft.hero.showStats?"#B8D8E8":"#ddd")}}>
+            <div onClick={()=>upd("hero.showStats",draft.hero.showStats===false?true:false)}
+              style={{width:44,height:24,borderRadius:12,background:draft.hero.showStats!==false?"var(--dt)":"#ccc",position:"relative",cursor:"pointer",transition:"background .3s",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left:draft.hero.showStats!==false?22:3,width:18,height:18,borderRadius:"50%",background:"white",transition:"left .3s"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:".85rem",fontWeight:700,color:"var(--dt)"}}>Show Impact Statistics</div>
+              <div style={{fontSize:".72rem",color:"var(--mu)"}}>{draft.hero.showStats!==false ? "Stats boxes will be displayed" : "Stats are hidden"}</div>
+            </div>
+          </div>
+
+          {/* Image Toggle */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:draft.hero.showImage?16:16,padding:"10px 14px",background:draft.hero.showImage?"var(--tl)":"#f5f5f5",borderRadius:10,border:"1px solid "+(draft.hero.showImage?"#B8D8E8":"#ddd")}}>
+            <div onClick={()=>upd("hero.showImage",!draft.hero.showImage)}
+              style={{width:44,height:24,borderRadius:12,background:draft.hero.showImage?"var(--dt)":"#ccc",position:"relative",cursor:"pointer",transition:"background .3s",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left:draft.hero.showImage?22:3,width:18,height:18,borderRadius:"50%",background:"white",transition:"left .3s"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:".85rem",fontWeight:700,color:"var(--dt)"}}>Show Campaign Image</div>
+              <div style={{fontSize:".72rem",color:"var(--mu)"}}>{draft.hero.showImage ? "Image will be displayed" : "Image is hidden"}</div>
+            </div>
+          </div>
+          {draft.hero.showImage && (
+            <div style={{marginBottom: 24, marginLeft: 20}}>
+              <F label="Image URL (Or paste above)" path="hero.image" hint="Paste image URL here"/>
+            </div>
+          )}
+
+          {/* Registration Button Toggle */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:draft.hero.showRegBtn?16:0,padding:"10px 14px",background:draft.hero.showRegBtn?"var(--tl)":"#f5f5f5",borderRadius:10,border:"1px solid "+(draft.hero.showRegBtn?"#B8D8E8":"#ddd")}}>
+            <div onClick={()=>upd("hero.showRegBtn",!draft.hero.showRegBtn)}
+              style={{width:44,height:24,borderRadius:12,background:draft.hero.showRegBtn?"var(--dt)":"#ccc",position:"relative",cursor:"pointer",transition:"background .3s",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left:draft.hero.showRegBtn?22:3,width:18,height:18,borderRadius:"50%",background:"white",transition:"left .3s"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:".85rem",fontWeight:700,color:"var(--dt)"}}>Show Registration/Hot Topic Button</div>
+              <div style={{fontSize:".72rem",color:"var(--mu)"}}>{draft.hero.showRegBtn ? "Button will be displayed" : "Button is hidden"}</div>
+            </div>
+          </div>
+          {draft.hero.showRegBtn && (
+            <div style={{marginLeft: 20}}>
+              <G2>
+                <F label="Button Label (English)" path="hero.regBtnLabel"/>
+                <F label="Button Label (Gujarati)" path="hero.regBtnLabelGu"/>
+              </G2>
+              <F label="Button Link" path="hero.regBtnLink" hint="e.g. #events or https://..."/>
+            </div>
+          )}
+        </div>
       </Sec>
 
       <Sec id="stats" icon="📊" label="Impact Statistics"
