@@ -1575,13 +1575,13 @@ function Team({ C, lang }) {
     if(children.length === 0) return null;
 
     return (
-      <div style={{display:"flex", gap: mob?"12px":"24px", justifyContent:"center", paddingTop: parentId ? (mob?20:30) : 0, position:"relative", flexWrap:mob?"wrap":"nowrap"}}>
+      <div style={{display:"flex", gap: mob?"8px":"16px", justifyContent:"center", paddingTop: parentId ? (mob?16:20) : 0, position:"relative", flexWrap:mob?"wrap":"nowrap"}}>
         {children.map((node, i) => (
           <div key={node.id} style={{display:"flex", flexDirection:"column", alignItems:"center", position:"relative"}}>
             {/* Connecting lines for children */}
             {parentId && !mob && (
               <>
-                <div style={{position:"absolute", top: 0, left: "50%", width: 2, height: 30, background: "var(--sf)", transform:"translateX(-50%)"}} />
+                <div style={{position:"absolute", top: 0, left: "50%", width: 2, height: 20, background: "var(--sf)", transform:"translateX(-50%)"}} />
                 {children.length > 1 && (
                   <div style={{
                     position:"absolute", top: 0, height: 2, background: "var(--sf)",
@@ -1594,32 +1594,32 @@ function Team({ C, lang }) {
             )}
             
             {/* The Node */}
-            <div style={{marginTop: (parentId && !mob) ? 30 : 0, position:"relative", display:"flex", flexDirection:"column", alignItems:"center"}}>
+            <div style={{marginTop: (parentId && !mob) ? 20 : 0, position:"relative", display:"flex", flexDirection:"column", alignItems:"center"}}>
               {/* Parent connector */}
               {!mob && items.find(x=>x.parentId===node.id) && (
-                <div style={{position:"absolute", bottom: -30, left: "50%", width: 2, height: 30, background: "var(--sf)", transform:"translateX(-50%)"}} />
+                <div style={{position:"absolute", bottom: -20, left: "50%", width: 2, height: 20, background: "var(--sf)", transform:"translateX(-50%)"}} />
               )}
               
               {/* Card */}
               <div className="gi" style={{
-                background:"white", padding: mob?12:16, borderRadius: 16, borderTop: "4px solid var(--sf)", 
-                width: mob?130:160, textAlign:"center", boxShadow:"0 12px 30px rgba(0,0,0,0.08)",
+                background:"white", padding: mob?8:10, borderRadius: 12, borderTop: "3px solid var(--sf)", 
+                width: mob?110:140, textAlign:"center", boxShadow:"0 8px 24px rgba(0,0,0,0.06)",
                 transition:"transform .3s", position:"relative", zIndex:2, cursor:"pointer"
-              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-5px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(node)}>
-                <div style={{width:mob?50:60, height:mob?50:60, margin:"0 auto 12px", borderRadius:"50%", overflow:"hidden", border:"2px solid #f0f0f0", background:"#eee"}}>
+              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(node)}>
+                <div style={{width:mob?40:50, height:mob?40:50, margin:"0 auto 8px", borderRadius:"50%", overflow:"hidden", border:"2px solid #f0f0f0", background:"#eee"}}>
                   {node.image ? (
                     <img src={node.image} alt={node.name} style={{width:"100%", height:"100%", objectFit:"cover"}}/>
                   ) : (
-                    <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2rem"}}>👤</div>
+                    <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.5rem"}}>👤</div>
                   )}
                 </div>
-                <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 4px 0", fontSize:mob?".85rem":"1rem", fontWeight:700}}>{node.name}</h4>
-                <div style={{fontSize:mob?".65rem":".75rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
+                <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 2px 0", fontSize:mob?".75rem":".85rem", fontWeight:700}}>{node.name}</h4>
+                <div style={{fontSize:mob?".6rem":".65rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
               </div>
             </div>
 
             {/* Recursively render children */}
-            <div style={{marginTop: mob?16:30, display:"flex", justifyContent:"center", width:"100%"}}>
+            <div style={{marginTop: mob?12:20, display:"flex", justifyContent:"center", width:"100%"}}>
               {renderHierarchy(node.id)}
             </div>
           </div>
