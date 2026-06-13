@@ -1602,19 +1602,19 @@ function Team({ C, lang }) {
               
               {/* Card */}
               <div className="gi" style={{
-                background:"white", padding: mob?16:24, borderRadius: 16, borderTop: "4px solid var(--sf)", 
-                width: mob?140:200, textAlign:"center", boxShadow:"0 12px 30px rgba(0,0,0,0.08)",
+                background:"white", padding: mob?12:16, borderRadius: 16, borderTop: "4px solid var(--sf)", 
+                width: mob?130:160, textAlign:"center", boxShadow:"0 12px 30px rgba(0,0,0,0.08)",
                 transition:"transform .3s", position:"relative", zIndex:2, cursor:"pointer"
               }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-5px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(node)}>
-                <div style={{width:mob?60:80, height:mob?60:80, margin:"0 auto 12px", borderRadius:"50%", overflow:"hidden", border:"3px solid #f0f0f0", background:"#eee"}}>
+                <div style={{width:mob?50:60, height:mob?50:60, margin:"0 auto 12px", borderRadius:"50%", overflow:"hidden", border:"2px solid #f0f0f0", background:"#eee"}}>
                   {node.image ? (
                     <img src={node.image} alt={node.name} style={{width:"100%", height:"100%", objectFit:"cover"}}/>
                   ) : (
                     <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2rem"}}>👤</div>
                   )}
                 </div>
-                <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 4px 0", fontSize:mob?".9rem":"1.1rem", fontWeight:700}}>{node.name}</h4>
-                <div style={{fontSize:mob?".7rem":".8rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
+                <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 4px 0", fontSize:mob?".85rem":"1rem", fontWeight:700}}>{node.name}</h4>
+                <div style={{fontSize:mob?".65rem":".75rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
               </div>
             </div>
 
@@ -1645,7 +1645,7 @@ function Team({ C, lang }) {
         )}
 
         {sortedPlainItems.length > 0 && (
-          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:24}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24}}>
             {sortedPlainItems.map(item => (
               <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer"}}
                 onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
@@ -1656,9 +1656,9 @@ function Team({ C, lang }) {
                     <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
                   )}
                 </div>
-                <div style={{padding:"24px 20px",textAlign:"center"}}>
-                  <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
-                  <div style={{fontSize:".85rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
+                <div style={{padding:mob?16:20,textAlign:"center"}}>
+                  <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
+                  <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
                 </div>
               </div>
             ))}
