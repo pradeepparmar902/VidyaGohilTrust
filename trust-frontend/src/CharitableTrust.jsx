@@ -5990,7 +5990,9 @@ function LoginScreen({ onLogin, onSkip }) {
 
         {/* Logo */}
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{width:56,height:56,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",margin:"0 auto 12px",boxShadow:"0 6px 20px rgba(232,101,10,.3)"}}>Om</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}>
+            <LogoMark logo={{...C.trust.logo, size: 56}} mob={false} />
+          </div>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",fontWeight:700}}>Login to Firebase</h2>
           <p style={{color:"var(--mu)",fontSize:".8rem",marginTop:4}}>Connect to save content to the database</p>
         </div>
@@ -6881,8 +6883,8 @@ export default function App() {
     <>
       <G/>
       <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0D4B5E,#1A6B87)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20}}>
-        <div style={{width:60,height:60,borderRadius:"50%",background:"linear-gradient(135deg,var(--sf),var(--gd))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.6rem"}}>Om</div>
-        <div style={{color:"white",fontFamily:"'Playfair Display',serif",fontSize:"1.1rem"}}>Loading Vidya Gohil Trust...</div>
+        <LogoMark logo={{...C.trust.logo, size: 60}} mob={false} />
+        <div style={{color:"white",fontFamily:"'Playfair Display',serif",fontSize:"1.1rem"}}>Loading {C.trust.name}...</div>
         <div style={{width:40,height:4,borderRadius:2,background:"rgba(255,255,255,.2)",overflow:"hidden"}}>
           <div style={{height:"100%",background:"var(--sf)",borderRadius:2,animation:"shimLoad 1.2s ease-in-out infinite"}}/>
         </div>
