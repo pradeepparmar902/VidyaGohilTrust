@@ -1908,9 +1908,9 @@ function Contact({ C }) {
               </div>
             </div>
           ))}
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {/* <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {ct.socials.map(s=><button key={s} style={{padding:"7px 12px",borderRadius:8,background:"white",border:"1px solid var(--bd)",fontSize:".78rem",fontWeight:600,cursor:"pointer",color:"var(--tm2)",transition:"all .2s"}} onMouseEnter={e=>{e.target.style.borderColor="var(--sf)";e.target.style.color="var(--sf)"}} onMouseLeave={e=>{e.target.style.borderColor="var(--bd)";e.target.style.color="var(--tm2)"}}>{s}</button>)}
-          </div>
+          </div> */}
         </div>
       </div>
     </section>
