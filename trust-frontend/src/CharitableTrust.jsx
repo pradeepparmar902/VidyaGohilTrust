@@ -1627,7 +1627,7 @@ function Team({ C, lang }) {
           </div>
         ) : (
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:24}}>
-            {items.sort((a,b)=>(a.order||0)-(b.order||0)).map(item => (
+            {[...items].sort((a,b)=>(a.order||0)-(b.order||0)).map(item => (
               <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s"}}
                 onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                 <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
@@ -4848,7 +4848,7 @@ function AdminTeam({ mob, C, setC, auth }) {
             <button className="btn-primary" onClick={addPlain} style={{padding:"8px 16px",borderRadius:8}}>+ Add Member</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {items.sort((a,b)=>(a.order||0)-(b.order||0)).map((item, i) => (
+            {[...items].sort((a,b)=>(a.order||0)-(b.order||0)).map((item, i) => (
               <div key={item.id} style={{display:"flex",gap:16,padding:16,border:"1px solid var(--bd)",borderRadius:16,background:"#fafafa",alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{width:60,height:60,borderRadius:"50%",background:"#eee",overflow:"hidden",flexShrink:0}}>
                   {item.image ? <img src={item.image} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>👤</div>}
