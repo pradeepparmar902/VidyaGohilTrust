@@ -708,7 +708,26 @@ function Hero({ C, lang }) {
           )}
           {h.showRegBtn && (
             <div style={{textAlign:"center"}}>
-              <a href={h.regBtnLink || "#events"} style={{display:"inline-block",padding:"16px 32px",background:"#F9A14E",color:"white",borderRadius:12,fontSize:"1.1rem",fontWeight:700,textDecoration:"none",boxShadow:"0 8px 24px rgba(249, 161, 78, 0.4)",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+              <a href={(h.regBtnLink === "external" ? h.regBtnExternal : h.regBtnLink) || "#events"} 
+                 onClick={(e) => {
+                   let link = h.regBtnLink || "#events";
+                   if (link === "external") link = h.regBtnExternal;
+                   if (!link) return;
+                   
+                   if (link.startsWith("#event-")) {
+                     e.preventDefault();
+                     const idx = parseInt(link.split("-")[1]);
+                     document.getElementById("events")?.scrollIntoView({behavior:"smooth"});
+                     setTimeout(() => {
+                       window.dispatchEvent(new CustomEvent('openEventRegistration', { detail: idx }));
+                     }, 500);
+                   } else if (link.startsWith("#")) {
+                     e.preventDefault();
+                     document.querySelector(link)?.scrollIntoView({behavior:"smooth"});
+                   }
+                 }}
+                 target={(h.regBtnLink==="external" && h.regBtnExternal && !h.regBtnExternal.startsWith("#")) ? "_blank" : undefined}
+                 style={{display:"inline-block",padding:"16px 32px",background:"#F9A14E",color:"white",borderRadius:12,fontSize:"1.1rem",fontWeight:700,textDecoration:"none",boxShadow:"0 8px 24px rgba(249, 161, 78, 0.4)",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
                 {lang==="en"?h.regBtnLabel:h.regBtnLabelGu}
               </a>
             </div>
@@ -1060,6 +1079,17 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
   const [authToken, setAuthToken] = useState("");
   const [uploadingFields, setUploadingFields] = useState({});
   const [previewFile, setPreviewFile] = useState(null);
+
+  useEffect(() => {
+    const handleOpen = (e) => {
+      const idx = e.detail;
+      if (C.events && C.events[idx]) {
+        setSelectedEvent({ type: 'register', event: C.events[idx] });
+      }
+    };
+    window.addEventListener('openEventRegistration', handleOpen);
+    return () => window.removeEventListener('openEventRegistration', handleOpen);
+  }, [C.events]);
 
   const handleFileUpload = async (e, fKey) => {
     const file = e.target.files[0];
@@ -3123,7 +3153,19 @@ function ContentEditor({ C, setC, setPage, auth }) {
                 <F label="Button Label (English)" path="hero.regBtnLabel"/>
                 <F label="Button Label (Gujarati)" path="hero.regBtnLabelGu"/>
               </G2>
-              <F label="Button Link" path="hero.regBtnLink" hint="e.g. #events or https://..."/>
+              <div style={{marginBottom: 16}}>
+                <div style={{fontSize:".8rem",fontWeight:700,marginBottom:6,color:"var(--dt)",textTransform:"uppercase",letterSpacing:1}}>Button Action</div>
+                <select value={draft.hero.regBtnLink || "#events"} onChange={(e)=>upd("hero.regBtnLink",e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",outline:"none",background:"white"}}>
+                  <option value="#events">Scroll to Events Section</option>
+                  <option value="external">External Link (Enter URL)</option>
+                  {draft.events && draft.events.map((ev, i) => (
+                    <option key={i} value={`#event-${i}`}>Open Registration: {ev.title || "Unnamed Event"}</option>
+                  ))}
+                </select>
+              </div>
+              {draft.hero.regBtnLink === "external" && (
+                <F label="External URL" path="hero.regBtnExternal" hint="https://..."/>
+              )}
             </div>
           )}
         </div>
