@@ -1693,7 +1693,7 @@ function Team({ C, lang }) {
             </div>
 
             {/* Navigation Arrows */}
-            {sortedPlainItems.length > 1 && (
+            {sortedPlainItems.findIndex(i => i.id === activeMember.id) !== -1 && sortedPlainItems.length > 1 && (
               <>
                 <button onClick={(e)=>{e.stopPropagation(); navModal(-1);}} style={{position:"absolute",top:"50%",left:16,transform:"translateY(-50%)",background:"white",border:"none",borderRadius:"50%",width:48,height:48,fontSize:"1.5rem",cursor:"pointer",color:"var(--dt)",boxShadow:"0 4px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>←</button>
                 <button onClick={(e)=>{e.stopPropagation(); navModal(1);}} style={{position:"absolute",top:"50%",right:16,transform:"translateY(-50%)",background:"white",border:"none",borderRadius:"50%",width:48,height:48,fontSize:"1.5rem",cursor:"pointer",color:"var(--dt)",boxShadow:"0 4px 12px rgba(0,0,0,0.15)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10}}>→</button>
