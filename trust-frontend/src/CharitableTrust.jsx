@@ -4656,13 +4656,15 @@ function AdminTeam({ mob, C, setC, auth }) {
     if (!uid) return;
     const u = allUsers.find(x => x.id === uid);
     if (u) {
-      const fetchedName = u.name || u['Full Name'] || "";
-      if (fetchedName) updateActiveNode("name", fetchedName);
+      const updates = {};
       
-      if (u.photo) updateActiveNode("image", u.photo);
-      else if (u.photoUrl) updateActiveNode("image", u.photoUrl);
+      const fetchedName = u.name || u.Name || u['Full Name'] || u.displayName || u.firstName || "";
+      if (fetchedName) updates.name = fetchedName;
       
-      if (u.position) updateActiveNode("position", u.position);
+      const fetchedPhoto = u.photo || u.photoUrl || u.image || u.picture || u.profilePhoto || u.Photo || "";
+      if (fetchedPhoto) updates.image = fetchedPhoto;
+      
+      if (u.position || u.Position) updates.position = u.position || u.Position;
       
       const details = [];
       if (u.mobile || u['Mobile Number']) details.push(`Mobile: ${u.mobile || u['Mobile Number']}`);
@@ -4672,7 +4674,9 @@ function AdminTeam({ mob, C, setC, auth }) {
       if (u.gender) details.push(`Gender: ${u.gender}`);
       if (u.registrationNo || u['Registration Number']) details.push(`Reg No: ${u.registrationNo || u['Registration Number']}`);
       
-      if (details.length > 0) updateActiveNode("desc", details.join(' | '));
+      if (details.length > 0) updates.desc = details.join(' | ');
+
+      setActiveNode(prev => ({ ...prev, ...updates }));
 
       e.target.value = "";
     }
