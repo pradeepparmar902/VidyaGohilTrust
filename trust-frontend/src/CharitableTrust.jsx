@@ -1629,9 +1629,9 @@ function Team({ C, lang }) {
   };
 
   return (
-    <section id="team" style={{padding:mob?"32px 16px":"40px 32px",background:"#F9FBFD",position:"relative",overflow:"hidden"}}>
+    <section id="team" style={{padding:mob?"16px 16px":"20px 32px",background:"#F9FBFD",position:"relative",overflow:"hidden"}}>
       <div style={{maxWidth:1200,margin:"0 auto",position:"relative",zIndex:2}}>
-        <div style={{textAlign:"center",marginBottom:mob?24:32}}>
+        <div style={{textAlign:"center",marginBottom:mob?16:20}}>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Leadership</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>Our Team</h2>
         </div>
