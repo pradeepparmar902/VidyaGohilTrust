@@ -8,23 +8,32 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
-const FB = window.FIREBASE_CONFIG || {};
-const FS_URL  = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/content/main`;
-const AUTH_URL= `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB.apiKey}`;
-const STG_URL = `https://firebasestorage.googleapis.com/v0/b/${FB.bucket}/o`;
+const getFB = () => window.FIREBASE_CONFIG || {};
+const FS_URL  = () => `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/content/main`;
+const AUTH_URL= () => `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${getFB().apiKey}`;
+const STG_URL = () => `https://firebasestorage.googleapis.com/v0/b/${getFB().bucket}/o`;
 
-const fbApp = initializeApp({
-  apiKey: FB.apiKey,
-  projectId: FB.projectId,
-  authDomain: `${FB.projectId}.firebaseapp.com`
-});
-const fbAuth = getAuth(fbApp);
+let fbApp = null;
+let fbAuth = null;
+try {
+  const initFB = window.FIREBASE_CONFIG || {};
+  if (initFB.apiKey && initFB.apiKey.trim().length > 0 && initFB.apiKey.trim() !== "1") {
+    fbApp = initializeApp({
+      apiKey: initFB.apiKey.trim(),
+      projectId: initFB.projectId?.trim(),
+      authDomain: `${initFB.projectId?.trim()}.firebaseapp.com`
+    });
+    fbAuth = getAuth(fbApp);
+  }
+} catch (e) {
+  console.warn("Firebase could not be initialized:", e);
+}
 
 // ── FIREBASE HELPERS ──────────────────────────────────────────────────────────
 // Firestore stores everything as one JSON string field for simplicity
 const fbLoad = async () => {
   try {
-    const res = await fetch(`${FS_URL}?t=${Date.now()}`, { cache: "no-store" });
+    const res = await fetch(`${FS_URL()}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return null;
     const doc = await res.json();
     const raw = doc?.fields?.data?.stringValue;
@@ -34,7 +43,7 @@ const fbLoad = async () => {
 
 const fbSave = async (content, idToken) => {
   const res = await fetch(
-    `${FS_URL}?updateMask.fieldPaths=data&updateMask.fieldPaths=savedAt`,
+    `${FS_URL()}?updateMask.fieldPaths=data&updateMask.fieldPaths=savedAt`,
     {
       method: "PATCH",
       headers: { "Content-Type":"application/json", "Authorization":`Bearer ${idToken}` },
@@ -51,7 +60,7 @@ const fbSave = async (content, idToken) => {
 };
 
 const fbSubmitRegistration = async (registrationData, idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/registrations`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   
@@ -82,7 +91,7 @@ const fbSubmitRegistration = async (registrationData, idToken) => {
 };
 
 const fbUpdateRegistration = async (docId, newData, idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations/${docId}?updateMask.fieldPaths=data`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/registrations/${docId}?updateMask.fieldPaths=data`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, {
@@ -99,7 +108,7 @@ const fbUpdateRegistration = async (docId, newData, idToken) => {
 };
 
 const fbUpdateDonation = async (docId, newData, idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations/${docId}?updateMask.fieldPaths=data`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/donations/${docId}?updateMask.fieldPaths=data`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, {
@@ -116,7 +125,7 @@ const fbUpdateDonation = async (docId, newData, idToken) => {
 };
 
 const fbFetchRegistrations = async (idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/registrations?pageSize=300`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/registrations?pageSize=300`;
   const headers = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, { headers });
@@ -137,7 +146,7 @@ const fbFetchRegistrations = async (idToken) => {
 };
 
 const fbSubmitDonation = async (donationData, idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/donations`;
   const headers = { "Content-Type": "application/json" };
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, {
@@ -155,7 +164,7 @@ const fbSubmitDonation = async (donationData, idToken) => {
 };
 
 const fbSubmitVolunteer = async (vData) => {
-  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers`;
+  const URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/volunteers`;
   const res = await fetch(URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -171,7 +180,7 @@ const fbSubmitVolunteer = async (vData) => {
 };
 
 const fbFetchVolunteers = async (idToken) => {
-  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers?pageSize=300`;
+  const URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/volunteers?pageSize=300`;
   const headers = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(URL, { headers });
@@ -188,7 +197,7 @@ const fbFetchVolunteers = async (idToken) => {
 
 const fbUpdateVolunteer = async (docId, vData, idToken) => {
   if (!docId) throw new Error("Missing document ID");
-  const URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/volunteers/${docId}`;
+  const URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/volunteers/${docId}`;
   const res = await fetch(URL, {
     method: "PATCH",
     headers: {
@@ -207,7 +216,7 @@ const fbUpdateVolunteer = async (docId, vData, idToken) => {
 };
 
 const fbFetchDonations = async (idToken) => {
-  const REG_URL = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/donations?pageSize=300`;
+  const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/donations?pageSize=300`;
   const headers = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
   const res = await fetch(REG_URL, { headers });
@@ -224,7 +233,7 @@ const fbFetchDonations = async (idToken) => {
 
 
 const fbSignUp = async (email, password) => {
-  const SIGNUP_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.apiKey}`;
+  const SIGNUP_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${getFB().apiKey}`;
   const res = await fetch(SIGNUP_URL, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
@@ -236,7 +245,7 @@ const fbSignUp = async (email, password) => {
 };
 
 const fbLogin = async (email, password) => {
-  const res = await fetch(AUTH_URL, {
+  const res = await fetch(AUTH_URL(), {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ email, password, returnSecureToken: true })
@@ -247,7 +256,7 @@ const fbLogin = async (email, password) => {
 };
 
 const fbUpdateProfile = async (idToken, displayName, photoUrl) => {
-  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FB.apiKey}`, {
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${getFB().apiKey}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken, displayName, photoUrl, returnSecureToken: true })
   });
@@ -256,7 +265,7 @@ const fbUpdateProfile = async (idToken, displayName, photoUrl) => {
 };
 
 const fbFetchUserProfile = async (localId, idToken) => {
-  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users/${localId}`, {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/users/${localId}`, {
     headers: { "Authorization": `Bearer ${idToken}` }
   });
   if (!res.ok) return null;
@@ -272,7 +281,7 @@ const fbSaveUserProfile = async (localId, data, idToken) => {
   for(const [k,v] of Object.entries(data)) {
     if (v !== undefined && v !== null) fields[k] = { stringValue: String(v) };
   }
-  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users/${localId}`, {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/users/${localId}`, {
     method: "PATCH", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
     body: JSON.stringify({ fields })
   });
@@ -281,7 +290,7 @@ const fbSaveUserProfile = async (localId, data, idToken) => {
 };
 
 const fbFetchAllUsers = async (idToken) => {
-  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/users?pageSize=100`, {
+  const res = await fetch(`https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/users?pageSize=100`, {
     headers: { "Authorization": `Bearer ${idToken}` }
   });
   if (!res.ok) return [];
@@ -299,20 +308,20 @@ const fbFetchAllUsers = async (idToken) => {
 const fbUploadLogo = async (file, idToken) => {
   const ext  = file.name.split(".").pop();
   const name = encodeURIComponent(`logos/logo_${Date.now()}.${ext}`);
-  const res  = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+  const res  = await fetch(`${STG_URL()}?uploadType=media&name=${name}`, {
     method: "POST",
     headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
     body: file,
   });
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
-  return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
+  return `${STG_URL()}/${name}?alt=media&token=${data.downloadTokens}`;
 };
 
 const fbUploadPhoto = async (file, idToken) => {
   const ext  = file.name.split(".").pop();
   const name = encodeURIComponent(`gallery/photo_${Date.now()}.${ext}`);
-  const res  = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+  const res  = await fetch(`${STG_URL()}?uploadType=media&name=${name}`, {
     method: "POST",
     headers: { "Content-Type": file.type, "Authorization": `Bearer ${idToken}` },
     body: file,
@@ -322,7 +331,7 @@ const fbUploadPhoto = async (file, idToken) => {
     throw new Error(`Upload failed (${res.status}): ${errText}`);
   }
   const data = await res.json();
-  return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
+  return `${STG_URL()}/${name}?alt=media&token=${data.downloadTokens}`;
 };
 
 const fbUploadPublicFile = async (file, idToken) => {
@@ -337,14 +346,14 @@ const fbUploadPublicFile = async (file, idToken) => {
     else cType = 'application/octet-stream';
   }
 
-  const res = await fetch(`${STG_URL}?uploadType=media&name=${name}`, {
+  const res = await fetch(`${STG_URL()}?uploadType=media&name=${name}`, {
     method: "POST",
     headers: { "Content-Type": cType, "Authorization": `Bearer ${idToken}` },
     body: file,
   });
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
-  return `${STG_URL}/${name}?alt=media&token=${data.downloadTokens}`;
+  return `${STG_URL()}/${name}?alt=media&token=${data.downloadTokens}`;
 };
 
 
@@ -355,11 +364,20 @@ function useW() {
   return w;
 }
 
-const G = () => (
+const THEMES = {
+  classic: `:root{--sf:#E8650A;--sflt:#F9A14E;--gd:#C8860A;--dt:#0D4B5E;--tm:#1A6B87;--tl:#E8F4F8;--cr:#FDF8F0;--ww:#FFFBF4;--tx:#1C1C1C;--tm2:#4A4A4A;--mu:#888;--bd:#E8DDD0}`,
+  ocean: `:root{--sf:#FF6B6B;--sflt:#FF8E8E;--gd:#4ECDC4;--dt:#0B3954;--tm:#087E8B;--tl:#EBF8FA;--cr:#F4F9F9;--ww:#FFFFFF;--tx:#112D32;--tm2:#4A4A4A;--mu:#888;--bd:#DDE8E8}`,
+  forest: `:root{--sf:#D4AF37;--sflt:#E6C25B;--gd:#B8860B;--dt:#1A3622;--tm:#2C5535;--tl:#EBF3ED;--cr:#F4F6F4;--ww:#FCFDFD;--tx:#1A251D;--tm2:#4A4A4A;--mu:#888;--bd:#DCE3DD}`,
+  "3d": `:root{--sf:#BC13FE;--sflt:#D966FF;--gd:#00F0FF;--dt:#09090B;--tm:#18181B;--tl:#27272A;--cr:#000000;--ww:#0A0A0A;--tx:#FFFFFF;--tm2:#A1A1AA;--mu:#71717A;--bd:#3F3F46}`
+};
+
+const G = ({ theme = "classic" }) => {
+  const vars = THEMES[theme] || THEMES.classic;
+  return (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--sf:#E8650A;--sflt:#F9A14E;--gd:#C8860A;--dt:#0D4B5E;--tm:#1A6B87;--tl:#E8F4F8;--cr:#FDF8F0;--ww:#FFFBF4;--tx:#1C1C1C;--tm2:#4A4A4A;--mu:#888;--bd:#E8DDD0}
+    ${vars}
     html{scroll-behavior:smooth}body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);overflow-x:hidden}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--sflt);border-radius:10px}
     @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
@@ -377,6 +395,50 @@ const G = () => (
     .bt:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(13,75,94,.4)}
     .sb{background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05));backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
     .sh::after{content:'';display:block;width:56px;height:3px;background:linear-gradient(90deg,var(--sf),var(--gd));margin:10px auto 0;border-radius:2px}
+    ${theme === "ocean" ? `
+      .ocean #home > div { text-align: left !important; }
+      .ocean .hbg { background: white !important; background-image: radial-gradient(circle at 100% 50%, #EBF8FA 0%, white 50%) !important; }
+      .ocean #home h1, .ocean #home p { color: var(--tx) !important; }
+      .ocean .sp { border-color: var(--gd) !important; right: -5% !important; top: -5% !important; width: 400px !important; height: 400px !important; }
+      .ocean #about, .ocean #events, .ocean #contact { background: #EBF8FA !important; }
+      .ocean #programs { background: linear-gradient(180deg, #EBF8FA, #FFFFFF) !important; }
+      .ocean #gallery { background: var(--dt) !important; }
+      .ocean #gallery h2, .ocean #gallery p { color: white !important; }
+      .ocean #gallery img { border-radius: 50% !important; border: 4px solid white !important; }
+      .ocean #achievements { background: white !important; }
+      .ocean .ac, .ocean .csc { border: none !important; border-radius: 24px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important; }
+      .ocean .bs, .ocean .bt { border-radius: 50px !important; }
+    ` : ''}
+    ${theme === "forest" ? `
+      .forest #home { align-items: flex-end !important; padding-bottom: 120px !important; }
+      .forest #home > div { grid-template-columns: 1fr !important; text-align: center !important; max-width: 900px !important; }
+      .forest #home .fu > div { justify-content: center !important; }
+      .forest .hbg { background: var(--dt) !important; background-image: linear-gradient(180deg, rgba(26,54,34,0.4) 0%, #1A3622 100%) !important; }
+      .forest #about, .forest #events { background: var(--dt) !important; color: white !important; }
+      .forest #programs, .forest #gallery { background: #122818 !important; color: white !important; }
+      .forest #programs h2, .forest #gallery h2, .forest #about h2, .forest #events h2 { color: var(--sf) !important; }
+      .forest #programs p, .forest #gallery p, .forest #about p, .forest #events p { color: rgba(255,255,255,0.8) !important; }
+      .forest #programs .csc { background: var(--dt) !important; color: white !important; border: 1px solid var(--sf) !important; }
+      .forest #gallery img { border-radius: 0px !important; border: 2px solid var(--sf) !important; }
+      .forest .ac, .forest .csc { border: 1px solid var(--sf) !important; border-radius: 0px !important; }
+      .forest .bs, .forest .bt { border-radius: 0px !important; }
+    ` : ''}
+    ${theme === "3d" ? `
+      .3d #home > div { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; padding: 40px !important; box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 2px 2px 10px rgba(255,255,255,0.1); }
+      .3d .hbg { background: radial-gradient(circle at 50% 50%, #18181B 0%, #09090B 100%) !important; }
+      .3d .ac, .3d .csc { background: rgba(255,255,255,0.02) !important; border: 1px solid rgba(255,255,255,0.05) !important; box-shadow: inset 2px 2px 5px rgba(255,255,255,0.05), inset -2px -2px 5px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.3) !important; border-radius: 30px !important; color: white !important; }
+      .3d section { background: var(--dt) !important; }
+      .3d #programs .csc { background: rgba(0,240,255,0.05) !important; border: 1px solid rgba(0,240,255,0.2) !important; box-shadow: 0 0 20px rgba(0,240,255,0.1) !important; border-radius: 20px !important; color: white !important; }
+      .3d #programs h2, .3d #gallery h2 { text-shadow: 0 0 10px var(--sf) !important; }
+      .3d #gallery img { border-radius: 20px !important; box-shadow: inset 0 0 20px black, 0 10px 20px black !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+      .3d h2 { color: white !important; }
+      .3d p, .3d .cl { color: var(--tm2) !important; }
+      .3d .bs, .3d .bt { box-shadow: inset 2px 2px 5px rgba(255,255,255,0.3), inset -2px -2px 5px rgba(0,0,0,0.5), 0 5px 15px rgba(188,19,254,0.4) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 20px !important; }
+      .3d .bs:hover, .3d .bt:hover { box-shadow: inset 1px 1px 3px rgba(255,255,255,0.4), inset -1px -1px 3px rgba(0,0,0,0.6), 0 8px 20px rgba(188,19,254,0.6) !important; }
+      .3d .ch { box-shadow: 10px 10px 20px #050505, -10px -10px 20px #111111; border: 1px solid #27272A; background: var(--ww); }
+      .3d .ch:hover { transform: translateY(-4px); box-shadow: 12px 12px 24px #040404, -12px -12px 24px #141414; }
+      .3d .ci, .3d .csh { background: #111 !important; border-color: #27272A !important; color: white !important; }
+    ` : ''}
     .sh.l::after{margin-left:0}
     .ap{border:2px solid var(--bd);background:white;cursor:pointer;transition:all .2s;border-radius:10px}
     .ap.a{border-color:var(--sf);background:#FFF4EC;color:var(--sf);font-weight:600}
@@ -402,23 +464,25 @@ const G = () => (
     .lt.a{background:var(--dt);color:white;border-color:var(--dt)}
     .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1A7A3E;color:white;padding:12px 24px;border-radius:50px;font-size:.875rem;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:fadeUp .4s ease}
   `}</style>
-);
+  );
+};
 
 const DC = {
-  trust:{name:"Vidya Gohil Charitable Trust",nameGu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ",subtitle:"CHARITABLE TRUST",phone:"+91 98765 43210",email:"info@vidyagohiltrust.org",address:"12, Gokuldham Society, Near Sardar Bridge, Ahmedabad – 380 006, Gujarat",hours:"Mon–Sat: 9:00 AM – 6:00 PM",estd:"2004",reg80G:"CIT(E)/12A/2004/123",panNo:"AACVG1234E",cin:"U85300GJ2004NPL045678",
+  theme: "classic",
+  trust:{name:"myCommunity",nameGu:"મારો સમુદાય",subtitle:"COMMUNITY PLATFORM",phone:"+1 800 123 4567",email:"hello@mycommunity.org",address:"123 Community Drive, Main Street, Global City - 12345",hours:"Mon–Sat: 9:00 AM – 6:00 PM",estd:"2024",reg80G:"REG/2024/123",panNo:"ABCDE1234F",cin:"U12345AB2024CDE012345",
     logo:{
       visible:  true,
       type:     "text",       // "text" | "image"
-      text:     "Om",         // shown when type=text
+      text:     "MC",         // shown when type=text
       url:      "",           // image URL when type=image
       size:     42,           // px — applies to both types
       shape:    "circle",     // "circle" | "rounded" | "square"
       bgColor:  "gradient",   // "gradient" | "white" | "transparent"
     }
   },
-  hero:{badge:"ESTD. 2004 · REGISTERED TRUST",title:"Empowering Lives Through Education & Compassion",titleGu:"શિક્ષણ અને કરુણા દ્વારા જીવન સશક્ત",subtitle:"For over 20 years, we have been uplifting underprivileged communities through education, healthcare, and sustainable development.",subtitleGu:"20 વર્ષોથી, અમે શિક્ષણ, આરોગ્ય અને ટકાઉ વિકાસ દ્વારા સમુદાયોને ઉપર ઉઠાવ્યા છે.",cta1:"Donate Now",cta1Gu:"દાન આપો",cta2:"Our Programs",cta2Gu:"અમારા કાર્યક્રમો",badge1:"80G Certified",badge2:"FCRA Registered",badge3:"ISO Audited",showStats:true,showImage:false,image:"",showRegBtn:false,regBtnLabel:"Register Now",regBtnLabelGu:"હવે નોંધણી કરો",regBtnLink:"#events"},
-  stats:[{num:"12,400+",label:"Lives Impacted",labelGu:"જીવો પ્રભાવિત"},{num:"Rs.2.8 Cr",label:"Funds Raised",labelGu:"ભંડોળ એકત્ર"},{num:"340+",label:"Volunteers",labelGu:"સ્વયંસેવકો"},{num:"28",label:"Active Programs",labelGu:"સક્રિય કાર્યક્રમો"}],
-  about:{heading:"Rooted in Compassion, Driven by Purpose",headingGu:"કરુણામાં મૂળ, ઉદ્દેશ્ય દ્વારા ચાલિત",body1:"The Vidya Gohil Charitable Trust was founded in 2004 by Vidyaben Gohil with a vision to create a dignified life for every individual regardless of caste, creed, or economic status.",body1Gu:"વિદ્યા ગોહિલ સખાવત ટ્રસ્ટ 2004 માં વિદ્યાબેન ગોહિલ દ્વારા સ્થાપિત કરવામાં આવ્યો હતો.",body2:"Our work spans education, healthcare, women's empowerment, environmental conservation, and disaster relief through community participation and transparent governance.",body2Gu:"અમારું કાર્ય શિક્ષણ, આરોગ્ય, મહિલા સશક્તિકરણ, પર્યાવરણ સંરક્ષણ અને આપત્તિ રાહત સુધી ફેલાયેલું છે.",points:["Transparent Governance","Community-Led Programs","Annual Public Audit","Zero Admin Fee Policy"],yearsLabel:"Years of Service",cta:"Read Our Story"},
+  hero:{badge:"ESTD. 2024 · COMMUNITY PLATFORM",title:"Empowering Our Community Together",titleGu:"આપણા સમુદાયને સાથે મળીને સશક્તિકરણ",subtitle:"A generic fallback boilerplate for communities to share their mission, programs, and connect with members.",subtitleGu:"સમુદાયો માટે તેમના મિશન, કાર્યક્રમો શેર કરવા અને સભ્યો સાથે જોડાવા માટે એક સામાન્ય ફોલબેક બોઈલરપ્લેટ.",cta1:"Donate Now",cta1Gu:"દાન આપો",cta2:"Our Programs",cta2Gu:"અમારા કાર્યક્રમો",badge1:"Verified",badge2:"Registered",badge3:"Audited",showStats:true,showImage:false,image:"",showRegBtn:false,regBtnLabel:"Register Now",regBtnLabelGu:"હવે નોંધણી કરો",regBtnLink:"#events"},
+  stats:[{num:"10,000+",label:"Members",labelGu:"સભ્યો"},{num:"$100k",label:"Funds Raised",labelGu:"ભંડોળ એકત્ર"},{num:"50+",label:"Volunteers",labelGu:"સ્વયંસેવકો"},{num:"10",label:"Active Programs",labelGu:"સક્રિય કાર્યક્રમો"}],
+  about:{heading:"Rooted in Compassion, Driven by Purpose",headingGu:"કરુણામાં મૂળ, ઉદ્દેશ્ય દ્વારા ચાલિત",body1:"myCommunity was founded to create a dignified life for every individual regardless of caste, creed, or economic status. This is fallback data when Firebase is not connected.",body1Gu:"મારો સમુદાય દરેક વ્યક્તિ માટે સન્માનજનક જીવન બનાવવા માટે સ્થાપિત કરવામાં આવ્યો હતો.",body2:"Our work spans education, healthcare, and empowerment through community participation.",body2Gu:"અમારું કાર્ય શિક્ષણ, આરોગ્ય અને સશક્તિકરણ સુધી ફેલાયેલું છે.",points:["Transparent Governance","Community-Led Programs","Annual Public Audit","Zero Admin Fee Policy"],yearsLabel:"Years of Service",cta:"Read Our Story"},
   programs:[{icon:"📚",title:"Education for All",sub:"Scholarships and learning centers for underprivileged children",details:"### Our Mission\nOur Education for All initiative focuses on providing quality education to children from marginalized communities. \n\n### What We Do\n- **Evening Centers**: We run evening learning centers for over 500 children.\n- **Scholarships**: We offer merit-based scholarships to help students pursue higher education.\n- **Free Supplies**: Distribute free school supplies, uniforms, and textbooks.\n\n> *\"Education is the most powerful weapon which you can use to change the world.\"*",color:"#FFF4EC",border:"#FDDBB8"},{icon:"🏥",title:"Health and Wellness",sub:"Free medical camps, medicines and health awareness drives",details:"### Healthcare for Everyone\nWe organize monthly free medical camps in rural areas, offering:\n\n1. General physical checkups\n2. Eye and dental exams\n3. Free basic medicines\n\nOur health awareness drives educate communities on hygiene, nutrition, and preventative care.",color:"#E8F4F8",border:"#B8D8E8"},{icon:"🌾",title:"Livelihood Support",sub:"Skill development and micro-finance for rural communities",details:"### Economic Independence\nTo foster economic independence, we provide skill development workshops in:\n- **Tailoring & Sewing**\n- **Computer Literacy**\n- **Basic Mechanics**\n\nWe also offer micro-finance support to help families start small sustainable businesses.",color:"#EDFAF1",border:"#B8E8CC"},{icon:"🤝",title:"Women Empowerment",sub:"Self-help groups, vocational training and legal aid",details:"### Empowering Women\nOur Women Empowerment programs create **self-help groups** where women can save and invest together.\n\nWe offer specialized vocational training and free legal aid to ensure women are aware of and can protect their rights.",color:"#F9F0FF",border:"#D8B8E8"},{icon:"🌊",title:"Disaster Relief",sub:"Rapid response support for flood and earthquake victims",details:"### Emergency Response\nIn times of natural calamities, our rapid response teams distribute:\n- Emergency ration kits\n- Clean drinking water\n- Temporary shelter materials\n\nWe work closely with local authorities to ensure aid reaches the most affected areas quickly.",color:"#FEF9EC",border:"#F5E8B8"},{icon:"🌱",title:"Environment",sub:"Tree plantation drives and clean water initiatives",details:"### A Greener Future\nCommitted to a greener future, we conduct regular **tree plantation drives** and maintain them with community support.\n\nWe also install water purification systems in schools and villages to ensure access to safe drinking water.",color:"#EDFAF1",border:"#B8E8CC"}],
   events:[{date:"Jun 15",month:"2025",title:"Annual Blood Donation Camp",location:"Ahmedabad Community Hall",tag:"Health",color:"#E8F4F8"},{date:"Jul 04",month:"2025",title:"Monsoon Tree Plantation Drive",location:"Sabarmati Riverfront",tag:"Environment",color:"#EDFAF1"},{date:"Aug 20",month:"2025",title:"Scholarship Distribution Ceremony",location:"Sardar Patel Hall, Surat",tag:"Education",color:"#FFF4EC"},{date:"Sep 10",month:"2025",title:"Womens Skill Fair 2025",location:"Vadodara Exhibition Ground",tag:"Empowerment",color:"#F9F0FF"}],
   donate:{heading:"Your Donation Changes Lives",subtext:"100% of donations go directly to programs. Tax exemption under 80G available.",note:"Secured by Razorpay - 256-bit SSL encryption - 80G receipt auto-generated",recurringLabel:"Monthly Recurring Donation",recurringNote:"Auto-deducted each month. Cancel anytime.",razorpayKey:"rzp_test_YourRazorpayKeyHere",programs:["General","Education","Healthcare","Women","Environment","Relief"]},
@@ -1950,9 +2014,31 @@ function Contact({ C }) {
               </div>
             </div>
           ))}
-          {/* <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {ct.socials.map(s=><button key={s} style={{padding:"7px 12px",borderRadius:8,background:"white",border:"1px solid var(--bd)",fontSize:".78rem",fontWeight:600,cursor:"pointer",color:"var(--tm2)",transition:"all .2s"}} onMouseEnter={e=>{e.target.style.borderColor="var(--sf)";e.target.style.color="var(--sf)"}} onMouseLeave={e=>{e.target.style.borderColor="var(--bd)";e.target.style.color="var(--tm2)"}}>{s}</button>)}
-          </div> */}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {ct.socials.map((s, i) => {
+              const isObj = typeof s === 'object';
+              const name = isObj ? s.name : s;
+              let url = isObj ? s.url : "";
+              const msg = isObj ? s.msg : "";
+              
+              if (url && !url.startsWith("http")) {
+                const n = name.toLowerCase();
+                const cleanUrl = url.startsWith("@") ? url.substring(1) : url;
+                if (n === "youtube") url = `https://youtube.com/@${cleanUrl}`;
+                else if (n === "instagram") url = `https://instagram.com/${cleanUrl}`;
+                else if (n === "facebook") url = `https://facebook.com/${cleanUrl}`;
+                else if (n === "x" || n === "twitter") url = `https://twitter.com/${cleanUrl}`;
+                else url = `https://${url}`;
+              }
+
+              if (url && msg && name.toLowerCase() === "whatsapp" && !url.includes("?text=")) {
+                url = `${url}?text=${encodeURIComponent(msg)}`;
+              }
+              return (
+                <a key={i} href={url || "#"} target={url ? "_blank" : "_self"} rel="noreferrer" style={{padding:"7px 12px",borderRadius:8,background:"white",border:"1px solid var(--bd)",fontSize:".78rem",fontWeight:600,cursor:"pointer",color:"var(--tm2)",transition:"all .2s",textDecoration:"none"}} onMouseEnter={e=>{e.target.style.borderColor="var(--sf)";e.target.style.color="var(--sf)"}} onMouseLeave={e=>{e.target.style.borderColor="var(--bd)";e.target.style.color="var(--tm2)"}}>{name}</a>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
@@ -3567,14 +3653,23 @@ function ContentEditor({ C, setC, setPage, auth }) {
         </div>
         <div className="cf">
           <label className="cl">Social Links</label>
-          {draft.contact.socials.map((s,i)=>(
+          {draft.contact.socials.map((s,i)=>{
+            const isObj = typeof s === 'object';
+            const name = isObj ? s.name : s;
+            const url = isObj ? s.url : "";
+            const msg = isObj ? s.msg : "";
+            return (
             <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-              <BlurInput className="ci" style={{flex:1,marginBottom:0}} value={s} onCommit={v=>upd(`contact.socials.${i}`,v)}/>
+              <BlurInput className="ci" placeholder="Platform" style={{flex:1,marginBottom:0}} value={name} onCommit={v=>upd(`contact.socials.${i}`, isObj ? {...s, name:v} : {name:v, url:"", msg:""})}/>
+              <BlurInput className="ci" placeholder="Link URL (https://...)" style={{flex:2,marginBottom:0}} value={url} onCommit={v=>upd(`contact.socials.${i}`, {name, url:v, msg})}/>
+              {name.toLowerCase() === "whatsapp" && (
+                <BlurInput className="ci" placeholder="Pre-filled Message" style={{flex:2,marginBottom:0}} value={msg || ""} onCommit={v=>upd(`contact.socials.${i}`, {name, url, msg:v})}/>
+              )}
               <button onClick={()=>delItem("contact.socials",i)}
                 style={{padding:"8px 10px",borderRadius:6,border:"1px solid #F5B8B8",background:"#FEF0EF",cursor:"pointer",fontSize:".8rem",color:"#C0392B",flexShrink:0,fontWeight:700}}>Del</button>
             </div>
-          ))}
-          <AddBtn label="Social Link" onClick={()=>addItem("contact.socials","New Link")}/>
+          )})}
+          <AddBtn label="Social Link" onClick={()=>addItem("contact.socials",{name:"New Link",url:"",msg:""})}/>
         </div>
       </Sec>
 
@@ -3751,7 +3846,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="team"      && hasAccess.includes("team") && <AdminTeam mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="gallery"   && hasAccess.includes("gallery") && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="achievements" && hasAccess.includes("achievements") && <AdminAchievements mob={mob} C={C} setC={setC} auth={auth}/>}
-          {tab==="settings"  && hasAccess.includes("settings") && <Settings mob={mob} C={C}/>}
+          {tab==="settings"  && hasAccess.includes("settings") && <Settings mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="access"    && hasAccess.includes("access") && <AdminAccess C={C} setC={setC} master={master} auth={auth}/>}
           {tab==="profile"   && hasAccess.includes("profile") && <AdminProfile auth={auth} mob={mob} adminProfile={adminProfile} setAdminProfile={setAdminProfile}/>}
         </div>
@@ -5354,10 +5449,39 @@ function AdminGallery({ mob, C, setC, auth }) {
   );
 }
 
-function Settings({ mob, C }) {
+function Settings({ mob, C, setC, auth }) {
+  const [theme, setTheme] = useState(C.theme || "classic");
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveTheme = async () => {
+    setSaving(true);
+    const newC = { ...C, theme };
+    setC(newC);
+    if (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey && window.FIREBASE_CONFIG.apiKey.trim().length > 0 && window.FIREBASE_CONFIG.apiKey.trim() !== "1") {
+      await fbSave(newC, auth?.idToken).catch(e => alert(e.message));
+    }
+    setSaving(false);
+    alert("Theme updated successfully!");
+  };
+
   const secs=[{t:"Trust Profile",ic:"🏛️",fs:[{l:"Trust Name",v:C.trust.name},{l:"Reg No.",v:"GUJ/CHT/2004/045678"},{l:"PAN",v:C.trust.panNo},{l:"80G Cert",v:C.trust.reg80G}]},{t:"Razorpay",ic:"💳",fs:[{l:"Key ID",v:"rzp_live_..."},{l:"Webhook Secret",v:"..."},{l:"Receipt Prefix",v:"VGCT"},{l:"Currency",v:"INR"}]},{t:"Email/SMTP",ic:"✉️",fs:[{l:"SMTP Host",v:"smtp.gmail.com"},{l:"From Email",v:C.trust.email},{l:"Reply-To",v:C.trust.email},{l:"Admin CC",v:C.trust.email}]},{t:"SEO/Social",ic:"🔍",fs:[{l:"Meta Title",v:C.trust.name},{l:"Facebook",v:"fb.com/vidyagohiltrust"},{l:"Instagram",v:"@vidyagohiltrust"},{l:"GA ID",v:"G-XXXXXXXXXX"}]}];
   return (
     <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:16}}>
+      <div className="ac" style={{padding:mob?"16px":"22px",gridColumn:mob?"1":"1 / -1"}}>
+        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",color:"var(--dt)",marginBottom:14,fontWeight:700}}>🎨 Theme Selection</h3>
+        <div style={{marginBottom:10}}>
+          <label style={{fontSize:".72rem",fontWeight:600,color:"var(--mu)",display:"block",marginBottom:4}}>Active Theme</label>
+          <select value={theme} onChange={e=>setTheme(e.target.value)} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".82rem",fontFamily:"inherit",background:"white"}}>
+            <option value="classic">Classic (Teal & Orange)</option>
+            <option value="ocean">Ocean (Navy & Coral)</option>
+            <option value="forest">Forest (Emerald & Gold)</option>
+            <option value="3d">Glossy 3D (Purple & Cyan)</option>
+          </select>
+        </div>
+        <button onClick={handleSaveTheme} disabled={saving} className="bt" style={{padding:"7px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",marginTop:6}}>
+          {saving ? "Saving..." : "Apply Theme"}
+        </button>
+      </div>
       {secs.map((s,i)=>(
         <div key={i} className="ac" style={{padding:mob?"16px":"22px"}}>
           <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:".95rem",color:"var(--dt)",marginBottom:14,fontWeight:700}}>{s.ic} {s.t}</h3>
@@ -5367,7 +5491,7 @@ function Settings({ mob, C }) {
               <input defaultValue={f.v} style={{width:"100%",padding:"8px 11px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".82rem",fontFamily:"inherit"}}/>
             </div>
           ))}
-          <button className="bt" style={{padding:"7px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",marginTop:6}}>Save</button>
+          <button className="bt" style={{padding:"7px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",marginTop:6}} onClick={() => alert("Settings saved locally")}>Save</button>
         </div>
       ))}
     </div>
@@ -6678,7 +6802,7 @@ function DashboardProfile({ globalProfile, globalAuthToken, mob }) {
       };
       
       // Re-fetch user localId to save to users collection
-      const res = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FB.apiKey, {
+      const res = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + getFB().apiKey, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({idToken: globalAuthToken})
       });
@@ -6880,8 +7004,8 @@ export default function App() {
 
   // ── Loading splash ────────────────────────────────────────────────────────
   if (fbState === "loading") return (
-    <>
-      <G/>
+    <div id="app-root" className={C?.theme || "classic"}>
+      <G theme={C?.theme || "classic"} />
       <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0D4B5E,#1A6B87)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20}}>
         <LogoMark logo={{...C.trust.logo, size: 60}} mob={false} />
         <div style={{color:"white",fontFamily:"'Playfair Display',serif",fontSize:"1.1rem"}}>Loading {C.trust.name}...</div>
@@ -6890,18 +7014,18 @@ export default function App() {
         </div>
         <style>{`@keyframes shimLoad{0%{width:0%}100%{width:100%}}`}</style>
       </div>
-    </>
+    </div>
   );
 
   return (
-    <>
-      <G/>
+    <div id="app-root" className={C?.theme || "classic"}>
+      <G theme={C?.theme || "classic"} />
       {page === "public"
         ? <Public C={C} lang={lang} setLang={setLang} setPage={goAdmin} auth={auth} onShowLogin={()=>setShowLogin(true)}/>
         : <Admin  C={C} setC={setC} setPage={setPage} auth={auth} onLogout={handleLogout} onShowLogin={()=>setShowLogin(true)}/>}
       {/* Login modal — overlays whatever page is showing */}
       {showLogin && <LoginScreen C={C} onLogin={handleLogin} onSkip={()=>setShowLogin(false)}/>}
-    </>
+    </div>
   );
 }
 
