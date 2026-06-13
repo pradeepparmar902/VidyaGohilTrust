@@ -1545,6 +1545,7 @@ function Achievements({ C, lang }) {
 // ── PUBLIC TEAM ───────────────────────────────────────────────────────────────
 function Team({ C, lang }) {
   const [activeMember, setActiveMember] = useState(null);
+  const [fullScreenMode, setFullScreenMode] = useState(null);
   const items = C.teamItems || [];
   const layout = C.teamLayout || "plain";
   const w = useW(); const mob = w<768;
@@ -1628,6 +1629,27 @@ function Team({ C, lang }) {
     );
   };
 
+  const renderPlainGrid = (isFullScreen = false) => (
+    <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":(!isFullScreen && items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob)?"repeat(2,1fr)":isFullScreen?"repeat(auto-fit, minmax(180px, 1fr))":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24, padding: "10px"}}>
+      {sortedPlainItems.map(item => (
+        <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
+          onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
+          <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
+            {item.image ? (
+              <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            ) : (
+              <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
+            )}
+          </div>
+          <div style={{padding:mob?16:20,textAlign:"center"}}>
+            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
+            <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <section id="team" style={{padding:mob?"16px 16px":"20px 32px",background:"#F9FBFD",position:"relative",overflow:"hidden"}}>
       <div style={{maxWidth:1200,margin:"0 auto",position:"relative",zIndex:2}}>
@@ -1638,41 +1660,48 @@ function Team({ C, lang }) {
 
         <div style={{display: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "flex" : "block", gap: 24, alignItems: "flex-start"}}>
           {items.filter(i => i.parentId === null).length > 0 && (
-            <div style={{flex: 1, width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%", marginBottom: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? 0 : 40}}>
+            <div style={{flex: 1, position:"relative", width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%", marginBottom: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? 0 : 40}}>
               <div style={{overflow:"auto", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
                 <div style={{minWidth: mob?300:((items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? 400 : 800), margin:"0 auto", paddingTop: 10, paddingBottom: 10}}>
                    {renderHierarchy(null)}
                 </div>
               </div>
+              <button onClick={() => setFullScreenMode("hierarchy")} style={{position:"absolute", top:16, right:24, background:"white", border:"1px solid #ddd", borderRadius:"50%", width:40, height:40, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", zIndex:10, boxShadow:"0 4px 12px rgba(0,0,0,0.1)", fontSize:"1.2rem", color:"var(--dt)"}} title="Full Screen">⛶</button>
             </div>
           )}
 
           {sortedPlainItems.length > 0 && (
-            <div style={{flex: 1, width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%"}}>
+            <div style={{flex: 1, position:"relative", width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%"}}>
               <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
-                <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":(items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob)?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24, padding: "10px"}}>
-                  {sortedPlainItems.map(item => (
-                    <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
-                      onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
-                      <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                        ) : (
-                          <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
-                        )}
-                      </div>
-                      <div style={{padding:mob?16:20,textAlign:"center"}}>
-                        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
-                        <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {renderPlainGrid(false)}
               </div>
+              <button onClick={() => setFullScreenMode("plain")} style={{position:"absolute", top:16, right:24, background:"white", border:"1px solid #ddd", borderRadius:"50%", width:40, height:40, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", zIndex:10, boxShadow:"0 4px 12px rgba(0,0,0,0.1)", fontSize:"1.2rem", color:"var(--dt)"}} title="Full Screen">⛶</button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Full Screen Layout Modal */}
+      {fullScreenMode && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#F9FBFD",zIndex:99999,display:"flex",flexDirection:"column",padding:mob?16:32,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,maxWidth:1600,margin:"0 auto 24px",width:"100%"}}>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.5rem":"2rem",color:"var(--dt)",margin:0}}>
+              {fullScreenMode === "hierarchy" ? "Organization Chart" : "Team Members"}
+            </h2>
+            <button onClick={()=>setFullScreenMode(null)} style={{background:"white",border:"1px solid var(--bd)",borderRadius:"50%",width:44,height:44,fontSize:"1.2rem",cursor:"pointer",color:"#333",display:"flex",alignItems:"center",justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>✕</button>
+          </div>
+          
+          <div style={{flex:1, overflow:"auto", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)", padding:mob?16:32, maxWidth:1600, margin:"0 auto", width:"100%"}}>
+            {fullScreenMode === "hierarchy" ? (
+              <div style={{minWidth: mob?300:1000, margin:"0 auto", paddingTop: 20, paddingBottom: 40}}>
+                 {renderHierarchy(null)}
+              </div>
+            ) : (
+               renderPlainGrid(true)
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Member Detail Modal */}
       {activeMember && (
