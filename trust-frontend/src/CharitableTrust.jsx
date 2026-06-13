@@ -2448,7 +2448,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
   const [draft, setDraft] = useState(()=>getDraft(C));
   const [toast,    setToast]    = useState(null); // null | "saving" | "saved" | "error"
   const [toastMsg, setToastMsg] = useState("");
-  const [exp, setExp] = useState({sections:true,nav:true,trust:true,hero:true,stats:true,about:true,programs:true,events:true,donate:true,contact:true});
+  const [exp, setExp] = useState({});
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
   const w = useW(); const mob = w<768;
