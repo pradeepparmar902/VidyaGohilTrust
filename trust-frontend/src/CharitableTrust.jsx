@@ -3405,6 +3405,16 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
   const [tab, setTab] = useState(visibleNav.length > 0 ? visibleNav[0].id : "");
   const [open, setOpen] = useState(true);
+  const [adminProfile, setAdminProfile] = useState(null);
+  
+  useEffect(() => {
+    if (auth?.idToken && auth?.localId) {
+      fbFetchUserProfile(auth.localId, auth.idToken).then(p => {
+        if(p) setAdminProfile(p);
+      }).catch(console.error);
+    }
+  }, [auth]);
+
   const w = useW(); const mob = w<768;
   
   useEffect(()=>{ if(mob) setOpen(false); else setOpen(true); },[mob]);
