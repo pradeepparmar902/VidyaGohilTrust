@@ -1551,7 +1551,8 @@ function Team({ C, lang }) {
 
   if(items.length === 0) return null;
 
-  const sortedPlainItems = layout === "plain" ? [...items].sort((a,b)=>(a.order||0)-(b.order||0)) : items;
+  const plainItems = items.filter(i => i.parentId === "plain" || typeof i.parentId === "undefined");
+  const sortedPlainItems = [...plainItems].sort((a,b)=>(a.order||0)-(b.order||0));
 
   const openModal = (item) => {
     const idx = sortedPlainItems.findIndex(i => i.id === item.id);
@@ -4992,7 +4993,7 @@ function AdminTeam({ mob, C, setC, auth }) {
             <button className="btn-primary" onClick={addPlain} style={{padding:"8px 16px",borderRadius:8}}>+ Add Member</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {[...items].sort((a,b)=>(a.order||0)-(b.order||0)).map((item, i) => (
+            {items.filter(i => i.parentId === "plain" || typeof i.parentId === "undefined").sort((a,b)=>(a.order||0)-(b.order||0)).map((item, i) => (
               <div key={item.id} style={{display:"flex",gap:16,padding:16,border:"1px solid var(--bd)",borderRadius:16,background:"#fafafa",alignItems:"center",flexWrap:"wrap"}}>
                 <div style={{width:60,height:60,borderRadius:"50%",background:"#eee",overflow:"hidden",flexShrink:0}}>
                   {item.image ? <img src={item.image} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>👤</div>}
