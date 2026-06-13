@@ -4837,7 +4837,21 @@ function AdminTeam({ mob, C, setC, auth }) {
   };
 
   const flushNodeUpdate = () => {
-    updItems(items); // Save to FB
+    setActiveNode(currActive => {
+      if (!currActive) return null;
+      setItems(currItems => {
+        const newItems = currItems.map(it => it.id === currActive.id ? currActive : it);
+        
+        setC(currC => {
+          const newC = { ...currC, teamItems: newItems };
+          saveToFb(newC);
+          return newC;
+        });
+        
+        return newItems;
+      });
+      return null;
+    });
   };
 
   // Plain layout actions
@@ -5002,7 +5016,7 @@ function AdminTeam({ mob, C, setC, auth }) {
       {activeNode && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
           <div style={{background:"white",width:"100%",maxWidth:500,borderRadius:24,padding:32,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
-            <button onClick={()=>{setActiveNode(null); flushNodeUpdate();}} style={{position:"absolute",top:16,right:16,background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer",color:"#888"}}>✕</button>
+            <button onClick={flushNodeUpdate} style={{position:"absolute",top:16,right:16,background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer",color:"#888"}}>✕</button>
             <h3 style={{marginTop:0,marginBottom:24,color:"var(--dt)"}}>Edit Team Member</h3>
             
             <div style={{marginBottom:24, paddingBottom:20, borderBottom:"1px solid #eee"}}>
@@ -5046,7 +5060,7 @@ function AdminTeam({ mob, C, setC, auth }) {
               <textarea value={activeNode.desc} onChange={e=>updateActiveNode("desc", e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",minHeight:80,resize:"vertical"}}/>
             </div>
 
-            <button onClick={()=>{setActiveNode(null); flushNodeUpdate();}} className="btn-primary" style={{width:"100%",padding:14,borderRadius:12,fontSize:"1rem"}}>Save Changes</button>
+            <button onClick={flushNodeUpdate} className="btn-primary" style={{width:"100%",padding:14,borderRadius:12,fontSize:"1rem"}}>Save Changes</button>
           </div>
         </div>
       )}
