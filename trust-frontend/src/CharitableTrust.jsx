@@ -1667,11 +1667,11 @@ function Team({ C, lang }) {
           <div style={{background:"white",width:"100%",maxWidth:600,borderRadius:24,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)", overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:"90vh"}}>
             <button onClick={()=>setActiveMemberIdx(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.8)",border:"none",borderRadius:"50%",width:40,height:40,fontSize:"1.5rem",cursor:"pointer",color:"#333",zIndex:10, display:"flex",alignItems:"center",justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>✕</button>
             
-            <div style={{background:"#f5f5f5", width:"100%", height: mob?200:300, position:"relative"}}>
+            <div style={{background:"#f9fafb", width:"100%", position:"relative", padding: "32px 16px", display:"flex", justifyContent:"center", borderBottom:"1px solid var(--bd)"}}>
               {sortedPlainItems[activeMemberIdx].image ? (
-                <img src={sortedPlainItems[activeMemberIdx].image} style={{width:"100%", height:"100%", objectFit:"cover"}} alt=""/>
+                <img src={sortedPlainItems[activeMemberIdx].image} style={{maxHeight: mob?250:350, maxWidth:"100%", objectFit:"contain", borderRadius:16, boxShadow:"0 12px 30px rgba(0,0,0,0.1)"}} alt=""/>
               ) : (
-                <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"5rem", opacity:0.1}}>👤</div>
+                <div style={{width:150, height:150, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"5rem", opacity:0.1}}>👤</div>
               )}
             </div>
             
