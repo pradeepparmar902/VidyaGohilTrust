@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-fetch('/config.json')
+fetch('./config.json')
   .then(res => res.json())
   .then(async config => {
     window.FIREBASE_CONFIG = config;
