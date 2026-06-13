@@ -1664,18 +1664,18 @@ function Team({ C, lang }) {
       {/* Member Detail Modal */}
       {activeMemberIdx !== null && sortedPlainItems[activeMemberIdx] && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div style={{background:"white",width:"100%",maxWidth:600,borderRadius:24,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)", overflow:"hidden", display:"flex", flexDirection:"column", maxHeight:"90vh"}}>
-            <button onClick={()=>setActiveMemberIdx(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.8)",border:"none",borderRadius:"50%",width:40,height:40,fontSize:"1.5rem",cursor:"pointer",color:"#333",zIndex:10, display:"flex",alignItems:"center",justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.1)"}}>✕</button>
+          <div style={{background:"white",width:"100%",maxWidth:mob?400:800,borderRadius:24,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)", overflow:"hidden", display:"flex", flexDirection:mob?"column":"row", maxHeight:"90vh"}}>
+            <button onClick={()=>setActiveMemberIdx(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.9)",border:"none",borderRadius:"50%",width:40,height:40,fontSize:"1.5rem",cursor:"pointer",color:"#333",zIndex:10, display:"flex",alignItems:"center",justifyContent:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>✕</button>
             
-            <div style={{background:"#f9fafb", width:"100%", position:"relative", padding: "32px 16px", display:"flex", justifyContent:"center", borderBottom:"1px solid var(--bd)"}}>
+            <div style={{background:"#f9fafb", width:mob?"100%":"45%", position:"relative", padding: mob?"32px 16px":"40px 24px", display:"flex", justifyContent:"center", alignItems:"center", borderBottom:mob?"1px solid var(--bd)":"none", borderRight:mob?"none":"1px solid var(--bd)"}}>
               {sortedPlainItems[activeMemberIdx].image ? (
-                <img src={sortedPlainItems[activeMemberIdx].image} style={{maxHeight: mob?250:350, maxWidth:"100%", objectFit:"contain", borderRadius:16, boxShadow:"0 12px 30px rgba(0,0,0,0.1)"}} alt=""/>
+                <img src={sortedPlainItems[activeMemberIdx].image} style={{maxHeight: mob?250:400, maxWidth:"100%", objectFit:"contain", borderRadius:16, boxShadow:"0 12px 30px rgba(0,0,0,0.1)"}} alt=""/>
               ) : (
                 <div style={{width:150, height:150, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"5rem", opacity:0.1}}>👤</div>
               )}
             </div>
             
-            <div style={{padding:mob?24:40, overflowY:"auto"}}>
+            <div style={{width:mob?"100%":"55%", padding:mob?24:40, overflowY:"auto", display:"flex", flexDirection:"column", justifyContent:"center"}}>
               <h2 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 8px 0", fontSize:"2rem"}}>{sortedPlainItems[activeMemberIdx].name}</h2>
               <div style={{color:"var(--sf)", fontWeight:700, fontSize:"1.1rem", textTransform:"uppercase", letterSpacing:1, marginBottom:24}}>{sortedPlainItems[activeMemberIdx].position}</div>
               
