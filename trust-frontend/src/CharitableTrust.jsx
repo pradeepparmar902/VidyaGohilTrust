@@ -4656,10 +4656,24 @@ function AdminTeam({ mob, C, setC, auth }) {
     if (!uid) return;
     const u = allUsers.find(x => x.id === uid);
     if (u) {
-      if (u.name) updateActiveNode("name", u.name);
+      const fetchedName = u.name || u['Full Name'] || "";
+      if (fetchedName) updateActiveNode("name", fetchedName);
+      
       if (u.photo) updateActiveNode("image", u.photo);
       else if (u.photoUrl) updateActiveNode("image", u.photoUrl);
+      
       if (u.position) updateActiveNode("position", u.position);
+      
+      const details = [];
+      if (u.mobile || u['Mobile Number']) details.push(`Mobile: ${u.mobile || u['Mobile Number']}`);
+      if (u.email) details.push(`Email: ${u.email}`);
+      if (u.address) details.push(`Address: ${u.address}`);
+      if (u.dob || u['Date of Birth']) details.push(`DOB: ${u.dob || u['Date of Birth']}`);
+      if (u.gender) details.push(`Gender: ${u.gender}`);
+      if (u.registrationNo || u['Registration Number']) details.push(`Reg No: ${u.registrationNo || u['Registration Number']}`);
+      
+      if (details.length > 0) updateActiveNode("desc", details.join(' | '));
+
       e.target.value = "";
     }
   };
