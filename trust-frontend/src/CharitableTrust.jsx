@@ -4667,12 +4667,23 @@ function AdminTeam({ mob, C, setC, auth }) {
       if (u.position || u.Position) updates.position = u.position || u.Position;
       
       const details = [];
-      if (u.mobile || u['Mobile Number']) details.push(`Mobile: ${u.mobile || u['Mobile Number']}`);
-      if (u.email) details.push(`Email: ${u.email}`);
-      if (u.address) details.push(`Address: ${u.address}`);
-      if (u.dob || u['Date of Birth']) details.push(`DOB: ${u.dob || u['Date of Birth']}`);
-      if (u.gender) details.push(`Gender: ${u.gender}`);
-      if (u.registrationNo || u['Registration Number']) details.push(`Reg No: ${u.registrationNo || u['Registration Number']}`);
+      const mob = u.mobile || u.Mobile || u['Mobile Number'] || u.phone || u.Phone;
+      if (mob) details.push(`Mobile: ${mob}`);
+      
+      const eml = u.email || u.Email;
+      if (eml) details.push(`Email: ${eml}`);
+      
+      const add = u.address || u.Address;
+      if (add) details.push(`Address: ${add}`);
+      
+      const dob = u.dob || u.DOB || u['Date of Birth'];
+      if (dob) details.push(`DOB: ${dob}`);
+      
+      const gen = u.gender || u.Gender;
+      if (gen) details.push(`Gender: ${gen}`);
+      
+      const reg = u.registrationNo || u.RegistrationNo || u['Registration Number'];
+      if (reg) details.push(`Reg No: ${reg}`);
       
       if (details.length > 0) updates.desc = details.join(' | ');
 
@@ -4767,9 +4778,12 @@ function AdminTeam({ mob, C, setC, auth }) {
   };
 
   const updateActiveNode = (field, val) => {
-    const updated = items.map(i => i.id === activeNode.id ? { ...i, [field]: val } : i);
-    setItems(updated); // Local fast update
-    setActiveNode({ ...activeNode, [field]: val });
+    setActiveNode(prev => {
+      const nextNode = { ...prev, [field]: val };
+      // Also update local items array to reflect change immediately
+      setItems(currItems => currItems.map(i => i.id === prev.id ? nextNode : i));
+      return nextNode;
+    });
   };
 
   const flushNodeUpdate = () => {
