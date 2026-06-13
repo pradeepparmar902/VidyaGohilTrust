@@ -2519,6 +2519,20 @@ function ContentEditor({ C, setC, setPage, auth }) {
     } finally { setUploading(false); }
   };
 
+  const handleHeroImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!auth?.idToken) { showToast("error","Please login to upload images."); return; }
+    setUploading(true);
+    try {
+      const url = await fbUploadPhoto(file, auth.idToken);
+      upd("hero.image", url);
+      showToast("saved","Hero image uploaded successfully!");
+    } catch(e) {
+      showToast("error","Upload failed: " + e.message);
+    } finally { setUploading(false); }
+  };
+
   const upd = (path, value) => {
     setDraft(prev=>{
       try {
@@ -3078,7 +3092,17 @@ function ContentEditor({ C, setC, setPage, auth }) {
           </div>
           {draft.hero.showImage && (
             <div style={{marginBottom: 24, marginLeft: 20}}>
-              <F label="Image URL (Or paste above)" path="hero.image" hint="Paste image URL here"/>
+              <div style={{display:"flex", alignItems:"flex-end", gap:8}}>
+                <div style={{flex:1}}>
+                  <F label="Image URL (Or upload)" path="hero.image" hint="Paste image URL here"/>
+                </div>
+                <div style={{marginBottom: 16}}>
+                  <input id="hero-img-upload" type="file" accept="image/*" style={{display:"none"}} onChange={handleHeroImageUpload} />
+                  <label htmlFor="hero-img-upload" style={{display:"inline-block",background:"var(--dt)",color:"white",padding:"10px 16px",borderRadius:8,fontSize:".85rem",cursor:"pointer",fontWeight:600}}>
+                    {uploading ? "Uploading..." : "Upload"}
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 
