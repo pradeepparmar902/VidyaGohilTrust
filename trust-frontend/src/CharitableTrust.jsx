@@ -5939,7 +5939,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
 }
 
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin, onSkip }) {
+function LoginScreen({ C, onLogin, onSkip }) {
   const [email, setEmail]   = useState("");
   const [pass,  setPass]    = useState("");
   const [err,   setErr]     = useState("");
@@ -6900,7 +6900,7 @@ export default function App() {
         ? <Public C={C} lang={lang} setLang={setLang} setPage={goAdmin} auth={auth} onShowLogin={()=>setShowLogin(true)}/>
         : <Admin  C={C} setC={setC} setPage={setPage} auth={auth} onLogout={handleLogout} onShowLogin={()=>setShowLogin(true)}/>}
       {/* Login modal — overlays whatever page is showing */}
-      {showLogin && <LoginScreen onLogin={handleLogin} onSkip={()=>setShowLogin(false)}/>}
+      {showLogin && <LoginScreen C={C} onLogin={handleLogin} onSkip={()=>setShowLogin(false)}/>}
     </>
   );
 }
