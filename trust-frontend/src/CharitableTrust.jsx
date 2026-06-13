@@ -707,7 +707,7 @@ function Programs({ C, lang }) {
   const [activeProg, setActiveProg] = useState(null);
   return (
     <>
-    <section id="programs" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
+    <section id="programs" style={{padding:w<640?"16px 16px":"20px 32px",background:"var(--cr)"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:48}}>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>What We Do</span>
@@ -765,7 +765,7 @@ function Programs({ C, lang }) {
 function About({ C, lang }) {
   const w = useW(); const mob = w<768; const a = C.about;
   return (
-    <section id="about" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
+    <section id="about" style={{padding:mob?"16px 16px":"20px 32px",background:"var(--ww)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:60,alignItems:"center"}}>
         {!mob && <div style={{position:"relative"}}>
           <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)",overflow:"hidden"}}>
@@ -887,7 +887,7 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
     }
   };
   return (
-    <section id="donate" style={{padding:mob?"56px 16px":"80px 32px",background:"linear-gradient(135deg,#0D4B5E,#1A6B87)",position:"relative"}}>
+    <section id="donate" style={{padding:mob?"16px 16px":"20px 32px",background:"linear-gradient(135deg,#0D4B5E,#1A6B87)",position:"relative"}}>
       <div style={{maxWidth:820,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <span style={{color:"var(--sflt)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Make a Difference</span>
@@ -1172,7 +1172,7 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
   };
 
   return (
-    <section id="events" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)",position:"relative"}}>
+    <section id="events" style={{padding:mob?"16px 16px":"20px 32px",background:"var(--ww)",position:"relative"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:mob?"flex-start":"flex-end",flexDirection:mob?"column":"row",gap:16,marginBottom:36}}>
           <div><span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Calendar</span>
@@ -1472,7 +1472,7 @@ function Achievements({ C, lang }) {
 
   if(items.length === 0) return null;
   return (
-    <section id="achievements" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
+    <section id="achievements" style={{padding:mob?"16px 16px":"20px 32px",background:"var(--ww)"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:mob?32:48}}>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Recognition</span>
@@ -1754,7 +1754,7 @@ function Gallery({ C }) {
 
   return (
     <>
-    <section id="gallery" style={{padding:w<640?"56px 16px":"80px 32px",background:"var(--cr)"}}>
+    <section id="gallery" style={{padding:w<640?"16px 16px":"20px 32px",background:"var(--cr)"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Our Work</span>
@@ -1835,7 +1835,7 @@ function Contact({ C }) {
   };
 
   return (
-    <section id="contact" style={{padding:mob?"56px 16px":"80px 32px",background:"var(--ww)"}}>
+    <section id="contact" style={{padding:mob?"16px 16px":"20px 32px",background:"var(--ww)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?36:48}}>
         <div>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Join Us</span>
@@ -1897,7 +1897,7 @@ function CustomSection({ sec, lang }) {
   const content = lang==="en" ? sec.content : (sec.contentGu || sec.content);
 
   return (
-    <section id={sec.id} style={{padding:mob?"56px 16px":"80px 32px",background:bg}}>
+    <section id={sec.id} style={{padding:mob?"16px 16px":"20px 32px",background:bg}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
         {/* Heading */}
         <div style={{textAlign:"center",marginBottom:40}}>
