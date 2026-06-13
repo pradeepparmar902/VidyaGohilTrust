@@ -1638,8 +1638,8 @@ function Team({ C, lang }) {
 
         {items.filter(i => i.parentId === null).length > 0 && (
           <div style={{marginBottom:40}}>
-            <div style={{overflow:"auto", maxHeight:"600px", padding:"32px 16px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
-              <div style={{minWidth: mob?300:800, margin:"0 auto"}}>
+            <div style={{overflow:"auto", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+              <div style={{minWidth: mob?300:800, margin:"0 auto", paddingTop: 10, paddingBottom: 10}}>
                  {renderHierarchy(null)}
               </div>
             </div>
@@ -1648,8 +1648,8 @@ function Team({ C, lang }) {
 
         {sortedPlainItems.length > 0 && (
           <div>
-            <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"600px", padding:"32px 16px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
-              <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24}}>
+            <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+              <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24, padding: "10px"}}>
                 {sortedPlainItems.map(item => (
                   <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
                     onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
