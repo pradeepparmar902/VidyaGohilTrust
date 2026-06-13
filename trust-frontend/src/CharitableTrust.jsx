@@ -3389,6 +3389,7 @@ const ANAV = [
   {id:"achievements",icon:"🏆",label:"Achievements"},
   {id:"settings",icon:"⚙️",label:"Settings"},
   {id:"access",icon:"🔐",label:"Access Control"},
+  {id:"profile",icon:"👤",label:"My Profile"},
 ];
 
 function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
@@ -3398,7 +3399,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
 
   let hasAccess = [];
   if (auth?.email) {
-    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "team", "achievements", "settings", "access"] : (userRole?.permissions || []);
+    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "team", "achievements", "settings", "access", "profile"] : [...(userRole?.permissions || []), "profile"];
   }
 
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
@@ -3507,6 +3508,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="achievements" && hasAccess.includes("achievements") && <AdminAchievements mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="settings"  && hasAccess.includes("settings") && <Settings mob={mob} C={C}/>}
           {tab==="access"    && hasAccess.includes("access") && <AdminAccess C={C} setC={setC} master={master} auth={auth}/>}
+          {tab==="profile"   && hasAccess.includes("profile") && <AdminProfile auth={auth} mob={mob} adminProfile={adminProfile} setAdminProfile={setAdminProfile}/>}
         </div>
       </div>
     </div>
@@ -6331,6 +6333,226 @@ function PolicyPage({ type, C }) {
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
+
+
+// ── NEW PROFILE COMPONENTS ────────────────────────────────────────────────────────
+function DashboardProfile({ globalProfile, globalAuthToken, mob }) {
+  const [data, setData] = useState({ name: "", email: "", mobile: "", address: "", gender: "", photo: "" });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (globalProfile) {
+      setData({
+        name: globalProfile.name || globalProfile['Full Name'] || "",
+        email: globalProfile.email || "",
+        mobile: globalProfile.mobile || globalProfile['Mobile Number'] || "",
+        address: globalProfile.address || "",
+        gender: globalProfile.gender || "",
+        photo: globalProfile.photo || globalProfile.photoUrl || ""
+      });
+    }
+  }, [globalProfile]);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await fbUploadPhoto(file, globalAuthToken);
+      setData(prev => ({ ...prev, photo: url }));
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        name: data.name,
+        email: data.email,
+        mobile: data.mobile,
+        address: data.address,
+        gender: data.gender,
+        photo: data.photo,
+        photoUrl: data.photo // support both
+      };
+      
+      // Re-fetch user localId to save to users collection
+      const res = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FB.apiKey, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({idToken: globalAuthToken})
+      });
+      const authData = await res.json();
+      if (!authData.users || !authData.users[0]) throw new Error("Could not find user.");
+      const localId = authData.users[0].localId;
+      
+      await fbSaveUserProfile(localId, payload, globalAuthToken);
+      
+      // Update local storage so next reload uses updated profile
+      const newGlobalProfile = { ...globalProfile, ...payload };
+      localStorage.setItem("globalProfile", JSON.stringify(newGlobalProfile));
+      alert("Profile updated successfully! Refresh the page to see changes in the top bar.");
+    } catch(e) {
+      alert("Failed to save: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:24,fontWeight:700}}>My Profile</h3>
+      <div style={{background:"white",padding:mob?20:32,borderRadius:16,border:"1px solid var(--bd)"}}>
+        
+        <div style={{display:"flex",gap:24,marginBottom:32,alignItems:"center",flexDirection:mob?"column":"row"}}>
+          <div style={{width:100,height:100,borderRadius:"50%",background:"#f5f5f5",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",border:"2px solid var(--bd)"}}>
+            {data.photo ? <img src={data.photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:"2.5rem"}}>👤</span>}
+          </div>
+          <div style={{flex:1,textAlign:mob?"center":"left"}}>
+            <label style={{cursor:"pointer",display:"inline-block",background:"var(--sf)",color:"white",padding:"8px 16px",borderRadius:8,fontWeight:600,fontSize:".9rem"}}>
+              {uploading ? "Uploading..." : "Change Profile Photo"}
+              <input type="file" style={{display:"none"}} accept="image/*" onChange={handlePhotoUpload} disabled={uploading}/>
+            </label>
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:20,marginBottom:24}}>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Full Name</label>
+            <input type="text" value={data.name} onChange={e=>setData({...data,name:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Mobile Number</label>
+            <input type="text" value={data.mobile} onChange={e=>setData({...data,mobile:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Email Address</label>
+            <input type="email" value={data.email} onChange={e=>setData({...data,email:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Gender</label>
+            <select value={data.gender} onChange={e=>setData({...data,gender:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",background:"white"}}>
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div style={{gridColumn:mob?"1":"1 / -1"}}>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Address</label>
+            <textarea value={data.address} onChange={e=>setData({...data,address:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",minHeight:80,resize:"vertical"}}/>
+          </div>
+        </div>
+
+        <button onClick={handleSave} disabled={saving} className="btn-primary" style={{width:mob?"100%":"auto",padding:"12px 32px",borderRadius:8,fontSize:"1rem"}}>
+          {saving ? "Saving Changes..." : "Save Profile"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminProfile({ auth, mob, adminProfile, setAdminProfile }) {
+  const [data, setData] = useState({ name: "", email: "", mobile: "", address: "", gender: "", photo: "" });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (adminProfile) {
+      setData({
+        name: adminProfile.name || adminProfile['Full Name'] || "",
+        email: adminProfile.email || auth.email || "",
+        mobile: adminProfile.mobile || adminProfile['Mobile Number'] || "",
+        address: adminProfile.address || "",
+        gender: adminProfile.gender || "",
+        photo: adminProfile.photo || adminProfile.photoUrl || ""
+      });
+    } else {
+      setData(prev => ({ ...prev, email: auth.email || "" }));
+    }
+  }, [adminProfile, auth.email]);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await fbUploadPhoto(file, auth.idToken);
+      setData(prev => ({ ...prev, photo: url }));
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        name: data.name,
+        email: data.email,
+        mobile: data.mobile,
+        address: data.address,
+        gender: data.gender,
+        photo: data.photo,
+        photoUrl: data.photo // support both
+      };
+      
+      await fbSaveUserProfile(auth.localId, payload, auth.idToken);
+      if(setAdminProfile) setAdminProfile(payload);
+      alert("Admin profile updated successfully!");
+    } catch(e) {
+      alert("Failed to save: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{padding:mob?16:32,background:"#F4F6F8",minHeight:"100%"}}>
+      <h2 style={{fontSize:"1.4rem",color:"var(--dt)",marginBottom:24,marginTop:0}}>Admin Profile</h2>
+      <div style={{background:"white",padding:mob?20:32,borderRadius:16,border:"1px solid var(--bd)"}}>
+        
+        <div style={{display:"flex",gap:24,marginBottom:32,alignItems:"center",flexDirection:mob?"column":"row"}}>
+          <div style={{width:100,height:100,borderRadius:"50%",background:"#f5f5f5",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",border:"2px solid var(--bd)"}}>
+            {data.photo ? <img src={data.photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <span style={{fontSize:"2.5rem"}}>👤</span>}
+          </div>
+          <div style={{flex:1,textAlign:mob?"center":"left"}}>
+            <label style={{cursor:"pointer",display:"inline-block",background:"var(--dt)",color:"white",padding:"8px 16px",borderRadius:8,fontWeight:600,fontSize:".9rem"}}>
+              {uploading ? "Uploading..." : "Change Admin Photo"}
+              <input type="file" style={{display:"none"}} accept="image/*" onChange={handlePhotoUpload} disabled={uploading}/>
+            </label>
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:20,marginBottom:24}}>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Full Name</label>
+            <input type="text" value={data.name} onChange={e=>setData({...data,name:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Email Address</label>
+            <input type="email" value={data.email} onChange={e=>setData({...data,email:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+          <div>
+            <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"var(--mu)",marginBottom:6}}>Mobile Number</label>
+            <input type="text" value={data.mobile} onChange={e=>setData({...data,mobile:e.target.value})} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+          </div>
+        </div>
+
+        <button onClick={handleSave} disabled={saving} className="btn-primary" style={{width:mob?"100%":"auto",padding:"12px 32px",borderRadius:8,fontSize:"1rem"}}>
+          {saving ? "Saving Changes..." : "Save Admin Profile"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page,    setPage]    = useState("public");
   const [lang,    setLang]    = useState("en");
