@@ -440,11 +440,14 @@ const DC = {
     tagline: "Designed with love for humanity"
   },
   builtinSections:{
-    hero:true, about:true, programs:true,
+    hero:true, about:true, programs:true, team:true,
     gallery:true, events:true, donate:true, contact:true,
   },
   customSections:[],
   galleryItems:[],
+  teamItems:[],
+  teamLayout:"plain",
+  teamNodeCounter: 1,
   access:{roles:[]},
 };
 
@@ -1539,6 +1542,116 @@ function Achievements({ C, lang }) {
 }
 
 // ── GALLERY ───────────────────────────────────────────────────────────────────
+// ── PUBLIC TEAM ───────────────────────────────────────────────────────────────
+function Team({ C, lang }) {
+  const items = C.teamItems || [];
+  const layout = C.teamLayout || "plain";
+  const w = useW(); const mob = w<768;
+
+  if(items.length === 0) return null;
+
+  const renderHierarchy = (parentId = null) => {
+    let children = items.filter(i => i.parentId === parentId);
+    children.sort((a,b) => (a.order||0) - (b.order||0));
+    
+    if(children.length === 0) return null;
+
+    return (
+      <div style={{display:"flex", gap: mob?"12px":"24px", justifyContent:"center", paddingTop: parentId ? (mob?20:30) : 0, position:"relative", flexWrap:mob?"wrap":"nowrap"}}>
+        {children.map((node, i) => (
+          <div key={node.id} style={{display:"flex", flexDirection:"column", alignItems:"center", position:"relative"}}>
+            {/* Connecting lines for children */}
+            {parentId && !mob && (
+              <>
+                <div style={{position:"absolute", top: 0, left: "50%", width: 2, height: 30, background: "var(--sf)", transform:"translateX(-50%)"}} />
+                {children.length > 1 && (
+                  <div style={{
+                    position:"absolute", top: 0, height: 2, background: "var(--sf)",
+                    left: i === 0 ? "50%" : 0,
+                    right: i === children.length - 1 ? "50%" : 0,
+                    width: i === 0 || i === children.length - 1 ? "50%" : "100%"
+                  }} />
+                )}
+              </>
+            )}
+            
+            {/* The Node */}
+            <div style={{marginTop: (parentId && !mob) ? 30 : 0, position:"relative", display:"flex", flexDirection:"column", alignItems:"center"}}>
+              {/* Parent connector */}
+              {!mob && items.find(x=>x.parentId===node.id) && (
+                <div style={{position:"absolute", bottom: -30, left: "50%", width: 2, height: 30, background: "var(--sf)", transform:"translateX(-50%)"}} />
+              )}
+              
+              {/* Card */}
+              <div className="gi" style={{
+                background:"white", padding: mob?16:24, borderRadius: 16, borderTop: "4px solid var(--sf)", 
+                width: mob?140:200, textAlign:"center", boxShadow:"0 12px 30px rgba(0,0,0,0.08)",
+                transition:"transform .3s", position:"relative", zIndex:2
+              }} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-5px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                <div style={{width:mob?60:80, height:mob?60:80, margin:"0 auto 12px", borderRadius:"50%", overflow:"hidden", border:"3px solid #f0f0f0", background:"#eee"}}>
+                  {node.image ? (
+                    <img src={node.image} alt={node.name} style={{width:"100%", height:"100%", objectFit:"cover"}}/>
+                  ) : (
+                    <div style={{width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"2rem"}}>👤</div>
+                  )}
+                </div>
+                <h4 style={{fontFamily:"'Playfair Display',serif", color:"var(--dt)", margin:"0 0 4px 0", fontSize:mob?".9rem":"1.1rem", fontWeight:700}}>{node.name}</h4>
+                <div style={{fontSize:mob?".7rem":".8rem", color:"var(--sf)", fontWeight:600, textTransform:"uppercase", letterSpacing:1}}>{node.position}</div>
+                {node.desc && <p style={{fontSize:mob?".75rem":".85rem", color:"var(--tm)", margin:"8px 0 0 0", lineHeight:1.4}}>{node.desc}</p>}
+              </div>
+            </div>
+
+            {/* Recursively render children */}
+            <div style={{marginTop: mob?16:30, display:"flex", justifyContent:"center", width:"100%"}}>
+              {renderHierarchy(node.id)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <section id="team" style={{padding:mob?"56px 16px":"80px 32px",background:"#F9FBFD",position:"relative",overflow:"hidden"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",position:"relative",zIndex:2}}>
+        <div style={{textAlign:"center",marginBottom:mob?40:60}}>
+          <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>Leadership</span>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>Our Team</h2>
+        </div>
+
+        {layout === "hierarchy" ? (
+          <div style={{overflowX:"auto", paddingBottom:40}}>
+            <div style={{minWidth: mob?300:800, margin:"0 auto"}}>
+               {renderHierarchy(null)}
+            </div>
+          </div>
+        ) : (
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":w<1024?"repeat(3,1fr)":"repeat(4,1fr)",gap:24}}>
+            {items.sort((a,b)=>(a.order||0)-(b.order||0)).map(item => (
+              <div key={item.id} className="gi" style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s"}}
+                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  ) : (
+                    <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
+                  )}
+                </div>
+                <div style={{padding:"24px 20px",textAlign:"center"}}>
+                  <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
+                  <div style={{fontSize:".85rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>{item.position}</div>
+                  {item.desc && <p style={{color:"var(--tm)",fontSize:".9rem",lineHeight:1.5,margin:0}}>{item.desc}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
 function Gallery({ C }) {
   const [active, setActive] = useState("All"); 
   const [selectedImage, setSelectedImage] = useState(null);
@@ -2393,6 +2506,7 @@ function ContentEditor({ C, setC, setPage, auth }) {
               {key:"hero",     label:"Hero / Banner",    icon:"🌟"},
               {key:"about",    label:"About Section",    icon:"ℹ️"},
               {key:"programs", label:"Programs",          icon:"📋"},
+              {key:"team",     label:"Our Team",          icon:"👥"},
               {key:"achievements", label:"Achievements",  icon:"🏆"},
               {key:"gallery",  label:"Gallery",           icon:"🖼️"},
               {key:"events",   label:"Events",            icon:"📅"},
@@ -3271,6 +3385,7 @@ const ANAV = [
   {id:"registrations",icon:"📋",label:"Registrations"},
   {id:"volunteers",icon:"🤝",label:"Volunteers"},
   {id:"gallery",icon:"🖼️",label:"Gallery"},
+  {id:"team",icon:"👥",label:"Our Team"},
   {id:"achievements",icon:"🏆",label:"Achievements"},
   {id:"settings",icon:"⚙️",label:"Settings"},
   {id:"access",icon:"🔐",label:"Access Control"},
@@ -3283,7 +3398,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
 
   let hasAccess = [];
   if (auth?.email) {
-    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "achievements", "settings", "access"] : (userRole?.permissions || []);
+    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "team", "achievements", "settings", "access"] : (userRole?.permissions || []);
   }
 
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
@@ -4492,6 +4607,314 @@ function AdminAchievements({ mob, C, setC, auth }) {
   );
 }
 
+// ── ADMIN TEAM ────────────────────────────────────────────────────────────────
+function AdminTeam({ mob, C, setC, auth }) {
+  const [items, setItems] = useState(C.teamItems || []);
+  const [layout, setLayout] = useState(C.teamLayout || "plain");
+  const [saving, setSaving] = useState(false);
+  const [activeNode, setActiveNode] = useState(null); // For editing details
+  const [menuNode, setMenuNode] = useState(null); // For Add actions
+
+  // Sync state if C changes
+  useEffect(() => {
+    setItems(C.teamItems || []);
+    setLayout(C.teamLayout || "plain");
+  }, [C.teamItems, C.teamLayout]);
+
+  const saveToFb = async (newC) => {
+    setSaving(true);
+    try {
+      const db = window.firebase.firestore();
+      await db.collection("trust_content").doc("draft").set(newC, { merge: true });
+      if (newC.publishAutomatically !== false) {
+        await db.collection("trust_content").doc("live").set(newC, { merge: true });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save changes.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updItems = (newItems) => {
+    setItems(newItems);
+    const newC = {...C, teamItems: newItems};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const updLayout = (l) => {
+    setLayout(l);
+    const newC = {...C, teamLayout: l};
+    setC(newC);
+    saveToFb(newC);
+  };
+
+  const getNewId = () => "team_" + Date.now() + Math.floor(Math.random()*1000);
+
+  // Hierarchy actions
+  const addRoot = () => {
+    const root = { id: getNewId(), parentId: null, name: "New Member", position: "Role", desc: "", image: "", order: 0 };
+    updItems([root]);
+  };
+
+  const addBoss = (node) => {
+    const newBossId = getNewId();
+    const newBoss = { id: newBossId, parentId: node.parentId, name: "New Boss", position: "Role", desc: "", image: "", order: node.order };
+    
+    // All siblings (including node itself) become children of newBoss
+    const updatedItems = items.map(i => {
+      if(i.parentId === node.parentId) return { ...i, parentId: newBossId };
+      return i;
+    });
+    
+    updItems([...updatedItems, newBoss]);
+    setMenuNode(null);
+  };
+
+  const addSubordinate = (node) => {
+    const children = items.filter(i => i.parentId === node.id);
+    const order = children.length > 0 ? Math.max(...children.map(c=>c.order||0)) + 1 : 0;
+    const child = { id: getNewId(), parentId: node.id, name: "New Member", position: "Role", desc: "", image: "", order };
+    updItems([...items, child]);
+    setMenuNode(null);
+  };
+
+  const addSibling = (node, dir) => {
+    // dir: -1 (left), 1 (right)
+    const newSibling = { id: getNewId(), parentId: node.parentId, name: "New Member", position: "Role", desc: "", image: "", order: node.order + dir * 0.5 };
+    updItems([...items, newSibling]);
+    setMenuNode(null);
+  };
+
+  const removeNode = (id) => {
+    if(!window.confirm("Delete this member? Any subordinates will also be deleted.")) return;
+    
+    const getDescendants = (pid) => {
+      let desc = items.filter(i => i.parentId === pid).map(i => i.id);
+      let all = [...desc];
+      desc.forEach(d => all.push(...getDescendants(d)));
+      return all;
+    };
+    
+    const toRemove = [id, ...getDescendants(id)];
+    updItems(items.filter(i => !toRemove.includes(i.id)));
+    setMenuNode(null);
+  };
+
+  const updateActiveNode = (field, val) => {
+    const updated = items.map(i => i.id === activeNode.id ? { ...i, [field]: val } : i);
+    setItems(updated); // Local fast update
+    setActiveNode({ ...activeNode, [field]: val });
+  };
+
+  const flushNodeUpdate = () => {
+    updItems(items); // Save to FB
+  };
+
+  // Plain layout actions
+  const addPlain = () => {
+    const newItem = { id: getNewId(), parentId: "plain", name: "New Member", position: "Role", desc: "", image: "", order: items.length };
+    updItems([...items, newItem]);
+  };
+
+  const movePlain = (index, dir) => {
+    let arr = [...items];
+    const temp = arr[index];
+    arr[index] = arr[index + dir];
+    arr[index + dir] = temp;
+    arr = arr.map((x,i)=>({...x, order:i}));
+    updItems(arr);
+  };
+
+  const removePlain = (index) => {
+    if(!window.confirm("Delete this member?")) return;
+    let arr = [...items];
+    arr.splice(index, 1);
+    updItems(arr);
+  };
+
+  // Hierarchy Renderer component (recursive)
+  const renderTree = (parentId = null) => {
+    let children = items.filter(i => i.parentId === parentId);
+    children.sort((a,b) => (a.order||0) - (b.order||0));
+    
+    if(children.length === 0) return null;
+
+    return (
+      <div style={{display:"flex", gap: "20px", justifyContent:"center", paddingTop: parentId ? 20 : 0, position:"relative"}}>
+        {children.map((node, i) => (
+          <div key={node.id} style={{display:"flex", flexDirection:"column", alignItems:"center", position:"relative"}}>
+            {/* Connecting lines for children */}
+            {parentId && (
+              <>
+                <div style={{position:"absolute", top: 0, left: "50%", width: 2, height: 20, background: "#ccc", transform:"translateX(-50%)"}} />
+                {children.length > 1 && (
+                  <div style={{
+                    position:"absolute", top: 0, height: 2, background: "#ccc",
+                    left: i === 0 ? "50%" : 0,
+                    right: i === children.length - 1 ? "50%" : 0,
+                    width: i === 0 || i === children.length - 1 ? "50%" : "100%"
+                  }} />
+                )}
+              </>
+            )}
+            
+            {/* The Node */}
+            <div style={{marginTop: parentId ? 20 : 0, position:"relative"}}>
+              {/* Parent connector */}
+              {items.find(x=>x.parentId===node.id) && (
+                <div style={{position:"absolute", bottom: -20, left: "50%", width: 2, height: 20, background: "#ccc", transform:"translateX(-50%)"}} />
+              )}
+              
+              <div style={{
+                background:"white", padding: 10, borderRadius: 8, border: "2px solid var(--bd)", 
+                width: 160, textAlign:"center", boxShadow:"0 4px 12px rgba(0,0,0,0.05)",
+                cursor:"pointer", position:"relative"
+              }} onClick={() => setActiveNode(node)}>
+                {node.image ? (
+                  <img src={node.image} alt="" style={{width:50, height:50, borderRadius:"50%", objectFit:"cover", marginBottom:8, border:"2px solid #eee"}}/>
+                ) : (
+                  <div style={{width:50, height:50, borderRadius:"50%", background:"#f5f5f5", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:8, fontSize:"1.2rem"}}>👤</div>
+                )}
+                <div style={{fontWeight:700, fontSize:".85rem", color:"var(--dt)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"}}>{node.name || "Name"}</div>
+                <div style={{fontSize:".7rem", color:"var(--sf)"}}>{node.position || "Position"}</div>
+                
+                {/* Plus button to open menu */}
+                <button onClick={(e)=>{e.stopPropagation(); setMenuNode(node);}} style={{
+                  position:"absolute", bottom: -12, right: -12, width: 24, height: 24, borderRadius:"50%", 
+                  background:"var(--dt)", color:"white", border:"2px solid white", cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1rem", zIndex:10
+                }}>+</button>
+              </div>
+
+              {/* Action Menu Context */}
+              {menuNode?.id === node.id && (
+                <div style={{position:"absolute", top: "100%", left: "50%", transform:"translate(-50%, 15px)", background:"white", borderRadius:8, boxShadow:"0 10px 30px rgba(0,0,0,.2)", zIndex:100, width: 160, padding: 8, border:"1px solid #eee"}}>
+                  <div style={{fontSize:".7rem", color:"#888", marginBottom:6, textAlign:"center", fontWeight:600}}>ADD RELATIVE</div>
+                  <button onClick={()=>addBoss(node)} className="gi" style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"#f9f9f9", border:"none", borderRadius:4, marginBottom:4, cursor:"pointer"}}>⬆️ Add Boss (Above)</button>
+                  <button onClick={()=>addSibling(node, -1)} className="gi" style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"#f9f9f9", border:"none", borderRadius:4, marginBottom:4, cursor:"pointer"}}>⬅️ Add Sibling (Left)</button>
+                  <button onClick={()=>addSibling(node, 1)} className="gi" style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"#f9f9f9", border:"none", borderRadius:4, marginBottom:4, cursor:"pointer"}}>➡️ Add Sibling (Right)</button>
+                  <button onClick={()=>addSubordinate(node)} className="gi" style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"#f9f9f9", border:"none", borderRadius:4, marginBottom:4, cursor:"pointer"}}>⬇️ Add Subordinate</button>
+                  <div style={{height:1, background:"#eee", margin:"6px 0"}}/>
+                  <button onClick={()=>removeNode(node.id)} style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"#FFF0F0", color:"#D32F2F", border:"none", borderRadius:4, cursor:"pointer"}}>🗑️ Delete Node</button>
+                  <button onClick={()=>setMenuNode(null)} style={{display:"block", width:"100%", padding:"6px", fontSize:".75rem", background:"transparent", border:"none", marginTop:4, cursor:"pointer", color:"#666"}}>Cancel</button>
+                </div>
+              )}
+            </div>
+
+            {/* Recursively render children */}
+            <div style={{marginTop: 20}}>
+              {renderTree(node.id)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{padding:mob?16:32, maxWidth:1200, margin:"0 auto"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:16}}>
+        <div>
+          <h2 style={{fontSize:"1.8rem",color:"var(--dt)",fontFamily:"'Playfair Display',serif",fontWeight:700,margin:0}}>Our Team Manager</h2>
+          <p style={{color:"var(--mu)",fontSize:".9rem",marginTop:4}}>Manage your team structure and profiles.</p>
+        </div>
+        <div style={{display:"flex",gap:10,background:"#fff",padding:4,borderRadius:12,boxShadow:"0 4px 12px rgba(0,0,0,.05)"}}>
+          <button onClick={()=>updLayout("plain")} style={{padding:"8px 16px",borderRadius:8,border:"none",background:layout==="plain"?"var(--sf)":"transparent",color:layout==="plain"?"white":"var(--mu)",fontWeight:600,cursor:"pointer",transition:"all .2s"}}>Plain Layout</button>
+          <button onClick={()=>updLayout("hierarchy")} style={{padding:"8px 16px",borderRadius:8,border:"none",background:layout==="hierarchy"?"var(--dt)":"transparent",color:layout==="hierarchy"?"white":"var(--mu)",fontWeight:600,cursor:"pointer",transition:"all .2s"}}>Hierarchy (Org Chart)</button>
+        </div>
+      </div>
+
+      {layout === "hierarchy" ? (
+        <div style={{background:"white",borderRadius:24,padding:32,boxShadow:"0 12px 40px rgba(0,0,0,0.04)", overflowX:"auto", minHeight: 400}}>
+          {items.length === 0 ? (
+            <div style={{textAlign:"center", padding: 60}}>
+              <div style={{fontSize:"3rem", marginBottom:16}}>🌳</div>
+              <h3 style={{color:"var(--dt)", marginBottom:16}}>Your Org Chart is Empty</h3>
+              <button className="btn-primary" onClick={addRoot} style={{padding:"12px 24px"}}>Add Top Leader</button>
+            </div>
+          ) : (
+            <div style={{minWidth: 800, paddingBottom: 60}}>
+              {renderTree(null)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{background:"white",borderRadius:24,padding:mob?16:32,boxShadow:"0 12px 40px rgba(0,0,0,0.04)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+            <h3 style={{color:"var(--dt)",margin:0}}>Team Members</h3>
+            <button className="btn-primary" onClick={addPlain} style={{padding:"8px 16px",borderRadius:8}}>+ Add Member</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {items.sort((a,b)=>(a.order||0)-(b.order||0)).map((item, i) => (
+              <div key={item.id} style={{display:"flex",gap:16,padding:16,border:"1px solid var(--bd)",borderRadius:16,background:"#fafafa",alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{width:60,height:60,borderRadius:"50%",background:"#eee",overflow:"hidden",flexShrink:0}}>
+                  {item.image ? <img src={item.image} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem"}}>👤</div>}
+                </div>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.1rem"}}>{item.name || "No Name"}</div>
+                  <div style={{color:"var(--sf)",fontSize:".85rem",fontWeight:600}}>{item.position || "No Position"}</div>
+                  <div style={{color:"var(--tm)",fontSize:".8rem",marginTop:4}}>{item.desc || "No Description"}</div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setActiveNode(item)} style={{padding:"6px 12px",borderRadius:6,border:"1px solid var(--sf)",background:"white",color:"var(--sf)",cursor:"pointer",fontWeight:600}}>Edit</button>
+                  <button onClick={()=>movePlain(i,-1)} disabled={i===0} style={{padding:"6px 12px",borderRadius:6,border:"1px solid var(--bd)",background:"white",cursor:i===0?"not-allowed":"pointer"}}>↑</button>
+                  <button onClick={()=>movePlain(i,1)} disabled={i===items.length-1} style={{padding:"6px 12px",borderRadius:6,border:"1px solid var(--bd)",background:"white",cursor:i===items.length-1?"not-allowed":"pointer"}}>↓</button>
+                  <button onClick={()=>removePlain(i)} style={{padding:"6px 12px",borderRadius:6,border:"none",background:"#FFF0F0",color:"#D32F2F",cursor:"pointer"}}>Delete</button>
+                </div>
+              </div>
+            ))}
+            {items.length===0 && <div style={{padding:40,textAlign:"center",color:"#888"}}>No team members yet.</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Node Modal */}
+      {activeNode && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",width:"100%",maxWidth:500,borderRadius:24,padding:32,position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
+            <button onClick={()=>{setActiveNode(null); flushNodeUpdate();}} style={{position:"absolute",top:16,right:16,background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer",color:"#888"}}>✕</button>
+            <h3 style={{marginTop:0,marginBottom:24,color:"var(--dt)"}}>Edit Team Member</h3>
+            
+            <div style={{display:"flex",gap:16,marginBottom:20}}>
+              <div style={{width:80,height:80,borderRadius:"50%",background:"#f5f5f5",overflow:"hidden",position:"relative"}}>
+                {activeNode.image ? <img src={activeNode.image} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2rem"}}>👤</div>}
+              </div>
+              <div style={{flex:1}}>
+                <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--mu)",marginBottom:4}}>PHOTO URL (OR FIREBASE STORAGE URL)</label>
+                <input type="text" value={activeNode.image} onChange={e=>updateActiveNode("image", e.target.value)} style={{width:"100%",padding:10,borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem"}} placeholder="https://..."/>
+                <div style={{fontSize:".7rem",color:"var(--sf)",marginTop:4}}>*Tip: Upload image in Gallery first and paste link here for now.</div>
+              </div>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--mu)",marginBottom:4}}>NAME</label>
+              <input type="text" value={activeNode.name} onChange={e=>updateActiveNode("name", e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+            </div>
+            
+            <div style={{marginBottom:16}}>
+              <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--mu)",marginBottom:4}}>POSITION / TITLE</label>
+              <input type="text" value={activeNode.position} onChange={e=>updateActiveNode("position", e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem"}}/>
+            </div>
+
+            <div style={{marginBottom:24}}>
+              <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--mu)",marginBottom:4}}>SHORT DESCRIPTION</label>
+              <textarea value={activeNode.desc} onChange={e=>updateActiveNode("desc", e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",minHeight:80,resize:"vertical"}}/>
+            </div>
+
+            <button onClick={()=>{setActiveNode(null); flushNodeUpdate();}} className="btn-primary" style={{width:"100%",padding:14,borderRadius:12,fontSize:"1rem"}}>Save Changes</button>
+          </div>
+        </div>
+      )}
+
+      {saving && <div style={{position:"fixed",bottom:20,right:20,background:"#333",color:"white",padding:"10px 20px",borderRadius:20,fontSize:".8rem",fontWeight:600}}>Saving...</div>}
+    </div>
+  );
+}
+
+
 function AdminGallery({ mob, C, setC, auth }) {
   const [loading, setLoading] = useState(false);
   const items = C.galleryItems || [];
@@ -4664,6 +5087,7 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
           {bs.about    !== false && <About C={C} lang={lang}/>}
           {bs.programs !== false && <Programs C={C} lang={lang}/>}
           {bs.achievements !== false && <Achievements C={C} lang={lang}/>}
+          {bs.team !== false && <Team C={C} lang={lang}/>}
           {bs.gallery  !== false && <Gallery C={C}/>}
           {bs.events   !== false && <Events C={C} lang={lang} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
           {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
