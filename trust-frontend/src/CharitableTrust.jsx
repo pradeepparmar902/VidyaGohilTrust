@@ -4623,16 +4623,12 @@ function AdminTeam({ mob, C, setC, auth }) {
   }, [C.teamItems, C.teamLayout]);
 
   const saveToFb = async (newC) => {
+    if (!auth?.idToken) { alert("Login required to save"); return; }
     setSaving(true);
     try {
-      const db = window.firebase.firestore();
-      await db.collection("trust_content").doc("draft").set(newC, { merge: true });
-      if (newC.publishAutomatically !== false) {
-        await db.collection("trust_content").doc("live").set(newC, { merge: true });
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to save changes.");
+      await fbSave(newC, auth.idToken);
+    } catch(e) {
+      alert("Save failed: " + e.message);
     } finally {
       setSaving(false);
     }
