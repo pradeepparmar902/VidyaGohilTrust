@@ -5337,7 +5337,8 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
     { id: "Registrations", label: "Event Registrations", icon: "📅" },
     { id: "Awards", label: "Education Awards", icon: "🎓" },
     { id: "Receipts", label: "Payment Receipts", icon: "🧾" },
-    { id: "Invites", label: "Special Invites", icon: "💌" }
+    { id: "Invites", label: "Special Invites", icon: "💌" },
+    { id: "Profile", label: "My Profile", icon: "👤" }
   ];
 
   const handleViewReceipt = async (r) => {
@@ -5470,6 +5471,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
 
           {/* Content Area */}
           <div style={{flex:1,padding:mob?"20px 16px":"32px",overflowY:"auto",background:"#F8F9FA"}}>
+            {activeTab === "Profile" && <DashboardProfile globalProfile={globalProfile} globalAuthToken={globalAuthToken} mob={mob} />}
             {activeTab === "Registrations" && (
               <>
                 <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Event Registrations</h3>
