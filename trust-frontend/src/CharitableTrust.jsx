@@ -1636,40 +1636,42 @@ function Team({ C, lang }) {
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.8rem":"2.4rem",color:"var(--dt)",marginTop:8,fontWeight:700}}>Our Team</h2>
         </div>
 
-        {items.filter(i => i.parentId === null).length > 0 && (
-          <div style={{marginBottom:40}}>
-            <div style={{overflow:"auto", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
-              <div style={{minWidth: mob?300:800, margin:"0 auto", paddingTop: 10, paddingBottom: 10}}>
-                 {renderHierarchy(null)}
+        <div style={{display: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "flex" : "block", gap: 24, alignItems: "flex-start"}}>
+          {items.filter(i => i.parentId === null).length > 0 && (
+            <div style={{flex: 1, width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%", marginBottom: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? 0 : 40}}>
+              <div style={{overflow:"auto", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+                <div style={{minWidth: mob?300:((items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? 400 : 800), margin:"0 auto", paddingTop: 10, paddingBottom: 10}}>
+                   {renderHierarchy(null)}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {sortedPlainItems.length > 0 && (
-          <div>
-            <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
-              <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24, padding: "10px"}}>
-                {sortedPlainItems.map(item => (
-                  <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
-                    onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
-                    <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                      ) : (
-                        <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
-                      )}
+          {sortedPlainItems.length > 0 && (
+            <div style={{flex: 1, width: (items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob) ? "50%" : "100%"}}>
+              <div style={{overflowY:"auto", overflowX:"hidden", maxHeight:"450px", padding:"24px", background:"white", borderRadius:24, border:"1px solid var(--bd)", boxShadow:"inset 0 4px 24px rgba(0,0,0,0.03)"}}>
+                <div style={{display:"grid",gridTemplateColumns:mob?"repeat(2,1fr)":(items.filter(i => i.parentId === null).length > 0 && sortedPlainItems.length > 0 && !mob)?"repeat(2,1fr)":w<1024?"repeat(4,1fr)":"repeat(5,1fr)",gap:mob?16:24, padding: "10px"}}>
+                  {sortedPlainItems.map(item => (
+                    <div key={item.id} className="gi" style={{background:"#fdfdfd",borderRadius:20,overflow:"hidden",boxShadow:"0 12px 30px rgba(0,0,0,.06)",transition:"all .3s", cursor:"pointer", border:"1px solid rgba(0,0,0,0.05)"}}
+                      onMouseEnter={e=>e.currentTarget.style.transform="translateY(-8px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"} onClick={() => openModal(item)}>
+                      <div style={{width:"100%",aspectRatio:"1",background:"#f5f5f5",position:"relative"}}>
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        ) : (
+                          <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"4rem",opacity:0.1}}>👤</div>
+                        )}
+                      </div>
+                      <div style={{padding:mob?16:20,textAlign:"center"}}>
+                        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
+                        <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
+                      </div>
                     </div>
-                    <div style={{padding:mob?16:20,textAlign:"center"}}>
-                      <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1rem":"1.1rem",color:"var(--dt)",margin:"0 0 4px 0",fontWeight:700}}>{item.name}</h3>
-                      <div style={{fontSize:mob?".65rem":".75rem",color:"var(--sf)",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>{item.position}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Member Detail Modal */}
@@ -5264,9 +5266,9 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
         </>
       )}
       <Footer C={C} onFooterLinkClick={handleFooterLinkClick}/>
-      <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:24,right:24,zIndex:999,width:52,height:52,borderRadius:"50%",fontSize:"1.3rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}} title="Donate Now">❤️</button>
+      <button className="bs" onClick={()=>document.getElementById("donate")?.scrollIntoView({behavior:"smooth"})} style={{position:"fixed",bottom:16,right:16,zIndex:999,width:40,height:40,borderRadius:"50%",fontSize:"1.1rem",boxShadow:"0 8px 28px rgba(232,101,10,.45)",display:"flex",alignItems:"center",justifyContent:"center",border:"none"}} title="Donate Now">❤️</button>
       {globalProfile && (
-        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",bottom:90,right:24,zIndex:999,background:"var(--dt)",color:"white",border:"border:1px solid #B8D8E8",width:52,height:52,borderRadius:"50%",fontSize:"1.2rem",boxShadow:"0 8px 28px rgba(13,75,94,.35)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .2s"}} title="My Dashboard">
+        <button className="bs" onClick={()=>setShowDashboard(true)} style={{position:"fixed",bottom:64,right:16,zIndex:999,background:"var(--dt)",color:"white",border:"border:1px solid #B8D8E8",width:40,height:40,borderRadius:"50%",fontSize:"1.1rem",boxShadow:"0 8px 28px rgba(13,75,94,.35)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .2s"}} title="My Dashboard">
           👤
         </button>
       )}
