@@ -861,11 +861,13 @@ function Programs({ C, lang }) {
 
 // ── ABOUT ─────────────────────────────────────────────────────────────────────
 function About({ C, lang }) {
-  const w = useW(); const mob = w<768; const a = C.about;
+  const w = useW(); const mob = w<768; const a = C.about || {};
+  const align = a.align || "left";
+  const [showStory, setShowStory] = useState(false);
   return (
     <section id="about" style={{padding:mob?"16px 16px":"20px 32px",background:"var(--ww)"}}>
-      <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:mob?32:60,alignItems:"center"}}>
-        {!mob && <div style={{position:"relative"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:mob||a.hideImage?"1fr":"1fr 1fr",gap:mob?32:60,alignItems:"center",textAlign:align}}>
+        {!mob && !a.hideImage && <div style={{position:"relative"}}>
           <div style={{width:"100%",aspectRatio:"4/3",borderRadius:20,background:"linear-gradient(135deg,var(--dt),var(--tm))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"6rem",boxShadow:"0 24px 60px rgba(13,75,94,.2)",overflow:"hidden"}}>
             {a.mainImage ? (
               <img src={a.mainImage} alt="About Us" style={{width:"100%",height:"100%",objectFit:"contain",background:"white",display:"block"}} />
@@ -879,20 +881,36 @@ function About({ C, lang }) {
             </div>
           )}
         </div>}
-        <div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:align==="center"?"center":align==="right"?"flex-end":"flex-start"}}>
           <span style={{color:"var(--sf)",fontWeight:600,fontSize:".8rem",letterSpacing:2,textTransform:"uppercase"}}>About the Trust</span>
           <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:mob?"1.6rem":"2rem",color:"var(--dt)",marginTop:8,marginBottom:18,fontWeight:700}} className="sh l">{lang==="en"?a.heading:a.headingGu}</h2>
           <p style={{color:"var(--tm2)",lineHeight:1.8,marginBottom:14,fontSize:".93rem"}}>{lang==="en"?a.body1:a.body1Gu}</p>
           <p style={{color:"var(--tm2)",lineHeight:1.8,marginBottom:24,fontSize:".93rem"}}>{lang==="en"?a.body2:a.body2Gu}</p>
-          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:24}}>
-            {a.points.map((v, i)=>{
+          <div style={{display:"grid",gridTemplateColumns:mob||a.hideImage?"repeat(auto-fit, minmax(200px, 1fr))":"1fr 1fr",gap:10,marginBottom:24,width:"100%"}}>
+            {a.points?.map((v, i)=>{
               const text = lang === "gu" ? (a.pointsGu?.[i] || v) : v;
-              return <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:".875rem"}}><span style={{color:"var(--sf)"}}>✓</span>{text}</div>
+              return <div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:".875rem",justifyContent:align==="center"?"center":align==="right"?"flex-end":"flex-start"}}><span style={{color:"var(--sf)"}}>✓</span>{text}</div>
             })}
           </div>
-          <button className="bt" style={{padding:"11px 22px",borderRadius:10,fontWeight:600,fontSize:".875rem"}}>{a.cta}</button>
+          {(a.story || a.storyGu) ? (
+            <button className="bt" onClick={() => setShowStory(true)} style={{padding:"11px 22px",borderRadius:10,fontWeight:600,fontSize:".875rem",cursor:"pointer"}}>{a.cta}</button>
+          ) : (
+            <button className="bt" style={{padding:"11px 22px",borderRadius:10,fontWeight:600,fontSize:".875rem"}}>{a.cta}</button>
+          )}
         </div>
       </div>
+
+      {showStory && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",width:"100%",maxWidth:800,maxHeight:"90vh",borderRadius:20,display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{padding:"20px 24px",borderBottom:"1px solid var(--bd)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--ww)"}}>
+              <h3 style={{margin:0,fontSize:"1.4rem",color:"var(--dt)",fontFamily:"'Playfair Display',serif"}}>{a.cta}</h3>
+              <button onClick={() => setShowStory(false)} style={{background:"none",border:"none",fontSize:"1.8rem",cursor:"pointer",color:"var(--mu)",lineHeight:1}}>×</button>
+            </div>
+            <div className="rich-text-content" style={{padding:"24px",overflowY:"auto",lineHeight:1.7,color:"#444",fontSize:"1.05rem"}} dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(lang==="gu"?(a.storyGu||""):(a.story||""))}} />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -3275,10 +3293,27 @@ function ContentEditor({ C, setC, setPage, auth }) {
           <F label="Paragraph 1" path="about.body1Gu" ta hint="Gujarati"/>
           <F label="Paragraph 2" path="about.body2" ta hint="English"/>
           <F label="Paragraph 2" path="about.body2Gu" ta hint="Gujarati"/>
+          <F label="Detailed Story (Pop-up Modal)" path="about.story" rtf={true} hint="English"/>
+          <F label="Detailed Story (Pop-up Modal)" path="about.storyGu" rtf={true} hint="Gujarati"/>
         </G2>
         <G2>
           <ImgUpload label="Main Image (Overrides 🙏)" path="about.mainImage" auth={auth}/>
           <ImgUpload label="Floating Badge Image (Overrides Years Label)" path="about.badgeImage" auth={auth}/>
+          
+          <div style={{display:"flex",gap:16,alignItems:"center",marginTop:8,marginBottom:16,flexWrap:"wrap"}}>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".8rem",fontWeight:600,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!draft.about.hideImage} onChange={e=>upd("about.hideImage", e.target.checked)}/>
+              Hide Image Section
+            </label>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:".8rem",fontWeight:600}}>Content Align:</span>
+              <select value={draft.about.align || "left"} onChange={e=>upd("about.align", e.target.value)} style={{padding:"4px 8px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".8rem",fontFamily:"inherit"}}>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
         </G2>
         <G2>
           <F label="Years Label" path="about.yearsLabel"/>
@@ -5354,6 +5389,8 @@ function AdminTeam({ mob, C, setC, auth }) {
 
 function AdminGallery({ mob, C, setC, auth }) {
   const [loading, setLoading] = useState(false);
+  const [bulkTag, setBulkTag] = useState("");
+  const [selected, setSelected] = useState([]);
   const items = C.galleryItems || [];
 
   const saveToFb = async (newC) => {
@@ -5372,19 +5409,30 @@ function AdminGallery({ mob, C, setC, auth }) {
   };
 
   const uploadPhoto = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     if (!auth?.idToken) { alert("Please login to upload media."); return; }
     setLoading(true);
     try {
-      const url = await fbUploadPhoto(file, auth.idToken);
-      const isVideo = file.type.startsWith("video/");
-      const newItem = { id: Date.now().toString(), url, title: isVideo ? "New Video" : "New Photo", category: "General", type: isVideo ? "video" : "image" };
-      upd([newItem, ...items]);
+      const newUploads = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const url = await fbUploadPhoto(file, auth.idToken);
+        const isVideo = file.type.startsWith("video/");
+        newUploads.push({
+          id: Date.now().toString() + "-" + i,
+          url,
+          title: isVideo ? "New Video" : "New Photo",
+          category: bulkTag.trim() || "General",
+          type: isVideo ? "video" : "image"
+        });
+      }
+      upd([...newUploads, ...items]);
     } catch(err) {
       alert("Upload failed: " + err.message);
     } finally {
       setLoading(false);
+      e.target.value = null;
     }
   };
 
@@ -5412,16 +5460,33 @@ function AdminGallery({ mob, C, setC, auth }) {
       <datalist id="gallery-categories">
         {existingCats.map(c => <option key={c} value={c}/>)}
       </datalist>
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16,gap:10}}>
-        <button onClick={() => upd([...items].sort((a,b) => (a.category||"").localeCompare(b.category||"")))} style={{padding:"8px 14px",borderRadius:8,border:"1px solid var(--bd)",background:"white",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--dt)"}}>Sort by Category</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:16}}>
+        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <button onClick={() => upd([...items].sort((a,b) => (a.category||"").localeCompare(b.category||"")))} style={{padding:"8px 14px",borderRadius:8,border:"1px solid var(--bd)",background:"white",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--dt)"}}>Sort by Category</button>
+          <input type="text" list="gallery-categories" value={bulkTag} onChange={e=>setBulkTag(e.target.value)} placeholder="Tag for uploads or selected..." style={{padding:"8px 11px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".8rem",fontFamily:"inherit",width:220}}/>
+          {selected.length > 0 && (
+            <button onClick={() => {
+              if (!bulkTag.trim()) return alert("Please enter a tag in the box first!");
+              const newItems = items.map(g => selected.includes(g.id) ? {...g, category: bulkTag.trim()} : g);
+              upd(newItems);
+              setSelected([]);
+            }} style={{padding:"8px 14px",borderRadius:8,background:"var(--sf)",color:"white",border:"none",cursor:"pointer",fontSize:".8rem",fontWeight:600}}>
+              Apply Tag to {selected.length} Selected
+            </button>
+          )}
+        </div>
         <label className="bs" style={{padding:"8px 14px",borderRadius:8,fontWeight:600,fontSize:".8rem",cursor:"pointer",opacity:loading?0.5:1}}>
           {loading ? "Uploading..." : "Upload Media"}
-          <input type="file" accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+          <input type="file" multiple accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
         </label>
       </div>
       <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"repeat(3,1fr)",gap:14}}>
         {items.map((g, i)=>(
-          <div key={g.id} className="ac" style={{overflow:"hidden",padding:0}}>
+          <div key={g.id} className="ac" style={{overflow:"hidden",padding:0,position:"relative",border:selected.includes(g.id)?"2px solid var(--sf)":""}}>
+            <input type="checkbox" checked={selected.includes(g.id)} onChange={e => {
+              if (e.target.checked) setSelected([...selected, g.id]);
+              else setSelected(selected.filter(id => id !== g.id));
+            }} style={{position:"absolute",top:8,left:8,width:20,height:20,cursor:"pointer",zIndex:10}}/>
             {g.type === 'video' ? (
               <video src={g.url} style={{width:"100%", height:140, objectFit:"cover", display:"block"}} muted playsInline preload="metadata" />
             ) : (
@@ -5441,8 +5506,8 @@ function AdminGallery({ mob, C, setC, auth }) {
           </div>
         ))}
         <label style={{border:"2px dashed var(--bd)",borderRadius:12,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:180,cursor:"pointer",color:"var(--mu)",gap:7,transition:"all .2s",opacity:loading?0.5:1}} onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--sf)";e.currentTarget.style.color="var(--sf)"}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--bd)";e.currentTarget.style.color="var(--mu)"}}>
-          <span style={{fontSize:"1.8rem"}}>📤</span><span style={{fontSize:".82rem",fontWeight:600}}>Upload Media</span>
-          <input type="file" accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
+          <span style={{fontSize:"1.8rem"}}>📤</span><span style={{fontSize:".82rem",fontWeight:600}}>Bulk Upload Media</span>
+          <input type="file" multiple accept="image/*,video/*" style={{display:"none"}} onChange={uploadPhoto} disabled={loading}/>
         </label>
       </div>
     </div>
