@@ -5609,20 +5609,29 @@ function Public({ C, lang, setLang, setPage, auth, onShowLogin }) {
     }
   };
 
+  const SectionDivider = () => (
+    <div style={{width:"100%", display:"flex", justifyContent:"center", alignItems:"center", padding:"0", margin:"-1px 0", position:"relative", zIndex:2, pointerEvents:"none"}}>
+      <div style={{width:"70%", maxWidth:400, height:2, background:"linear-gradient(90deg, transparent, #D4AF37, transparent)", opacity:0.8, position:"relative", display:"flex", justifyContent:"center", alignItems:"center"}}>
+        <div style={{width:10, height:10, background:"#D4AF37", transform:"rotate(45deg)", border:"2px solid var(--ww)", borderRadius:2}} />
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <Navbar C={C} lang={lang} setLang={setLang} setPage={setPage} auth={auth} onShowLogin={onShowLogin} globalProfile={globalProfile} onPublicLogout={handlePublicLogout} onShowDashboard={()=>setShowDashboard(true)} onShowUserLogin={()=>setShowUserLogin("nav")} onHomeClick={()=>setViewPolicy(null)}/>
       {viewPolicy ? <PolicyPage type={viewPolicy} C={C}/> : (
         <>
           <Hero C={C} lang={lang}/>
-          {bs.about    !== false && <About C={C} lang={lang}/>}
-          {bs.programs !== false && <Programs C={C} lang={lang}/>}
-          {bs.achievements !== false && <Achievements C={C} lang={lang}/>}
-          {bs.team !== false && <Team C={C} lang={lang}/>}
-          {bs.gallery  !== false && <Gallery C={C}/>}
-          {bs.events   !== false && <Events C={C} lang={lang} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/>}
-          {bs.donate   !== false && <Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/>}
-          {custom.map(sec => <CustomSection key={sec.id} sec={sec} lang={lang}/>)}
+          <SectionDivider/>
+          {bs.about    !== false && <><About C={C} lang={lang}/><SectionDivider/></>}
+          {bs.programs !== false && <><Programs C={C} lang={lang}/><SectionDivider/></>}
+          {bs.achievements !== false && <><Achievements C={C} lang={lang}/><SectionDivider/></>}
+          {bs.team !== false && <><Team C={C} lang={lang}/><SectionDivider/></>}
+          {bs.gallery  !== false && <><Gallery C={C}/><SectionDivider/></>}
+          {bs.events   !== false && <><Events C={C} lang={lang} globalAuthToken={globalAuthToken} globalProfile={globalProfile} onPublicLogin={handlePublicLogin}/><SectionDivider/></>}
+          {bs.donate   !== false && <><Donate C={C} lang={lang} globalProfile={globalProfile} globalAuthToken={globalAuthToken} onShowUserLogin={()=>setShowUserLogin("donate")}/><SectionDivider/></>}
+          {custom.map((sec,i) => <div key={sec.id}><CustomSection sec={sec} lang={lang}/><SectionDivider/></div>)}
           {bs.contact  !== false && <Contact C={C}/>}
         </>
       )}
