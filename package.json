@@ -1,0 +1,41 @@
+{
+  "name": "trust-frontend",
+  "homepage": "https://pradeepparmar902.github.io/VidyaGohilTrust/",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "npm run build",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.8",
+    "express": "^5.2.1",
+    "firebase": "^12.14.0",
+    "jspdf": "^4.2.1",
+    "marked": "^18.0.5",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-quill-new": "^3.8.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "gh-pages": "^6.3.0",
+    "globals": "^17.6.0",
+    "puppeteer": "^25.1.0",
+    "vite": "^8.0.12"
+  }
+}

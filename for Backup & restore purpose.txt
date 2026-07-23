@@ -1,0 +1,7 @@
+for Backup
+robocopy "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\community" "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\Backupfolder all website\community\community-backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')" /E /XD node_modules .git dist
+
+
+restore 
+
+robocopy "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\Backupfolder all website\community\community-backup-backup-20260625-203853" "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\community" /E

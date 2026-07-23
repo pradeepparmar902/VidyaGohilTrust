@@ -1,0 +1,6 @@
+
+
+# Step 1: Copying (Fixed path typo and ensured quotes)
+
+robocopy "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\community" "C:\Users\Pradeep.Parmar\OneDrive - insidemedia.net\personal\My Website\Backupfolder all website\community\community Backup" /E
+
