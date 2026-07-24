@@ -5308,7 +5308,7 @@ function CertificateConfigModal({ ev, type = 'cert', onSave, onClose, auth, form
   };
 
   const save = () => {
-    onSave({ certBgUrl, certMap, certFontSize, certFontColor });
+    onSave({ bgUrl: certBgUrl, map: certMap, fontSize: certFontSize, fontColor: certFontColor });
   };
 
   return (
