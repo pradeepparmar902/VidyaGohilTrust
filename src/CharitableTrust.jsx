@@ -1,6 +1,7 @@
 import { QRCodeCanvas } from "qrcode.react";
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { jsPDF } from "jspdf";
+import JSZip from "jszip";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { initializeApp } from "firebase/app";
@@ -2422,7 +2423,10 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
         const blob = doc.output('blob');
         const url = URL.createObjectURL(blob);
         
-        if (previewMode === 'url') {
+        if (previewMode === 'blob') {
+            resolve(blob);
+            return;
+        } else if (previewMode === 'url') {
             resolve(url);
             return;
         } else if (previewMode === true) {
@@ -9042,6 +9046,46 @@ function AdminCertificates({ mob, C, auth }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewCertUrl, setPreviewCertUrl] = useState(null);
   const [previewCertRegId, setPreviewCertRegId] = useState(null);
+  const [downloadingBulk, setDownloadingBulk] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const handleBulkDownload = async () => {
+    if (filteredRegs.length === 0) return alert("No certificates available to download.");
+    if (!window.confirm(`Generate and download a ZIP file containing ${filteredRegs.length} certificates?`)) return;
+    
+    setDownloadingBulk(true);
+    setDownloadProgress(0);
+    const zip = new JSZip();
+    let count = 0;
+    
+    try {
+      for (const r of filteredRegs) {
+        const evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+        const ev = certEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+        if (!ev) continue;
+        
+        const fieldsData = {...r};
+        const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+        
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "blob");
+        if (pdfBlob) {
+          const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          zip.file(`Certificate_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
+        }
+        count++;
+        setDownloadProgress(count);
+      }
+      
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `Certificates_${new Date().getTime()}.zip`;
+      link.click();
+    } catch (e) {
+      alert("Error during bulk download: " + e.message);
+    }
+    setDownloadingBulk(false);
+  };
 
   const fetchRegs = async () => {
     try {
@@ -9154,11 +9198,14 @@ function AdminCertificates({ mob, C, auth }) {
           </div>
           <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
             <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:200,outline:"none",fontFamily:"inherit"}} />
-            <button onClick={handleRefresh} disabled={refreshing || releasingAll} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
               {refreshing ? "..." : "↻"} Refresh
             </button>
-            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
               {releasingAll ? "Releasing..." : "📢 Release All"}
+            </button>
+            <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk || releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+              {downloadingBulk ? `Generating ZIP (${downloadProgress}/${filteredRegs.length})...` : "📦 Bulk Download ZIP"}
             </button>
           </div>
         </div>
@@ -9168,13 +9215,13 @@ function AdminCertificates({ mob, C, auth }) {
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:900}}>
               <thead>
                 <tr>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"220px"}}>Actions</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Date Approved</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Event</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Participant Name</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Status</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Viewed On</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Downloaded On</th>
-                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -9199,6 +9246,17 @@ function AdminCertificates({ mob, C, auth }) {
                         transition: "background-color 0.2s"
                       }}
                     >
+                      <td style={{padding:"12px",textAlign:"center"}} onClick={(e)=>e.stopPropagation()}>
+                        <div style={{display:"flex",justifyContent:"center",gap:8}}>
+                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.certificateHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#eaeaea":r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateHold?"#aaa":r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:r.certificateHold?"not-allowed":"pointer",fontWeight:600}}>
+                            {r.certificateReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                            {r.certificateHold ? "Unhold" : "Hold"}
+                          </button>
+                        </div>
+                      </td>
                       <td style={{padding:"12px"}}>{date}</td>
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
@@ -9215,17 +9273,6 @@ function AdminCertificates({ mob, C, auth }) {
                       </td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{vDate}</td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
-                      <td style={{padding:"12px",textAlign:"center"}}>
-                        <div style={{display:"flex",justifyContent:"center",gap:8}}>
-                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.certificateHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#eaeaea":r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateHold?"#aaa":r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:r.certificateHold?"not-allowed":"pointer",fontWeight:600}}>
-                            {r.certificateReleased ? "Revoke" : "Release"}
-                          </button>
-                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
-                            {r.certificateHold ? "Unhold" : "Hold"}
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   );
                 })}
@@ -9264,6 +9311,46 @@ function AdminInviteLetters({ mob, C, auth }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewCertUrl, setPreviewCertUrl] = useState(null);
   const [previewCertRegId, setPreviewCertRegId] = useState(null);
+  const [downloadingBulk, setDownloadingBulk] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const handleBulkDownload = async () => {
+    if (filteredRegs.length === 0) return alert("No invite letters available to download.");
+    if (!window.confirm(`Generate and download a ZIP file containing ${filteredRegs.length} invite letters?`)) return;
+    
+    setDownloadingBulk(true);
+    setDownloadProgress(0);
+    const zip = new JSZip();
+    let count = 0;
+    
+    try {
+      for (const r of filteredRegs) {
+        const evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+        const ev = inviteEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+        if (!ev) continue;
+        
+        const fieldsData = {...r};
+        const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+        
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "blob");
+        if (pdfBlob) {
+          const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          zip.file(`Invite_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
+        }
+        count++;
+        setDownloadProgress(count);
+      }
+      
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `Invite_Letters_${new Date().getTime()}.zip`;
+      link.click();
+    } catch (e) {
+      alert("Error during bulk download: " + e.message);
+    }
+    setDownloadingBulk(false);
+  };
 
   const fetchRegs = async () => {
     try {
@@ -9376,11 +9463,14 @@ function AdminInviteLetters({ mob, C, auth }) {
           </div>
           <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
             <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:200,outline:"none",fontFamily:"inherit"}} />
-            <button onClick={handleRefresh} disabled={refreshing || releasingAll} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
               {refreshing ? "..." : "↻"} Refresh
             </button>
-            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
               {releasingAll ? "Releasing..." : "📢 Release All"}
+            </button>
+            <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk || releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+              {downloadingBulk ? `Generating ZIP (${downloadProgress}/${filteredRegs.length})...` : "📦 Bulk Download ZIP"}
             </button>
           </div>
         </div>
@@ -9390,13 +9480,13 @@ function AdminInviteLetters({ mob, C, auth }) {
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:900}}>
               <thead>
                 <tr>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"220px"}}>Actions</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Date Approved</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Event</th>
                   <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600}}>Participant Name</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Status</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Viewed On</th>
                   <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Downloaded On</th>
-                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -9421,6 +9511,17 @@ function AdminInviteLetters({ mob, C, auth }) {
                         transition: "background-color 0.2s"
                       }}
                     >
+                      <td style={{padding:"12px",textAlign:"center"}} onClick={(e)=>e.stopPropagation()}>
+                        <div style={{display:"flex",justifyContent:"center",gap:8}}>
+                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.inviteLetterHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#eaeaea":r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteLetterHold?"#aaa":r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:r.inviteLetterHold?"not-allowed":"pointer",fontWeight:600}}>
+                            {r.inviteificateReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                            {r.inviteLetterHold ? "Unhold" : "Hold"}
+                          </button>
+                        </div>
+                      </td>
                       <td style={{padding:"12px"}}>{date}</td>
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
@@ -9437,17 +9538,6 @@ function AdminInviteLetters({ mob, C, auth }) {
                       </td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{vDate}</td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
-                      <td style={{padding:"12px",textAlign:"center"}}>
-                        <div style={{display:"flex",justifyContent:"center",gap:8}}>
-                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.inviteLetterHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#eaeaea":r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteLetterHold?"#aaa":r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:r.inviteLetterHold?"not-allowed":"pointer",fontWeight:600}}>
-                            {r.inviteificateReleased ? "Revoke" : "Release"}
-                          </button>
-                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
-                            {r.inviteLetterHold ? "Unhold" : "Hold"}
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   );
                 })}
