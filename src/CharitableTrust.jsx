@@ -7926,12 +7926,16 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
   const [status, setStatus] = useState(viewing['Status'] || 'Pending');
   const [remarks, setRemarks] = useState(viewing['Remarks'] || '');
   const [saving, setSaving] = useState(false);
+  const [editedReg, setEditedReg] = useState(viewing);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const keys = Object.keys(viewing).filter(k => typeof viewing[k] === 'string' && viewing[k].startsWith('http'));
     setActiveDoc(keys.length > 0 ? viewing[keys[0]] : null);
     setStatus(viewing['Status'] || 'Pending');
     setRemarks(viewing['Remarks'] || '');
+    setEditedReg(viewing);
+    setIsEditing(false);
   }, [viewing]);
 
   const handleSave = async () => {
@@ -7946,7 +7950,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
     }
     
     setSaving(true);
-    await saveVerification(viewing, status, remarks);
+    await saveVerification(editedReg, status, remarks);
     setSaving(false);
     
     if (nextItem) {
@@ -8043,12 +8047,79 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
             
             {/* Input Data List */}
             <div style={{flex:1,overflowY:"auto",padding:"24px"}}>
-              <h4 style={{fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:16,textTransform:"uppercase",letterSpacing:1}}>Submitted Details</h4>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <h4 style={{fontSize:".95rem",fontWeight:700,color:"var(--dt)",margin:0,textTransform:"uppercase",letterSpacing:1}}>Submitted Details</h4>
+                <button 
+                  onClick={() => setIsEditing(!isEditing)} 
+                  style={{
+                    background: "none", 
+                    border: "none", 
+                    color: "var(--dt)", 
+                    cursor: "pointer", 
+                    fontSize: ".85rem", 
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4
+                  }}
+                >
+                  {isEditing ? "👁 Read Only" : "✏️ Edit Fields"}
+                </button>
+              </div>
               <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                {Object.keys(viewing).filter(k => !k.startsWith('_') && !['id','eventId','eventName','Transaction ID','Status','Remarks','Updated By'].includes(k)).map(k => {
-                  const val = viewing[k];
+                {Object.keys(editedReg || viewing).filter(k => !k.startsWith('_') && !['id','eventId','eventName','Status','Remarks','Updated By'].includes(k)).map(k => {
+                  const val = (editedReg || viewing)[k];
                   if (typeof val === 'string' && val.startsWith('http')) return null; // Skip docs
                   const displayVal = typeof val === 'string' ? val.replace(/\|/g, ' ') : String(val);
+
+                  if (isEditing) {
+                    const isLong = String(val).length > 50 || k.toLowerCase().includes("address") || k.toLowerCase().includes("remark");
+                    return (
+                      <div key={k}>
+                        <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{k}</div>
+                        {isLong ? (
+                          <textarea 
+                            value={editedReg[k] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [k]: e.target.value }))}
+                            rows={3}
+                            style={{
+                              width: "100%",
+                              fontSize: ".95rem",
+                              color: "var(--tx)",
+                              background: "#fff",
+                              padding: "8px 12px",
+                              borderRadius: 6,
+                              border: "1px solid var(--bd)",
+                              boxSizing: "border-box",
+                              outline: "none",
+                              resize: "vertical",
+                              fontFamily: "inherit",
+                              boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)"
+                            }} 
+                          />
+                        ) : (
+                          <input 
+                            type="text" 
+                            value={editedReg[k] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [k]: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              fontSize: ".95rem",
+                              color: "var(--tx)",
+                              background: "#fff",
+                              padding: "8px 12px",
+                              borderRadius: 6,
+                              border: "1px solid var(--bd)",
+                              boxSizing: "border-box",
+                              outline: "none",
+                              boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)"
+                            }} 
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <div key={k}>
                       <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{k}</div>
@@ -8056,6 +8127,33 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                     </div>
                   );
                 })}
+
+                {isEditing && (
+                  <button 
+                    onClick={async () => {
+                      setSaving(true);
+                      await saveVerification(editedReg, status, remarks);
+                      setSaving(false);
+                      setIsEditing(false);
+                    }}
+                    disabled={saving}
+                    style={{
+                      marginTop: 12,
+                      width: "100%",
+                      padding: "12px",
+                      borderRadius: 8,
+                      background: "#333",
+                      color: "white",
+                      border: "none",
+                      fontWeight: 700,
+                      fontSize: ".9rem",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+                    }}
+                  >
+                    {saving ? "Saving..." : "💾 Save Details Only"}
+                  </button>
+                )}
               </div>
             </div>
 
