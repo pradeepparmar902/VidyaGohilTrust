@@ -9070,6 +9070,46 @@ function AdminCertificates({ mob, C, auth }) {
     }
   };
 
+  const [releasingAll, setReleasingAll] = useState(false);
+
+  const toggleHold = async (r) => {
+    const newVal = !r.certificateHold;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, certificateHold: newVal } : x));
+    try {
+      const cleanData = { ...r, certificateHold: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update hold status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const handleReleaseAll = async () => {
+    const unreleased = filteredRegs.filter(r => !r.certificateReleased && !r.certificateHold);
+    if (unreleased.length === 0) {
+      alert("All visible certificates are already released or on hold!");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to release ${unreleased.length} certificates?`)) return;
+    
+    setReleasingAll(true);
+    let successCount = 0;
+    try {
+      for (const r of unreleased) {
+        const cleanData = { ...r, certificateReleased: true };
+        delete cleanData.id; delete cleanData._submittedAt;
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, certificateReleased: true } : x));
+        successCount++;
+      }
+      alert(`Successfully released ${successCount} certificates!`);
+    } catch (e) {
+      alert(`Error after releasing ${successCount} certificates: ` + e.message);
+    }
+    setReleasingAll(false);
+  };
+
   const handlePreview = async (r, ev) => {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
@@ -9105,10 +9145,13 @@ function AdminCertificates({ mob, C, auth }) {
             <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Certificate Console</h2>
             <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Manage and release certificates for approved registrations.</p>
           </div>
-          <div style={{display:"flex",gap:12,width:mob?"100%":"auto"}}>
-            <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}} />
-            <button onClick={handleRefresh} disabled={refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:refreshing?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+          <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
+            <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:200,outline:"none",fontFamily:"inherit"}} />
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
               {refreshing ? "..." : "↻"} Refresh
+            </button>
+            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+              {releasingAll ? "Releasing..." : "📢 Release All"}
             </button>
           </div>
         </div>
@@ -9144,17 +9187,26 @@ function AdminCertificates({ mob, C, auth }) {
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
-                        <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:r.certificateReleased?"#EDFAF1":"#FEF9EC",color:r.certificateReleased?"#1A7A3E":"#C8860A"}}>
-                          {r.certificateReleased ? "Released" : "Pending"}
-                        </span>
+                        {r.certificateHold ? (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:"#FEE2E2",color:"#991B1B",display:"inline-block"}}>
+                            Hold
+                          </span>
+                        ) : (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:r.certificateReleased?"#EDFAF1":"#FEF9EC",color:r.certificateReleased?"#1A7A3E":"#C8860A"}}>
+                            {r.certificateReleased ? "Released" : "Pending"}
+                          </span>
+                        )}
                       </td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{vDate}</td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
                         <div style={{display:"flex",justifyContent:"center",gap:8}}>
                           <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={()=>toggleRelease(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:"pointer",fontWeight:600}}>
+                          <button onClick={()=>toggleRelease(r)} disabled={r.certificateHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#eaeaea":r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateHold?"#aaa":r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:r.certificateHold?"not-allowed":"pointer",fontWeight:600}}>
                             {r.certificateReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                            {r.certificateHold ? "Unhold" : "Hold"}
                           </button>
                         </div>
                       </td>
@@ -9210,6 +9262,46 @@ function AdminInviteLetters({ mob, C, auth }) {
     }
   };
 
+  const [releasingAll, setReleasingAll] = useState(false);
+
+  const toggleHold = async (r) => {
+    const newVal = !r.inviteLetterHold;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, inviteLetterHold: newVal } : x));
+    try {
+      const cleanData = { ...r, inviteLetterHold: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update hold status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const handleReleaseAll = async () => {
+    const unreleased = filteredRegs.filter(r => !r.inviteificateReleased && !r.inviteLetterHold);
+    if (unreleased.length === 0) {
+      alert("All visible invite letters are already released or on hold!");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to release ${unreleased.length} invite letters?`)) return;
+    
+    setReleasingAll(true);
+    let successCount = 0;
+    try {
+      for (const r of unreleased) {
+        const cleanData = { ...r, inviteificateReleased: true };
+        delete cleanData.id; delete cleanData._submittedAt;
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, inviteificateReleased: true } : x));
+        successCount++;
+      }
+      alert(`Successfully released ${successCount} invite letters!`);
+    } catch (e) {
+      alert(`Error after releasing ${successCount} invite letters: ` + e.message);
+    }
+    setReleasingAll(false);
+  };
+
   const handlePreview = async (r, ev) => {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
@@ -9245,10 +9337,13 @@ function AdminInviteLetters({ mob, C, auth }) {
             <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Certificate Console</h2>
             <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Manage and release inviteLetters for approved registrations.</p>
           </div>
-          <div style={{display:"flex",gap:12,width:mob?"100%":"auto"}}>
-            <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}} />
-            <button onClick={handleRefresh} disabled={refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:refreshing?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+          <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
+            <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:200,outline:"none",fontFamily:"inherit"}} />
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
               {refreshing ? "..." : "↻"} Refresh
+            </button>
+            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+              {releasingAll ? "Releasing..." : "📢 Release All"}
             </button>
           </div>
         </div>
@@ -9284,17 +9379,26 @@ function AdminInviteLetters({ mob, C, auth }) {
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
-                        <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:r.inviteificateReleased?"#EDFAF1":"#FEF9EC",color:r.inviteificateReleased?"#1A7A3E":"#C8860A"}}>
-                          {r.inviteificateReleased ? "Released" : "Pending"}
-                        </span>
+                        {r.inviteLetterHold ? (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:"#FEE2E2",color:"#991B1B",display:"inline-block"}}>
+                            Hold
+                          </span>
+                        ) : (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:r.inviteificateReleased?"#EDFAF1":"#FEF9EC",color:r.inviteificateReleased?"#1A7A3E":"#C8860A"}}>
+                            {r.inviteificateReleased ? "Released" : "Pending"}
+                          </span>
+                        )}
                       </td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{vDate}</td>
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
                         <div style={{display:"flex",justifyContent:"center",gap:8}}>
                           <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={()=>toggleRelease(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:"pointer",fontWeight:600}}>
+                          <button onClick={()=>toggleRelease(r)} disabled={r.inviteLetterHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#eaeaea":r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteLetterHold?"#aaa":r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:r.inviteLetterHold?"not-allowed":"pointer",fontWeight:600}}>
                             {r.inviteificateReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                            {r.inviteLetterHold ? "Unhold" : "Hold"}
                           </button>
                         </div>
                       </td>
