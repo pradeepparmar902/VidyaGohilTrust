@@ -2379,10 +2379,20 @@ const numberToWords = (num) => {
 };
 
 
-export const generateCertificatePDF = async (certConfig, fieldsData, fallbackName, previewMode = false) => {
+export const generateCertificatePDF = async (certConfig, fieldsData, fallbackName, type = 'cert', previewMode = false) => {
   return new Promise((resolve, reject) => {
+    let actualType = type;
+    let actualPreviewMode = previewMode;
+    
+    // Support backward compatibility where the 4th parameter is previewMode directly
+    if (typeof type === 'boolean' || type === 'url' || type === 'blob') {
+      actualPreviewMode = type;
+      actualType = 'cert';
+    }
+
     const img = new Image();
-    let srcUrl = certConfig.certBgUrl;
+    const isInvite = actualType === 'invite';
+    let srcUrl = isInvite ? certConfig.inviteBgUrl : certConfig.certBgUrl;
     
     if (srcUrl && srcUrl.startsWith('http')) {
       img.crossOrigin = "Anonymous";
@@ -2394,11 +2404,14 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
         const doc = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
         doc.addImage(img, 'JPEG', 0, 0, img.width, img.height);
         
-        doc.setFontSize(certConfig.certFontSize || 30);
-        doc.setTextColor(certConfig.certFontColor || "#000000");
+        const fontSize = isInvite ? certConfig.inviteFontSize : certConfig.certFontSize;
+        const fontColor = isInvite ? certConfig.inviteFontColor : certConfig.certFontColor;
+        
+        doc.setFontSize(fontSize || 30);
+        doc.setTextColor(fontColor || "#000000");
         doc.setFont("helvetica", "bold");
 
-        const m = certConfig.certMap || {};
+        const m = (isInvite ? certConfig.inviteMap : certConfig.certMap) || {};
 
         Object.entries(m).forEach(([key, pos]) => {
           if (pos.visible) {
@@ -2416,33 +2429,34 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
             if (typeof val === 'string') {
                 val = val.replace(/\|/g, ' ').trim();
             }
-            doc.text(String(val), xPx, yPx, { align: "center", baseline: "middle" });
+            const alignOpt = isInvite ? "left" : "center";
+            doc.text(String(val), xPx, yPx, { align: alignOpt, baseline: "middle" });
           }
         });
         
         const blob = doc.output('blob');
         const url = URL.createObjectURL(blob);
         
-        if (previewMode === 'blob') {
+        if (actualPreviewMode === 'blob') {
             resolve(blob);
             return;
-        } else if (previewMode === 'url') {
+        } else if (actualPreviewMode === 'url') {
             resolve(url);
             return;
-        } else if (previewMode === true) {
+        } else if (actualPreviewMode === true) {
             window.open(url, '_blank');
         } else {
             const link = document.createElement("a");
             link.href = url;
             const outName = fallbackName ? fallbackName.replace(/\s+/g, '_') : "Student";
-            link.download = `Certificate_${outName}.pdf`;
+            link.download = `${isInvite ? 'Invite' : 'Certificate'}_${outName}.pdf`;
             link.click();
         }
         
         resolve(true);
       } catch(e) { reject(e); }
     };
-    img.onerror = (e) => reject(new Error("Failed to load certificate template image."));
+    img.onerror = (e) => reject(new Error(`Failed to load ${isInvite ? 'invite' : 'certificate'} template image.`));
     img.src = srcUrl;
   });
 };
@@ -9067,7 +9081,7 @@ function AdminCertificates({ mob, C, auth }) {
         const fieldsData = {...r};
         const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
         
-        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "blob");
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "cert", "blob");
         if (pdfBlob) {
           const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
           zip.file(`Certificate_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
@@ -9163,7 +9177,7 @@ function AdminCertificates({ mob, C, auth }) {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
     try {
-      const url = await generateCertificatePDF(ev, fieldsData, sName, 'url');
+      const url = await generateCertificatePDF(ev, fieldsData, sName, 'cert', 'url');
       setPreviewCertUrl(url);
       setPreviewCertRegId(r.id);
     } catch (e) {
@@ -9332,7 +9346,7 @@ function AdminInviteLetters({ mob, C, auth }) {
         const fieldsData = {...r};
         const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
         
-        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "blob");
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "invite", "blob");
         if (pdfBlob) {
           const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
           zip.file(`Invite_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
@@ -9428,11 +9442,11 @@ function AdminInviteLetters({ mob, C, auth }) {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
     try {
-      const url = await generateCertificatePDF(ev, fieldsData, sName, 'url');
+      const url = await generateCertificatePDF(ev, fieldsData, sName, 'invite', 'url');
       setPreviewCertUrl(url);
       setPreviewCertRegId(r.id);
     } catch (e) {
-      alert("Error generating inviteificate: " + e.message);
+      alert("Error generating invite letter: " + e.message);
     }
   };
 
