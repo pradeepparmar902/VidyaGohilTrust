@@ -5259,9 +5259,10 @@ function CertificateTemplateMapper({ imgUrl, mapData, fontSize, fontColor, onCha
   );
 }
 
-function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
-  const [certBgUrl, setCertBgUrl] = useState(ev.certBgUrl || "");
-  const [certMap, setCertMap] = useState(ev.certMap || null);
+function CertificateConfigModal({ ev, type = 'cert', onSave, onClose, auth, forms }) {
+  const isInvite = type === 'invite';
+  const [certBgUrl, setCertBgUrl] = useState(isInvite ? (ev.inviteBgUrl || "") : (ev.certBgUrl || ""));
+  const [certMap, setCertMap] = useState(isInvite ? (ev.inviteMap || null) : (ev.certMap || null));
   
   // Extract form fields dynamically for this event
   const [availableFields, setAvailableFields] = useState(["Event Name", "Date"]);
@@ -5274,8 +5275,8 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
       }
     }
   }, [ev.formId, forms]);
-  const [certFontSize, setCertFontSize] = useState(ev.certFontSize || 30);
-  const [certFontColor, setCertFontColor] = useState(ev.certFontColor || "#000000");
+  const [certFontSize, setCertFontSize] = useState(isInvite ? (ev.inviteFontSize || 30) : (ev.certFontSize || 30));
+  const [certFontColor, setCertFontColor] = useState(isInvite ? (ev.inviteFontColor || "#000000") : (ev.certFontColor || "#000000"));
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (e) => {
@@ -5313,7 +5314,7 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",width:"100%",maxWidth:900,borderRadius:12,padding:24,maxHeight:"90vh",overflowY:"auto"}}>
-        <h3 style={{marginBottom:16,fontFamily:"'Playfair Display',serif",fontSize:"1.3rem"}}>Configure Certificate for {ev.title}</h3>
+        <h3 style={{marginBottom:16,fontFamily:"'Playfair Display',serif",fontSize:"1.3rem"}}>Configure {isInvite ? 'Invite Letter' : 'Certificate'} for {ev.title}</h3>
         
         <div style={{display:"flex",gap:16,marginBottom:20, flexWrap: "wrap"}}>
           <div style={{flex:1, minWidth: 300}}>
