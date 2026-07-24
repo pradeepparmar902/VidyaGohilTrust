@@ -8089,6 +8089,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
 function AdminRegistrations({ mob, C, auth }) {
 
   const [regs, setRegs] = useState([]);
+  const [selectedSection, setSelectedSection] = useState("All");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewing, setViewing] = useState(null);
@@ -8241,6 +8242,17 @@ function AdminRegistrations({ mob, C, auth }) {
   const filteredRegs = regs.filter(r => {
     if(!r) return false;
     
+    // Group section filter
+    const ev = C.events?.find(e => e.title === r.eventTitle || e.title === r.eventName || e.title === r.eventId);
+    const evSection = ev?.section || "Default";
+    if (selectedSection !== "All") {
+      if (selectedSection === "Default") {
+        if (evSection !== "Default" && evSection !== "") return false;
+      } else {
+        if (evSection !== selectedSection) return false;
+      }
+    }
+    
     // 1. Global search
     if(searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -8322,6 +8334,22 @@ function AdminRegistrations({ mob, C, auth }) {
         </div>
       </div>
 
+      {/* Group/Section Tabs */}
+      <div style={{display:"flex", gap:8, marginBottom:20, flexWrap:"wrap", borderBottom:"1px solid var(--bd)", paddingBottom:12}}>
+        {["All", "Default", ...(C.eventSections || [])].map(sec => {
+          const isSelected = selectedSection === sec;
+          return (
+            <button key={sec} onClick={()=>setSelectedSection(sec)} style={{
+              padding:"8px 16px", borderRadius:20, border:isSelected?"none":"1px solid var(--bd)",
+              background:isSelected?"var(--dt)":"white", color:isSelected?"white":"var(--mu)",
+              fontSize:".85rem", fontWeight:600, cursor:"pointer", transition:"all 0.2s"
+            }}>
+              {sec === "Default" ? "Default Section" : sec === "All" ? "All Groups" : sec}
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? <p>Loading registrations...</p> : (
         <>
         <style>{`
@@ -8391,7 +8419,14 @@ function AdminRegistrations({ mob, C, auth }) {
                       <button onClick={()=>setViewing(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"var(--dt)",color:"white",border:"none",cursor:"pointer",fontWeight:500,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>View</button>
                     </td>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>{date}</td>
-                    <td style={{padding:"12px",whiteSpace:"nowrap"}}>{evName}</td>
+                    <td style={{padding:"12px",whiteSpace:"nowrap"}}>
+                      <div>{evName}</div>
+                      {ev?.section && ev.section !== 'Default' && (
+                        <span style={{fontSize:".7rem",background:"var(--tl)",color:"var(--dt)",padding:"2px 6px",borderRadius:4,marginTop:4,display:"inline-block",fontWeight:600}}>
+                          {ev.section}
+                        </span>
+                      )}
+                    </td>
                     <td style={{padding:"12px",whiteSpace:"nowrap",fontWeight:600}}>{r['Transaction ID'] || "-"}</td>
                     <td style={{padding:"12px",whiteSpace:"nowrap"}}>
                       <select 
