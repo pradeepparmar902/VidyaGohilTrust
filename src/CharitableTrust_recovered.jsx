@@ -1,12 +1,196 @@
-import { QRCodeCanvas } from "qrcode.react";
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext, useCallback } from "react";
 import { jsPDF } from "jspdf";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, sendPasswordResetEmail } from "firebase/auth";
 import { marked } from "marked";
-import DOMPurify from "dompurify";
+import DOMPurify from "dompurify";      {showSerialModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:100000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",padding:"24px",borderRadius:12,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 10px 40px rgba(0,0,0,0.2)"}}>
+            <h3 style={{marginTop:0,color:"var(--dt)",marginBottom:16}}>Generate Serial Numbers</h3>
+            
+            <div style={{display:"flex",gap:8,marginBottom:20,alignItems:"center",background:"#f9f9f9",padding:12,borderRadius:8}}>
+              <label style={{fontSize:".85rem",fontWeight:600}}>Preset:</label>
+              <select value={selectedPreset} onChange={e=>handleLoadPreset(e.target.value)} style={{flex:1,padding:"6px",borderRadius:6,border:"1px solid #CCC",fontSize:".85rem"}}>
+                <option value="">-- Custom --</option>
+                {(C.serialPresets || []).map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+              </select>
+              {selectedPreset && (
+                <button onClick={() => handleSavePreset(selectedPreset)} style={{padding:"6px 12px",background:"#4CAF50",color:"white",border:"none",borderRadius:6,fontSize:".8rem",cursor:"pointer"}}>Save</button>
+              )}
+              <button onClick={() => handleSavePreset()} style={{padding:"6px 12px",background:"var(--dt)",color:"white",border:"none",borderRadius:6,fontSize:".8rem",cursor:"pointer"}}>Save As...</button>
+            </div>
+            
+            {(() => {
+              let maxUsedNumber = 0;
+              const filterLevelsUI = sortLevels.filter(l => l.col && l.val && l.val.length > 0);
+              const matchingRegs = (filterLevelsUI.length > 0) ? regs.filter(r => {
+                for (const level of filterLevelsUI) {
+                  if (!level.val.includes(String(r[level.col] || "").trim())) return false;
+                }
+                return true;
+              }) : regs;
+              
+              matchingRegs.forEach(r => {
+                const sn = r["Serial Number"];
+                if (sn) {
+                  if (serialPrefix && !String(sn).startsWith(serialPrefix)) return;
+                  const match = String(sn).match(/\d+$/);
+                  if (match) {
+                    const num = parseInt(match[0], 10);
+                    if (num > maxUsedNumber) maxUsedNumber = num;
+                  }
+                }
+              });
+
+              return (
+                <div style={{display:"flex",gap:12,marginBottom:16}}>
+                  <div style={{flex:1}}>
+                    <label style={{display:"block",fontSize:".8rem",fontWeight:600,marginBottom:4}}>Prefix (Optional)</label>
+                    <input value={serialPrefix} onChange={e=>setSerialPrefix(e.target.value)} placeholder="e.g. Graduate-" style={{width:"100%",padding:"8px",borderRadius:6,border:"1px solid #CCC",boxSizing:"border-box",fontSize:".9rem"}} />
+                  </div>
+                  <div style={{width:100}}>
+                    <label style={{display:"block",fontSize:".8rem",fontWeight:600,marginBottom:4}}>Start Num</label>
+                    <input type="number" value={serialStart} onChange={e=>setSerialStart(e.target.value)} style={{width:"100%",padding:"8px",borderRadius:6,border:"1px solid #CCC",boxSizing:"border-box",fontSize:".9rem"}} />
+                    <div style={{fontSize:".7rem",color:"#888",marginTop:4,textAlign:"right"}}>Last: {maxUsedNumber || "None"}</div>
+                  </div>
+                </div>
+              );
+            })()}
+            
+            <p style={{fontSize:".85rem",color:"#666",marginBottom:8}}>Sort order before assigning numbers (Optional):</p>
+            {sortLevels.map((level, i) => {
+              const uVals = level.col ? getUniqueValues(level.col) : [];
+              return (
+                <div key={i} style={{display:"flex",gap:8,marginBottom:12,alignItems:"flex-start",background:"#fafafa",padding:12,borderRadius:8,border:"1px solid #E0E0E0"}}>
+                  <div style={{fontSize:".8rem",fontWeight:600,width:80,marginTop:8}}>Level {i+1}</div>
+                  
+                  <div style={{flex:1,display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{display:"flex",gap:8}}>
+                      <select value={level.col} onChange={e=>{
+                        const newLevels = [...sortLevels];
+                        newLevels[i] = {...newLevels[i], col: e.target.value, val: []};
+                        setSortLevels(newLevels);
+                      }} style={{flex:1,padding:"6px",borderRadius:4,border:"1px solid #CCC",fontSize:".85rem"}}>
+                        <option value="">-- None --</option>
+                        {allKeys.filter(k => !sortLevels.some((sl, slIdx) => slIdx !== i && sl.col === k)).map(k => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                      <select value={level.dir} onChange={e=>{
+                        const newLevels = [...sortLevels];
+                        newLevels[i] = {...newLevels[i], dir: e.target.value};
+                        setSortLevels(newLevels);
+                      }} style={{width:80,padding:"6px",borderRadius:4,border:"1px solid #CCC",fontSize:".85rem"}}>
+                        <option value="asc">A-Z / 0-9</option>
+                        <option value="desc">Z-A / 9-0</option>
+                      </select>
+                      {sortLevels.length > 1 && (
+                        <button onClick={()=>{
+                          const newLevels = [...sortLevels];
+                          newLevels.splice(i, 1);
+                          setSortLevels(newLevels);
+                        }} style={{padding:"4px 8px",background:"#FEF0EF",color:"#C0392B",border:"1px solid #F5B8B8",borderRadius:4,cursor:"pointer",fontSize:".85rem"}}>✕</button>
+                      )}
+                    </div>
+                    
+                    {level.col && (
+                      <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                        <div style={{display:"flex",gap:8}}>
+                          <select value="" onChange={e=>{
+                            if(!e.target.value) return;
+                            const newLevels = [...sortLevels];
+                            if(!newLevels[i].val.includes(e.target.value)) {
+                              newLevels[i].val = [...newLevels[i].val, e.target.value];
+                              setSortLevels(newLevels);
+                            }
+                          }} style={{width:"100%",padding:"6px",borderRadius:4,border:"1px dashed #CCC",fontSize:".8rem",color:"#666"}}>
+                            <option value="">+ Add custom value to target & order...</option>
+                            {uVals.filter(uv => !level.val.includes(uv)).map(uv => <option key={uv} value={uv}>{uv}</option>)}
+                          </select>
+                        </div>
+                        {level.val.length > 0 && (
+                          <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:4}}>
+                            {level.val.map((v, vIdx) => (
+                              <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"white",padding:"4px 8px",borderRadius:4,border:"1px solid #E0E0E0",fontSize:".8rem"}}>
+                                <span style={{fontWeight:600,color:"#999",width:20}}>{vIdx+1}.</span>
+                                <span style={{flex:1}}>{v}</span>
+                                <div style={{display:"flex",gap:2}}>
+                                  <button onClick={()=>{
+                                    if(vIdx===0) return;
+                                    const newLevels = [...sortLevels];
+                                    const arr = [...newLevels[i].val];
+                                    [arr[vIdx-1], arr[vIdx]] = [arr[vIdx], arr[vIdx-1]];
+                                    newLevels[i].val = arr;
+                                    setSortLevels(newLevels);
+                                  }} disabled={vIdx===0} style={{padding:"2px 6px",cursor:vIdx===0?"not-allowed":"pointer",border:"none",background:"#EEE",borderRadius:2}}>↑</button>
+                                  <button onClick={()=>{
+                                    if(vIdx===level.val.length-1) return;
+                                    const newLevels = [...sortLevels];
+                                    const arr = [...newLevels[i].val];
+                                    [arr[vIdx], arr[vIdx+1]] = [arr[vIdx+1], arr[vIdx]];
+                                    newLevels[i].val = arr;
+                                    setSortLevels(newLevels);
+                                  }} disabled={vIdx===level.val.length-1} style={{padding:"2px 6px",cursor:vIdx===level.val.length-1?"not-allowed":"pointer",border:"none",background:"#EEE",borderRadius:2}}>↓</button>
+                                  <button onClick={()=>{
+                                    const newLevels = [...sortLevels];
+                                    newLevels[i].val = newLevels[i].val.filter((_, idx) => idx !== vIdx);
+                                    setSortLevels(newLevels);
+                                  }} style={{padding:"2px 6px",cursor:"pointer",border:"none",background:"#FEF0EF",color:"#C0392B",borderRadius:2,marginLeft:4}}>✕</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <button onClick={()=>{
+              setSortLevels([...sortLevels, {col:"",val:[],dir:"asc"}]);
+            }} style={{padding:"6px 12px",background:"#f5f5f5",border:"1px dashed #CCC",borderRadius:6,fontSize:".85rem",cursor:"pointer",width:"100%",color:"#666"}}>
+              + Add Sort Level
+            </button>
+            
+            {(() => {
+              let validRegs = filteredRegs.filter(r => r.Status === "Approved" || r.status === "Approved");
+              let targetLen = validRegs.length;
+              
+              let allRegs = [...filteredRegs];
+              let allLen = allRegs.length;
+
+              const fLevels = sortLevels.filter(l => l.col && l.val && l.val.length > 0);
+              if (fLevels.length > 0) {
+                targetLen = validRegs.filter(r => {
+                  for (const level of fLevels) {
+                    if (!level.val.includes(String(r[level.col] || "").trim())) return false;
+                  }
+                  return true;
+                }).length;
+
+                allLen = allRegs.filter(r => {
+                  for (const level of fLevels) {
+                    if (!level.val.includes(String(r[level.col] || "").trim())) return false;
+                  }
+                  return true;
+                }).length;
+              }
+              return (
+                <div style={{display:"flex",gap:12,marginTop:24}}>
+                  <button onClick={handleApplySerialNumbers} disabled={applyingSerial || targetLen === 0} style={{flex:1,background:(applyingSerial || targetLen === 0)?"var(--mu)":"var(--dt)",color:"white",padding:"10px",borderRadius:6,border:"none",fontWeight:700,cursor:(applyingSerial || targetLen === 0)?"not-allowed":"pointer"}}>
+                    {applyingSerial ? "Applying..." : `Apply to ${targetLen} Rows (Approved Only)`}
+                  </button>
+                  <button onClick={handleResetSerialNumbers} disabled={applyingSerial || allLen === 0} style={{padding:"10px 16px",background:"#FEF0EF",color:"#C0392B",border:"1px solid #F5B8B8",borderRadius:6,cursor:applyingSerial?"wait":"pointer",fontWeight:600}} title="Clear all serial numbers from the matched rows (regardless of status)">
+                    Clear Numbers
+                  </button>
+                  <button onClick={()=>setShowSerialModal(false)} style={{padding:"10px 16px",background:"#EEE",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600}}>Cancel</button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
 const getFB = () => window.FIREBASE_CONFIG || {};
@@ -141,7 +325,7 @@ const fbFetchRegistrations = async (idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/registrations?pageSize=300`;
   const headers = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  const res = await fetch(REG_URL, { headers });
+  const res = await fetch(REG_URL, { headers, cache: "no-store" });
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Failed to fetch registrations (${res.status}): ${errText}`);
@@ -235,7 +419,7 @@ const fbFetchDonations = async (idToken) => {
   const REG_URL = `https://firestore.googleapis.com/v1/projects/${getFB().projectId}/databases/(default)/documents/donations?pageSize=300`;
   const headers = {};
   if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
-  const res = await fetch(REG_URL, { headers });
+  const res = await fetch(REG_URL, { headers, cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch donations");
   const data = await res.json();
   if (!data.documents) return [];
@@ -668,6 +852,50 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                   </button>
                   </>
                 )}
+
+      {qrModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",borderRadius:12,padding:30,width:"100%",maxWidth:400,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 10px 30px rgba(0,0,0,0.5)",position:"relative",display:"flex",flexDirection:"column",alignItems:"center"}}>
+            <button onClick={() => setQrModal(null)} style={{position:"absolute",top:15,right:20,background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer",color:"#999"}}>×</button>
+            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",fontWeight:700,marginBottom:20,textAlign:"center"}}>{qrModal.ev.title}</h3>
+            <p style={{fontSize:".85rem",color:"var(--mu)",textAlign:"center",marginBottom:20}}>Scan this QR code to jump directly to this event's registration form.</p>
+            <div style={{padding:20,background:"white",borderRadius:12,border:"1px solid var(--bd)",marginBottom:20}}>
+              <QRCodeCanvas 
+                value={`${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(qrModal.ev.id || qrModal.ev.title)}&v=${Date.now()}`} 
+                size={200}
+                level={"H"}
+              />
+            </div>
+            <div style={{fontSize:".75rem",color:"var(--sf)",background:"#F5F7FA",padding:"8px 12px",borderRadius:6,border:"1px solid #D0E1F9",wordBreak:"break-all",textAlign:"center"}}>
+              {`${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(qrModal.ev.id || qrModal.ev.title)}`}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,borderLeft:"1px solid var(--bd)",paddingLeft:12}}>
+              {(() => {
+                const existingGroups = [...new Set(regs.map(r => r.Group).filter(Boolean))];
+                return (
+                  <datalist id="group-suggestions">
+                    {existingGroups.map(g => <option key={g} value={g} />)}
+                  </datalist>
+                );
+              })()}
+              <input 
+                type="text" 
+                list="group-suggestions"
+                placeholder="Bulk Group Name..." 
+                value={bulkGroup}
+                onChange={e=>setBulkGroup(e.target.value)}
+                style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",width:150,outline:"none",fontFamily:"inherit"}}
+              />
+              <button onClick={handleApplyBulkGroup} disabled={applyingBulkGroup} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:applyingBulkGroup?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+                {applyingBulkGroup ? "Applying..." : "Apply to Filtered"}
+              </button>
+            </div>
+            <button onClick={() => setShowSerialModal(true)} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              # Generate Serial Numbers
+            </button>
+          </div>
+        </div>
+      )}
               </div>
             )}
           </div>
@@ -775,6 +1003,47 @@ function Navbar({ C, lang, setLang, setPage, auth, onShowLogin, globalProfile, o
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resetConfirm && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",width:"100%",maxWidth:400,borderRadius:12,overflow:"hidden"}}>
+            <div style={{padding:"16px 20px",background:"#C0392B",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1.1rem",fontWeight:700}}>Final Reset Verification</h3>
+              <button onClick={()=>{setResetConfirm(false); setResetPass("");}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+            <div style={{padding:24}}>
+              <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:16}}>As a final security measure, please enter your Admin password to permanently factory-reset the entire website.</p>
+              <input type="password" value={resetPass} onChange={e=>setResetPass(e.target.value)} placeholder="Enter Admin Password" style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",marginBottom:16,boxSizing:"border-box"}} />
+              
+              <div style={{display:"flex",gap:12}}>
+                <button onClick={async () => {
+                   setResetLoading(true);
+                   try {
+                     await fbLogin(auth.email, resetPass);
+                     
+                     const d = JSON.parse(JSON.stringify(DC));
+                     await fbSave(d, auth.idToken);
+                     setC(d);
+                     
+                     setResetConfirm(false);
+                     setResetPass("");
+                     alert("Website successfully reset to defaults.");
+                   } catch(e) {
+                     alert("Incorrect password. Reset cancelled.");
+                   } finally {
+                     setResetLoading(false);
+                   }
+                }} disabled={resetLoading || !resetPass} style={{flex:1,padding:"12px",borderRadius:8,background:"#C0392B",color:"white",border:"none",fontWeight:600,cursor:(resetLoading || !resetPass)?"not-allowed":"pointer",opacity:(resetLoading || !resetPass)?0.6:1}}>
+                   {resetLoading ? "Verifying..." : "Confirm Reset"}
+                </button>
+                <button onClick={()=>{setResetConfirm(false); setResetPass("");}} disabled={resetLoading} style={{flex:1,padding:"12px",borderRadius:8,background:"#f5f5f5",color:"var(--dt)",border:"none",fontWeight:600,cursor:resetLoading?"not-allowed":"pointer"}}>
+                   Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1042,12 +1311,12 @@ function Donate({ C, lang, globalProfile, globalAuthToken, onShowUserLogin }) {
               date: new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}),
               id: `DON-${Math.floor(100000 + Math.random() * 900000)}`,
               razorpay_payment_id: response.razorpay_payment_id,
-              submitterMob: auth?.mob || ""
+              submitterMob: globalProfile?.mobile || globalProfile?.['Mobile Number'] || ""
             });
             setStep(3);
           } catch(e) {
             console.error(e);
-            alert("Payment recorded by Razorpay, but failed to save in database.");
+            alert("Payment recorded by Razorpay, but failed to save in database: " + e.message);
           }
         },
         prefill: { name: form.name, email: form.email, contact: form.phone },
@@ -1245,8 +1514,26 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
       }
     };
     window.addEventListener('openEventRegistration', handleOpen);
+    
+    // Auto-open if URL has ?event=...
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const evParam = urlParams.get('event');
+      if (evParam && C.events) {
+        let foundIdx = C.events.findIndex(e => e.id === evParam || e.title === evParam);
+        if (foundIdx === -1 && !isNaN(parseInt(evParam))) foundIdx = parseInt(evParam);
+        if (foundIdx !== -1 && C.events[foundIdx]) {
+          setTimeout(() => {
+            const el = document.getElementById('events');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+            handleOpen({ detail: foundIdx });
+          }, 300); // slight delay to ensure UI is ready
+        }
+      }
+    } catch(e) { console.error("Deep link error:", e); }
+
     return () => window.removeEventListener('openEventRegistration', handleOpen);
-  }, [C.events]);
+  }, [C.events, globalAuthToken, globalProfile]);
 
   const handleFileUpload = async (e, fKey) => {
     const file = e.target.files[0];
@@ -1386,11 +1673,12 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
         await fbSubmitRegistration({
           eventId: selectedEvent.event.title,
           eventTitle: selectedEvent.event.title,
-          submitterMob: (globalProfile?.mobile || mobile || ""),
+          submitterMob: globalProfile?.mobile || globalProfile?.['Mobile Number'] || "",
           formData: formData
         }, authToken);
       } catch (fbErr) {
-        console.warn("Firebase save skipped (Update Security Rules to enable database logging). Proceeding to WhatsApp.");
+        console.warn("Firebase save skipped (Update Security Rules to enable database logging). Proceeding to WhatsApp. Error:", fbErr);
+        alert("Warning: Firebase save failed. " + fbErr.message + " - Proceeding to WhatsApp fallback.");
       }
       // Option A: WhatsApp redirection
       let msg = `*New Registration: ${selectedEvent.event.title}*\n\n`;
@@ -1463,8 +1751,8 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
       </div>
 
       {selectedEvent && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight:"95vh",overflowY:"auto",position:"relative", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems: mob ? "flex-start" : "center",justifyContent:"center",padding: mob ? "60px 16px 20px 16px" : "16px"}}>
+          <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight: mob ? "calc(100svh - 80px)" : "95vh",overflowY:"auto",position:"relative", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
             <button onClick={()=>{setSelectedEvent(null);setDone(false);setFormData({});setWaMessageLink("");if(!globalAuthToken){setAuthStep(0);setMobile("");setPassword("");}setAuthError("");}} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
             
             {selectedEvent.type === 'details' && (
@@ -1493,7 +1781,7 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
                 {done ? (
                   <div style={{textAlign:"center",padding:"30px 0"}}>
                     <div style={{fontSize:"3rem",marginBottom:10}}>✅</div>
-                    <h4 style={{color:"#1A7A3E",fontWeight:700,marginBottom:6}}>Registration Successful!</h4>
+                    <h4 style={{color:"#1A7A3E",fontWeight:700,marginBottom:6}}>Registration Successful! (V2)</h4>
                     <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:24}}>Thank you for registering. Please choose an option below:</p>
                     <div style={{display:"flex",flexDirection:"column",gap:12,alignItems:"center"}}>
                       <a href={waMessageLink} target="_blank" rel="noreferrer" style={{display:"inline-block",padding:"10px 20px",borderRadius:20,background:"#F5F5F5",color:"var(--dt)",fontWeight:700,textDecoration:"none",fontSize:".9rem",border:"1px solid var(--bd)"}}>
@@ -1536,64 +1824,73 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
                     
                   </div>
                 ) : authStep === 'complete_profile' ? (
-                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                    <div style={{background:"#f4f9ff", border:"1px solid #d0e3ff", padding: "10px 14px", borderRadius:8}}>
-                      <p style={{fontSize:".8rem",color:"#0056b3",margin:0, fontWeight: 500}}>Create a complete profile to speed up future registrations.</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:16, background: "#FFFBF0", padding: mob ? "16px" : "24px", borderRadius: 12, border: "2px solid #F5B041", margin: "-10px"}}>
+                    <div style={{background:"#FDEBD0", border:"1px solid #F5B041", padding: "16px 20px", borderRadius:8}}>
+                      <p style={{fontSize:"1.1rem",color:"#935116",margin:0, fontWeight: 800, textAlign:"center", lineHeight: 1.4}}>
+                        This mobile number does not exist in our database.<br/>
+                        <span style={{fontSize: ".95rem", fontWeight: 600, display: "inline-block", marginTop: "6px"}}>As a new user, please fill out this form to create your user profile.</span>
+                      </p>
                     </div>
                     {authError && <div style={{background:"#FDECEA",color:"#C0392B",padding:"8px",borderRadius:6,fontSize:".75rem",fontWeight:600}}>{authError}</div>}
                     
-                    <div>
-                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Full Name <span style={{color:"red"}}>*</span></label>
-                      <input type="text" required value={regName} onChange={e=>setRegName(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full name" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
-                    </div>
-
-                    <div>
-                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Address <span style={{color:"red"}}>*</span></label>
-                      <input type="text" required value={regAddress} onChange={e=>setRegAddress(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem", background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full address" onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}/>
-                    </div>
-
-                    <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12}}>
+                    <div style={{background: "white", padding: 20, borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", gap: 16}}>
                       <div>
-                        <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Gender <span style={{color:"red"}}>*</span></label>
-                        <select required value={regGender} onChange={e=>setRegGender(e.target.value)} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #CCC",fontFamily:"inherit",fontSize:".85rem",background:"#FAFAFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box", cursor:"pointer"}} onFocus={e=>e.target.style.borderColor="var(--dt)"} onBlur={e=>e.target.style.borderColor="#CCC"}>
-                          <option value="">Select Gender</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </select>
+                        <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"#935116",marginBottom:6}}>Full Name <span style={{color:"red"}}>*</span></label>
+                        <input type="text" required value={regName} onChange={e=>setRegName(e.target.value)} style={{width:"100%",padding:"12px 16px",borderRadius:8,border:"1px solid #F5B041",fontFamily:"inherit",fontSize:"1rem", background:"#FFFEFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full name" onFocus={e=>e.target.style.boxShadow="0 0 0 3px rgba(245,176,65,0.2)"} onBlur={e=>e.target.style.boxShadow="none"}/>
                       </div>
-                    </div>
 
-                    <div>
-                      <label style={{display:"block",fontSize:".7rem",fontWeight:600,color:"var(--dt)",marginBottom:4}}>Profile Image <span style={{fontWeight:"normal",color:"#888"}}>(Optional)</span></label>
-                      <div style={{position:"relative", display:"flex", alignItems:"center"}}>
-                        <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{width:"100%",padding:"6px 10px",fontSize:".8rem",background:"white",borderRadius:8,border:"2px dashed #CCC",cursor:"pointer", color:"var(--mu)", boxSizing:"border-box"}}/>
+                      <div>
+                        <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"#935116",marginBottom:6}}>Address <span style={{color:"red"}}>*</span></label>
+                        <input type="text" required value={regAddress} onChange={e=>setRegAddress(e.target.value)} style={{width:"100%",padding:"12px 16px",borderRadius:8,border:"1px solid #F5B041",fontFamily:"inherit",fontSize:"1rem", background:"#FFFEFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box"}} placeholder="Enter your full address" onFocus={e=>e.target.style.boxShadow="0 0 0 3px rgba(245,176,65,0.2)"} onBlur={e=>e.target.style.boxShadow="none"}/>
                       </div>
-                    </div>
 
-                    <button type="button" onClick={handleSaveProfile} className="bs" style={{width:"100%",padding:"12px",borderRadius:8,fontWeight:700,marginTop:8,opacity:submitting?0.7:1, fontSize:".9rem", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", cursor:"pointer", border:"none", color:"white"}} disabled={submitting}>
-                      {submitting ? "Saving Profile..." : "Save Profile & Continue"}
-                    </button>
+                      <div style={{display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 16}}>
+                        <div>
+                          <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"#935116",marginBottom:6}}>Gender <span style={{color:"red"}}>*</span></label>
+                          <select required value={regGender} onChange={e=>setRegGender(e.target.value)} style={{width:"100%",padding:"12px 16px",borderRadius:8,border:"1px solid #F5B041",fontFamily:"inherit",fontSize:"1rem",background:"#FFFEFA", transition:"all 0.2s", outline:"none", boxSizing:"border-box", cursor:"pointer"}} onFocus={e=>e.target.style.boxShadow="0 0 0 3px rgba(245,176,65,0.2)"} onBlur={e=>e.target.style.boxShadow="none"}>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{display:"block",fontSize:".8rem",fontWeight:700,color:"#935116",marginBottom:6}}>Profile Image <span style={{fontWeight:"normal",color:"#888"}}>(Optional)</span></label>
+                        <div style={{position:"relative", display:"flex", alignItems:"center"}}>
+                          <input type="file" accept="image/*" onChange={e=>setRegImageFile(e.target.files[0])} style={{width:"100%",padding:"10px 14px",fontSize:".9rem",background:"white",borderRadius:8,border:"2px dashed #F5B041",cursor:"pointer", color:"#935116", boxSizing:"border-box"}}/>
+                        </div>
+                      </div>
+
+                      <button type="button" onClick={handleSaveProfile} style={{width:"100%",padding:"16px",borderRadius:8,fontWeight:800,marginTop:12,opacity:submitting?0.7:1, fontSize:"1.1rem", boxShadow:"0 6px 20px rgba(211,84,0,0.3)", cursor:"pointer", border:"none", color:"white", background: "linear-gradient(135deg, #E67E22, #D35400)", textTransform: "uppercase", letterSpacing: "1px"}} disabled={submitting}>
+                        {submitting ? "Saving Profile..." : "Create User Profile & Continue"}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <form onSubmit={submitForm} style={{display:"grid",gridTemplateColumns: mob ? "1fr" : "1fr 1fr",gap:12, rowGap:16}}>
-                    {(() => {
-                      const formObj = getForm(selectedEvent.event.formId);
-                      return (
-                        <>
-                          {formObj.bannerImage && (
-                            <div style={{gridColumn:"1 / -1", marginBottom: 10, borderRadius: 8, overflow: "hidden", border: "1px solid var(--bd)"}}>
-                              <img src={formObj.bannerImage} alt="Form Banner" style={{width: "100%", maxHeight: 150, objectFit: "cover"}} />
-                            </div>
-                          )}
-                          {formObj.instructions && (
-                            <div style={{gridColumn:"1 / -1", marginBottom: 14, background: "#FFFBF4", border: "1px solid var(--bd)", padding: "12px 16px", borderRadius: 8, fontSize: ".85rem", color: "var(--tx)", lineHeight: 1.5, whiteSpace: "pre-wrap"}}>
-                              {formObj.instructions}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()} 
+                  <div style={{display:"flex", flexDirection:"column", gap:16}}>
+                    {getForm(selectedEvent.event.formId)?.bannerUrl && (
+                      <div style={{width:"100%", borderRadius:8, overflow:"hidden", marginBottom:0}}>
+                        <img src={getForm(selectedEvent.event.formId).bannerUrl} alt="Form Banner" style={{width:"100%", height:"auto", display:"block", maxHeight:200, objectFit:"cover"}} />
+                      </div>
+                    )}
+                    {getForm(selectedEvent.event.formId)?.instructionText && (
+                      <div style={{background:"#F4F9FF", padding:"20px", borderRadius:12, border:"1px solid #D6E8FB", fontSize:".85rem", color:"#1E3A5F", lineHeight:1.6, boxShadow:"0 4px 12px rgba(0,0,0,0.03)"}}>
+                        <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:12, fontWeight:700, fontSize:".95rem", color:"#0D4B5E"}}>
+                          <span style={{fontSize:"1.2rem"}}>📋</span> Instructions
+                        </div>
+                        <ul style={{margin:0, padding:0, listStyle:"none", display:"flex", flexDirection:"column", gap:10}}>
+                          {getForm(selectedEvent.event.formId).instructionText.split('\n').filter(line => line.trim() !== '').map((line, i) => (
+                            <li key={i} style={{display:"flex", alignItems:"flex-start", gap:10}}>
+                              <span style={{color:"#3498DB", fontSize:"1.2rem", lineHeight:"1"}}>•</span>
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <form onSubmit={submitForm} style={{display:"grid",gridTemplateColumns: mob ? "1fr" : "1fr 1fr",gap:12, rowGap:16}}>
                     {getForm(selectedEvent.event.formId).fields.length === 0 && <p style={{gridColumn:"1 / -1",fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields. You can still register to send a blank confirmation.</p>}
                     {getForm(selectedEvent.event.formId).fields.map((f, idx) => {
                       let shouldShow = true;
@@ -1681,7 +1978,8 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
                     <button type="submit" className="bs" style={{padding:"12px",borderRadius:8,fontWeight:700,marginTop:10,opacity:submitting?0.5:1}} disabled={submitting}>
                       {submitting ? "Submitting..." : "Submit Registration"}
                     </button>
-                  </form>
+                    </form>
+                  </div>
                 )}
               </div>
             )}
@@ -1690,7 +1988,50 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin }) {
       )}
       
 
-      
+      {showSerialModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:100000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",padding:"24px",borderRadius:12,width:"100%",maxWidth:500,boxShadow:"0 10px 40px rgba(0,0,0,0.2)"}}>
+            <h3 style={{marginTop:0,color:"var(--dt)",marginBottom:16}}>Generate Serial Numbers</h3>
+            <div style={{display:"flex",gap:12,marginBottom:16}}>
+              <div style={{flex:1}}>
+                <label style={{display:"block",fontSize:".8rem",fontWeight:600,marginBottom:4}}>Prefix (Optional)</label>
+                <input value={serialPrefix} onChange={e=>setSerialPrefix(e.target.value)} placeholder="e.g. Graduate-" style={{width:"100%",padding:"8px",borderRadius:6,border:"1px solid #CCC",boxSizing:"border-box",fontSize:".9rem"}} />
+              </div>
+              <div style={{width:100}}>
+                <label style={{display:"block",fontSize:".8rem",fontWeight:600,marginBottom:4}}>Start Num</label>
+                <input type="number" value={serialStart} onChange={e=>setSerialStart(e.target.value)} style={{width:"100%",padding:"8px",borderRadius:6,border:"1px solid #CCC",boxSizing:"border-box",fontSize:".9rem"}} />
+              </div>
+            </div>
+            
+            <p style={{fontSize:".85rem",color:"#666",marginBottom:8}}>Sort order before assigning numbers (Optional):</p>
+            {[
+              { label: "Sort Level 1", state: sortLevel1, set: setSortLevel1 },
+              { label: "Sort Level 2", state: sortLevel2, set: setSortLevel2 },
+              { label: "Sort Level 3", state: sortLevel3, set: setSortLevel3 }
+            ].map((level, i) => (
+              <div key={i} style={{display:"flex",gap:8,marginBottom:12,alignItems:"center"}}>
+                <div style={{fontSize:".8rem",fontWeight:600,width:80}}>{level.label}</div>
+                <select value={level.state.col} onChange={e=>level.set({...level.state, col: e.target.value})} style={{flex:1,padding:"6px",borderRadius:4,border:"1px solid #CCC",fontSize:".85rem"}}>
+                  <option value="">-- None --</option>
+                  {allKeys.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+                <select value={level.state.dir} onChange={e=>level.set({...level.state, dir: e.target.value})} style={{width:80,padding:"6px",borderRadius:4,border:"1px solid #CCC",fontSize:".85rem"}}>
+                  <option value="asc">A-Z / 0-9</option>
+                  <option value="desc">Z-A / 9-0</option>
+                </select>
+              </div>
+            ))}
+            
+            <div style={{display:"flex",gap:12,marginTop:24}}>
+              <button onClick={handleApplySerialNumbers} disabled={applyingSerial} style={{flex:1,background:"var(--dt)",color:"white",padding:"10px",borderRadius:6,border:"none",fontWeight:700,cursor:applyingSerial?"wait":"pointer"}}>
+                {applyingSerial ? "Applying..." : `Apply to ${filteredRegs.length} Rows`}
+              </button>
+              <button onClick={()=>setShowSerialModal(false)} style={{padding:"10px 16px",background:"#EEE",border:"none",borderRadius:6,cursor:"pointer",fontWeight:600}}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {previewFile && (
         <div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
           <div style={{position:"relative",width:"100%",maxWidth:800,maxHeight:"90vh",background:"white",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
@@ -1898,6 +2239,86 @@ function Team({ C, lang }) {
             </div>
           </div>
         ))}
+         </div>
+
+                             {g.Address && <div><strong>Address:</strong> {g.Address}</div>}
+                             {!g.Email && !g.Address && <div>No additional details provided.</div>}
+                           </div>
+                         )}
+                      </div>
+                    ))}
+                    {globalGuests.length === 0 && <div style={{color:"var(--mu)",fontSize:".9rem"}}>Directory is empty.</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+         )}
+         </div>
+
+         {/* Global Guests Modal */}
+         {showGlobalGuestsModal && (
+          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+            <div style={{background:"white",borderRadius:12,padding:32,width:"100%",maxWidth:800,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+                 <div>
+                   <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",marginTop:0,marginBottom:4}}>Global Special Guests</h2>
+                   <p style={{fontSize:".85rem",color:"var(--mu)",margin:0}}>Add guests here once, and import them to any event.</p>
+                 </div>
+                 <button onClick={()=>setShowGlobalGuestsModal(false)} style={{background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer"}}>×</button>
+              </div>
+
+              <div style={{display:"flex",gap:24,flexDirection:mob?"column":"row"}}>
+                <div style={{flex:1}}>
+                  <h3 style={{fontSize:"1rem",borderBottom:"1px solid var(--bd)",paddingBottom:8,marginBottom:16}}>Add New Guest</h3>
+                  <form onSubmit={handleAddGlobalGuest} style={{display:"flex",flexDirection:"column",gap:16}}>
+                    <div>
+                      <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Full Name (Required)</label>
+                      <input required type="text" value={guestForm.fullName} onChange={e=>setGuestForm({...guestForm, fullName: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Designation / Organization</label>
+                      <input type="text" value={guestForm.designation} onChange={e=>setGuestForm({...guestForm, designation: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                    </div>
+                    <div style={{display:"flex",gap:16}}>
+                      <div style={{flex:1}}>
+                        <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Mobile</label>
+                        <input type="text" value={guestForm.mobile} onChange={e=>setGuestForm({...guestForm, mobile: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                      </div>
+                      <div style={{flex:1}}>
+                        <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Email</label>
+                        <input type="email" value={guestForm.email} onChange={e=>setGuestForm({...guestForm, email: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Address</label>
+                      <textarea rows="2" value={guestForm.address} onChange={e=>setGuestForm({...guestForm, address: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"} }></textarea>
+                    </div>
+                    <button type="submit" disabled={addingGuest} style={{padding:"10px 20px",borderRadius:8,border:"none",background:"#D2691E",color:"white",cursor:addingGuest?"wait":"pointer",fontWeight:600,marginTop:8}}>
+                      {addingGuest ? "Saving..." : "Add to Directory"}
+                    </button>
+                  </form>
+                </div>
+
+                <div style={{flex:1.5,borderLeft:mob?"none":"1px solid var(--bd)",paddingLeft:mob?0:24}}>
+                  <h3 style={{fontSize:"1rem",borderBottom:"1px solid var(--bd)",paddingBottom:8,marginBottom:16}}>Directory List</h3>
+                  <div style={{display:"flex",flexDirection:"column",gap:12,maxHeight:400,overflowY:"auto",paddingRight:8}}>
+                    {globalGuests.map(g => (
+                      <div key={g.id} style={{padding:12,border:"1px solid #eee",borderRadius:8,background:"#fafafa",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                         <div>
+                           <div style={{fontWeight:600,color:"#333"}}>{g["Full Name"]}</div>
+                           <div style={{fontSize:".8rem",color:"var(--mu)"}}>{g.Designation || "No Designation"} {g.Mobile ? `• ${g.Mobile}` : ""}</div>
+                         </div>
+                         <button onClick={()=>handleDeleteGlobalGuest(g)} style={{background:"none",border:"none",color:"#991B1B",fontSize:".8rem",cursor:"pointer",textDecoration:"underline"}}>Remove</button>
+                      </div>
+                    ))}
+                    {globalGuests.length === 0 && <div style={{color:"var(--mu)",fontSize:".9rem"}}>Directory is empty.</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+         )}
       </div>
     );
   };
@@ -2378,10 +2799,11 @@ const numberToWords = (num) => {
 };
 
 
-export const generateCertificatePDF = async (certConfig, fieldsData, fallbackName, previewMode = false) => {
+export const generateCertificatePDF = async (certConfig, fieldsData, fallbackName, type = 'cert', previewMode = false) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    let srcUrl = certConfig.certBgUrl;
+    const isInvite = type === 'invite';
+    let srcUrl = isInvite ? certConfig.inviteBgUrl : certConfig.certBgUrl;
     
     if (srcUrl && srcUrl.startsWith('http')) {
       img.crossOrigin = "Anonymous";
@@ -2393,11 +2815,14 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
         const doc = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
         doc.addImage(img, 'JPEG', 0, 0, img.width, img.height);
         
-        doc.setFontSize(certConfig.certFontSize || 30);
-        doc.setTextColor(certConfig.certFontColor || "#000000");
+        const fontSize = isInvite ? certConfig.inviteFontSize : certConfig.certFontSize;
+        const fontColor = isInvite ? certConfig.inviteFontColor : certConfig.certFontColor;
+        
+        doc.setFontSize(fontSize || 30);
+        doc.setTextColor(fontColor || "#000000");
         doc.setFont("helvetica", "bold");
 
-        const m = certConfig.certMap || {};
+        const m = (isInvite ? certConfig.inviteMap : certConfig.certMap) || {};
 
         Object.entries(m).forEach(([key, pos]) => {
           if (pos.visible) {
@@ -2415,20 +2840,31 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
             if (typeof val === 'string') {
                 val = val.replace(/\|/g, ' ').trim();
             }
-            doc.text(String(val), xPx, yPx, { align: "center", baseline: "middle" });
+            const alignOpt = type === 'invite' ? "left" : "center";
+            doc.text(String(val), xPx, yPx, { align: alignOpt, baseline: "middle" });
           }
         });
         
         const blob = doc.output('blob');
+        
+        if (previewMode === "blob") {
+            resolve(blob);
+            return;
+        }
+
         const url = URL.createObjectURL(blob);
         
-        if (previewMode) {
+        if (previewMode === "url") {
+            resolve(url);
+            return;
+        } else if (previewMode) {
             window.open(url, '_blank');
         } else {
             const link = document.createElement("a");
             link.href = url;
             const outName = fallbackName ? fallbackName.replace(/\s+/g, '_') : "Student";
-            link.download = `Certificate_${outName}.pdf`;
+            const prefix = type === 'invite' ? 'Invite' : 'Certificate';
+            link.download = `${prefix}_${outName}.pdf`;
             link.click();
         }
         
@@ -2645,6 +3081,435 @@ function TemplateMapper({ imgUrl, mapData, fontSize, onChange }) {
           style={{flex: 1, minWidth: 200, cursor: "pointer"}} 
         />
       </div>
+    </div>
+  );
+}
+
+// ── ADMIN CERTIFICATES ────────────────────────────────────────────────────────
+function AdminCertificates({ mob, C, auth }) {
+  const [regs, setRegs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fetchRegs = async () => {
+    try {
+      const d = await fbFetchRegistrations(auth?.idToken);
+      setRegs(d || []);
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegs().finally(() => setLoading(false));
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchRegs();
+    setRefreshing(false);
+  };
+
+  const toggleRelease = async (r) => {
+    const newVal = !r.certificateReleased;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, certificateReleased: newVal } : x));
+    try {
+      const cleanData = { ...r, certificateReleased: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const toggleHold = async (r) => {
+    const newVal = !r.certificateHold;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, certificateHold: newVal } : x));
+    try {
+      const cleanData = { ...r, certificateHold: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update hold status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const [releasingAll, setReleasingAll] = useState(false);
+
+  const handleReleaseAll = async () => {
+    const unreleased = filteredRegs.filter(r => !r.certificateReleased && !r.certificateHold);
+    if (unreleased.length === 0) {
+      alert("All visible certificates are already released!");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to release ${unreleased.length} certificates?`)) return;
+    
+    setReleasingAll(true);
+    let successCount = 0;
+    try {
+      for (const r of unreleased) {
+        const cleanData = { ...r, certificateReleased: true };
+        delete cleanData.id; delete cleanData._submittedAt;
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, certificateReleased: true } : x));
+        successCount++;
+      }
+      alert(`Successfully released ${successCount} certificates!`);
+    } catch (e) {
+      alert(`Error after releasing ${successCount} certificates: ` + e.message);
+    }
+    setReleasingAll(false);
+  };
+
+  const [previewCertUrl, setPreviewCertUrl] = useState(null);
+  const [previewCertRegId, setPreviewCertRegId] = useState(null);
+  const [downloadingBulk, setDownloadingBulk] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const handleBulkDownload = async () => {
+    if (filteredRegs.length === 0) return alert("No invite letters available to download.");
+    if (!window.confirm(`Generate and download a ZIP file containing ${filteredRegs.length} invite letters?`)) return;
+    
+    setDownloadingBulk(true);
+    setDownloadProgress(0);
+    const zip = new JSZip();
+    let count = 0;
+    
+    try {
+      for (const r of filteredRegs) {
+        const evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+        const ev = certEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+        if (!ev) continue;
+        
+        const fieldsData = {...r};
+        const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+        
+        // Use 'blob' mode
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "invite", "blob");
+        if (pdfBlob) {
+          const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          zip.file(`Invite_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
+        }
+        count++;
+        setDownloadProgress(count);
+      }
+      
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `Invite_Letters_${new Date().getTime()}.zip`;
+      link.click();
+    } catch (e) {
+      alert("Error during bulk download: " + e.message);
+    }
+    setDownloadingBulk(false);
+  };
+
+  const [downloadingEnvelopes, setDownloadingEnvelopes] = useState(false);
+
+  const handleBulkDownloadEnvelopes = () => {
+    if (filteredRegs.length === 0) return alert("No certificates available for envelopes.");
+    if (!window.confirm(`Generate and download envelopes for ${filteredRegs.length} registrants?`)) return;
+    
+    setDownloadingEnvelopes(true);
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'dl' });
+      filteredRegs.forEach((r, index) => {
+        if (index > 0) doc.addPage();
+        
+        let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+        let ev = certEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+        
+        const nameKey = ev?.guestMapping?.fullName || "Full Name";
+        const addressKey = ev?.guestMapping?.address || "Address";
+        const mobileKey = ev?.guestMapping?.mobile || "Mobile Number";
+
+        const sName = r[nameKey] || r["Name"] || r["Participant Name"] || "Unknown";
+        const sAddress = r[addressKey] || r["Location"] || r["Address"] || "";
+        const sMobile = r[mobileKey] || r["Phone"] || r["Mobile"] || "";
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("To,", 100, 45);
+
+        doc.setFontSize(16);
+        doc.text(String(sName), 110, 55);
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        
+        const splitAddress = doc.splitTextToSize(String(sAddress), 100);
+        if (splitAddress.length > 0 && splitAddress[0] !== "") {
+          doc.text(splitAddress, 110, 65);
+        }
+        
+        if (sMobile) {
+           const addressOffset = (splitAddress.length > 0 && splitAddress[0] !== "") ? splitAddress.length * 6 : 0;
+           doc.setFont("helvetica", "bold");
+           doc.text(`Mob: ${sMobile}`, 110, 65 + addressOffset);
+        }
+      });
+      
+      doc.save(`Cert_Envelopes_${new Date().getTime()}.pdf`);
+    } catch (e) {
+      alert("Error generating envelopes: " + e.message);
+    }
+    setDownloadingEnvelopes(false);
+  };
+
+  const [downloadingEnvelopes, setDownloadingEnvelopes] = useState(false);
+
+  const handleBulkDownloadEnvelopes = () => {
+    if (filteredRegs.length === 0) return alert("No invite letters available for envelopes.");
+    if (!window.confirm(`Generate and download envelopes for ${filteredRegs.length} registrants?`)) return;
+    
+    setDownloadingEnvelopes(true);
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'dl' });
+      // Standard DL envelope is 220x110 mm
+      const ev = inviteEvents.find(e => e.id === selectedEventId);
+      const nameKey = ev?.guestMapping?.fullName || "Full Name";
+      const addressKey = ev?.guestMapping?.address || "Address";
+      const mobileKey = ev?.guestMapping?.mobile || "Mobile";
+
+      filteredRegs.forEach((r, index) => {
+        if (index > 0) doc.addPage();
+        
+        const sName = r[nameKey] || r["Name"] || r["Participant Name"] || "Unknown";
+        const sAddress = r[addressKey] || r["Location"] || "";
+        const sMobile = r[mobileKey] || r["Mobile Number"] || r["Phone"] || "";
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("To,", 100, 45);
+
+        doc.setFontSize(16);
+        doc.text(String(sName), 110, 55);
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        
+        const splitAddress = doc.splitTextToSize(String(sAddress), 100);
+        if (splitAddress.length > 0 && splitAddress[0] !== "") {
+          doc.text(splitAddress, 110, 65);
+        }
+        
+        if (sMobile) {
+           const addressOffset = (splitAddress.length > 0 && splitAddress[0] !== "") ? splitAddress.length * 6 : 0;
+           doc.setFont("helvetica", "bold");
+           doc.text(`Mob: ${sMobile}`, 110, 65 + addressOffset);
+        }
+      });
+      
+      doc.save(`Envelopes_${new Date().getTime()}.pdf`);
+    } catch (e) {
+      alert("Error generating envelopes: " + e.message);
+    }
+    setDownloadingEnvelopes(false);
+  };
+
+  const handlePreview = async (r, ev) => {
+    const fieldsData = {...r};
+    const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+    try {
+      const url = await generateCertificatePDF(ev, fieldsData, sName, 'cert', "url");
+      setPreviewCertUrl(url);
+      setPreviewCertRegId(r.id);
+    } catch (e) {
+      alert("Error generating certificate: " + e.message);
+    }
+  };
+
+  const certEvents = (C.events || []).filter(e => e.issueCertificates === true || e.issueCertificates === "true");
+  const certEventIds = certEvents.map(e => e.id);
+  const certEventTitles = certEvents.map(e => e.title);
+  const certEventTitlesGu = certEvents.map(e => e.titleGu);
+
+  const certRegs = regs.filter(r => {
+    if (r.Status !== "Approved") return false;
+    let evName = r.eventName || r.eventTitle || r.eventId;
+    return certEventIds.includes(r.eventId) || certEventTitles.includes(evName) || certEventTitlesGu.includes(evName);
+  });
+
+  const filteredRegs = certRegs.filter(r => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return Object.values(r).some(v => String(v).toLowerCase().includes(q));
+  });
+
+  return (
+    <div style={{display:"flex",width:"100%"}}>
+      <div style={{flex: previewCertUrl ? 2 : 1, padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
+        <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:24,gap:16}}>
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Certificate Console</h2>
+            <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Manage and release certificates for approved registrations.</p>
+          </div>
+          <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing||releasingAll||downloadingBulk||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              {refreshing ? "..." : "↻"} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12,background:"#F9F9F9",padding:"12px 16px",borderRadius:12,border:"1px solid #eee"}}>
+           <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",width:mob?"100%":280,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}} />
+           
+           <div style={{display:"flex",gap:10,flexWrap:"wrap",width:mob?"100%":"auto"}}>
+             <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll||refreshing||downloadingBulk||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {releasingAll ? "Releasing..." : "Release All"}
+             </button>
+             <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk||releasingAll||refreshing||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {downloadingBulk ? `Zipping (${downloadProgress}/${filteredRegs.length})...` : "Bulk Download PDFs"}
+             </button>
+             <button onClick={handleBulkDownloadEnvelopes} disabled={downloadingBulk || releasingAll || refreshing || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk||releasingAll||refreshing||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {downloadingEnvelopes ? `Generating...` : "✉️ Download Envelopes"}
+             </button>
+           </div>
+        </div>
+
+        {loading ? <p>Loading certificates...</p> : (
+          <div style={{borderRadius:12,boxShadow:"0 10px 30px rgba(0,0,0,0.06)",overflow:"hidden",border:"1px solid #E0E0E0",background:"white",overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:900}}>
+              <thead>
+                <tr>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600,width:"15%"}}>Date Approved</th>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600,width:"20%"}}>Event</th>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"var(--dt)",color:"white",fontWeight:600,width:"20%"}}>Participant Name</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"12%"}}>Release Status</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"10%"}}>Viewed On</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"10%"}}>Downloaded On</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"var(--dt)",color:"white",fontWeight:600,width:"13%"}}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRegs.map((r, i) => {
+                  let date = "-";
+                  try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString().split(',')[0]; } catch(e){}
+                  let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+                  let pName = r["Full Name"] || r["Name"] || r["Participant Name"] || r.Email || "-";
+                  let ev = certEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+                  
+                  let vDate = r.certViewDate ? new Date(r.certViewDate).toLocaleString() : "-";
+                  let dDate = r.certDownloadDate ? new Date(r.certDownloadDate).toLocaleString() : "-";
+
+                  return (
+                    <tr key={i} style={{borderBottom:"1px solid #eee", background: previewCertRegId === r.id ? "#E8F4F8" : "transparent"}}>
+                      <td style={{padding:"12px",color:"#555"}}>{date}</td>
+                      <td style={{padding:"12px",color:"#444"}}>{evName}</td>
+                      <td style={{padding:"12px",fontWeight:600,color:"#111"}}>{pName}</td>
+                      <td style={{padding:"12px",textAlign:"center"}}>
+                        {r.certificateHold ? (
+                          <span style={{padding:"4px 8px",borderRadius:12,fontSize:".75rem",fontWeight:700,background:"#FEE2E2",color:"#991B1B",display:"inline-block"}}>
+                            On Hold
+                          </span>
+                        ) : r.certificateReleased ? (
+                           <span style={{padding:"4px 8px",borderRadius:12,fontSize:".75rem",fontWeight:700,background:"#D1FAE5",color:"#065F46",display:"inline-block"}}>
+                             Released
+                           </span>
+                        ) : (
+                          <span style={{padding:"4px 8px",borderRadius:12,fontSize:".75rem",fontWeight:700,background:"#FEF3C7",color:"#92400E",display:"inline-block"}}>
+                             Not Released
+                           </span>
+                        )}
+                      </td>
+                      <td style={{padding:"12px",textAlign:"center",fontSize:".75rem",color:"#666"}}>{vDate}</td>
+                      <td style={{padding:"12px",textAlign:"center",fontSize:".75rem",color:"#666"}}>{dDate}</td>
+                      <td style={{padding:"12px",textAlign:"center"}}>
+                        <div style={{display:"flex",justifyContent:"center",gap:6,flexWrap:"wrap"}}>
+                          <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 10px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600,color:"#333"}}>Preview</button>
+                          <button onClick={()=>toggleRelease(r)} style={{padding:"6px 10px",borderRadius:6,fontSize:".75rem",background:r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateReleased?"#555":"white",border:r.certificateReleased?"1px solid #ddd":"none",cursor:"pointer",fontWeight:600}}>
+                            {r.certificateReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 10px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ddd",cursor:"pointer",fontWeight:600}}>
+                            {r.certificateHold ? "Unhold" : "Hold"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                  );
+                })}
+                {filteredRegs.length === 0 && <tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"var(--mu)"}}>No certificates found to manage.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {previewCertUrl && (
+        <div style={{flex:1, borderLeft:"1px solid var(--bd)", background:"#F5F5F5", display:"flex", flexDirection:"column", minWidth: 400}}>
+          <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{fontSize:"1rem",fontWeight:600}}>Certificate Preview</h3>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <a href={previewCertUrl} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+              <button onClick={()=>{setPreviewCertUrl(null); setPreviewCertRegId(null);}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+          </div>
+          <div style={{flex:1, overflow:"auto", padding:20, display:"flex", alignItems:"center", justifyContent:"center"}}>
+             <object data={previewCertUrl} type="application/pdf" style={{width:"100%",height:"100%",minHeight:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+               <iframe src={previewCertUrl} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+             </object>
+          </div>
+        </div>
+      )}
+
+      {showMappingModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",borderRadius:12,padding:32,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+               <div>
+                 <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",marginTop:0,marginBottom:4}}>Event Field Mapping</h2>
+                 <p style={{fontSize:".85rem",color:"var(--mu)",margin:0}}>Map Global Guest fields to this event's letter template fields.</p>
+               </div>
+               <button onClick={()=>setShowMappingModal(false)} style={{background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer"}}>×</button>
+            </div>
+            <form onSubmit={handleSaveMapping} style={{display:"flex",flexDirection:"column",gap:16}}>
+               <div>
+                 <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Global 'Full Name' maps to:</label>
+                 <select value={mappingForm.fullName} onChange={e=>setMappingForm({...mappingForm, fullName: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit",background:"white"}}>
+                   <option value="Full Name">Full Name</option>
+                   {availableFields.map(f => <option key={f} value={f}>{f}</option>)}
+                 </select>
+               </div>
+               <div>
+                 <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Global 'Designation' maps to:</label>
+                 <select value={mappingForm.designation} onChange={e=>setMappingForm({...mappingForm, designation: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit",background:"white"}}>
+                   <option value="Designation">Designation</option>
+                   {availableFields.map(f => <option key={f} value={f}>{f}</option>)}
+                 </select>
+               </div>
+               <div>
+                 <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Global 'Mobile' maps to:</label>
+                 <select value={mappingForm.mobile} onChange={e=>setMappingForm({...mappingForm, mobile: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit",background:"white"}}>
+                   <option value="Mobile">Mobile</option>
+                   {availableFields.map(f => <option key={f} value={f}>{f}</option>)}
+                 </select>
+               </div>
+               <div>
+                 <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Global 'Email' maps to:</label>
+                 <select value={mappingForm.email} onChange={e=>setMappingForm({...mappingForm, email: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit",background:"white"}}>
+                   <option value="Email">Email</option>
+                   {availableFields.map(f => <option key={f} value={f}>{f}</option>)}
+                 </select>
+               </div>
+               <div>
+                 <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Global 'Address' maps to:</label>
+                 <select value={mappingForm.address} onChange={e=>setMappingForm({...mappingForm, address: e.target.value})} style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit",background:"white"}}>
+                   <option value="Address">Address</option>
+                   {availableFields.map(f => <option key={f} value={f}>{f}</option>)}
+                 </select>
+               </div>
+               <button type="submit" disabled={savingMapping} style={{padding:"10px 20px",borderRadius:8,border:"none",background:"#D2691E",color:"white",cursor:savingMapping?"wait":"pointer",fontWeight:600,marginTop:8}}>
+                 {savingMapping ? "Saving..." : "Save Mapping"}
+               </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2873,11 +3738,6 @@ function ContentEditor({ C, setC, setPage, auth, hasAccess, master }) {
     }
   };
 
-  const reset = () => {
-    if (!window.confirm("Reset all content to defaults?")) return;
-    const d = JSON.parse(JSON.stringify(DC));
-    setC(d); setDraft(d);
-  };
 
   // ── Logo file upload to Firebase Storage ──────────────────────────────────
   const handleLogoUpload = async (e) => {
@@ -2998,7 +3858,6 @@ function ContentEditor({ C, setC, setPage, auth, hasAccess, master }) {
           </p>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <button onClick={reset} style={{padding:"9px 14px",borderRadius:8,background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--mu)"}}>Reset</button>
           <button onClick={()=>setPage("public")} style={{padding:"9px 14px",borderRadius:8,background:"var(--tl)",border:"1px solid #B8D8E8",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--dt)"}}>Preview</button>
           <button className="bs" onClick={save} disabled={toast==="saving"} style={{padding:"10px 22px",borderRadius:8,fontWeight:700,fontSize:".9rem",opacity:toast==="saving"?.7:1}}>
             {toast==="saving" ? "Saving..." : "Save Changes"}
@@ -3976,6 +4835,7 @@ const ANAV = [
   {id:"donations",icon:"💰",label:"Donations"},
   {id:"events",icon:"📅",label:"Events"},
   {id:"registrations",icon:"📋",label:"Registrations"},
+  {id:"certificates",icon:"🎓",label:"Certificates"},
   {id:"volunteers",icon:"🤝",label:"Volunteers"},
   {id:"gallery",icon:"🖼️",label:"Gallery"},
   {id:"team",icon:"👥",label:"Our Team"},
@@ -3983,7 +4843,7 @@ const ANAV = [
   {id:"settings",icon:"⚙️",label:"Settings"},
   {id:"access",icon:"🔐",label:"Access Control"},
   {id:"profile",icon:"👤",label:"My Profile"},
-{id: "meritlist", label: "Reports & Lists", icon: "📑"}, {id: "inviteletters", label: "Invite Letters", icon: "📩"}, {id: "certificates", label: "Certificates", icon: "🎓"}];
+, {id: "meritlist", title: "Reports & Lists", icon: "📑"}, {id: "inviteletters", title: "Invite Letters", icon: "📩"}, {id: "certificates", title: "Certificates", icon: "🎓"}];
 
 function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
   const isMasterAdmin = (email) => ["admin@vidyagohiltrust.org", "pradeepparmar902@yahoo.com"].includes(email?.toLowerCase());
@@ -3992,7 +4852,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
 
   let hasAccess = [];
   if (auth?.email) {
-    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "volunteers", "gallery", "team", "achievements", "settings", "access", "profile", "meritlist", "inviteletters", "certificates"] : [...(userRole?.permissions || []), "profile"];
+    hasAccess = master ? ["content", "overview", "donations", "events", "registrations", "certificates", "volunteers", "gallery", "team", "achievements", "settings", "access", "profile"] : [...(userRole?.permissions || []), "profile"];
   }
 
   const visibleNav = ANAV.filter(item => hasAccess.includes(item.id));
@@ -4044,7 +4904,7 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
       <div className="as" style={{width:sw,transition:"width .3s",position:"fixed",top:0,left:0,bottom:0,zIndex:200,overflowX:"hidden",display:"flex",flexDirection:"column"}}>
         <div style={{padding:"16px 12px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:10,justifyContent:open?"flex-start":"center"}}>
           <LogoMark logo={{...C.trust.logo, size: 34, visible: true}} />
-          {open && <div style={{fontFamily:"'Playfair Display',serif",color:"white",fontWeight:700,fontSize:".82rem",whiteSpace:"nowrap"}}>{C.trust.adminHeader || "Trust Admin"}</div>}
+          {open && <div style={{fontFamily:"'Playfair Display',serif",color:"white",fontWeight:700,fontSize:".82rem",whiteSpace:"nowrap"}}>{C.trust.adminHeader || "Trust Admin"} <span style={{fontSize:".6rem",opacity:0.5}}>v3</span></div>}
         </div>
         <div style={{flex:1,padding:"10px 6px",overflowY:"auto"}}>
           {visibleNav.map(item=>(
@@ -4104,11 +4964,11 @@ function Admin({ C, setC, setPage, auth, onLogout, onShowLogin }) {
           {tab==="overview"  && hasAccess.includes("overview") && <Overview mob={mob} C={C} auth={auth}/>}
           {tab==="donations" && hasAccess.includes("donations") && <Donations mob={mob} auth={auth} C={C}/>}
           {tab==="events"    && hasAccess.includes("events") && <AdminEvents mob={mob} C={C} setC={setC} auth={auth}/>}
-          {tab==="registrations" && hasAccess.includes("registrations") && <AdminRegistrations mob={mob} C={C} auth={auth}/>}
-          {tab==="volunteers"&& hasAccess.includes("volunteers") && <Volunteers mob={mob} auth={auth} C={C}/>}
+          {tab==="registrations" && hasAccess.includes("registrations") && <AdminRegistrations mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="meritlist" && hasAccess.includes("meritlist") && <AdminMeritList mob={mob} C={C} auth={auth}/>}
-          {tab==="inviteletters" && hasAccess.includes("inviteletters") && <AdminInviteLetters mob={mob} C={C} auth={auth}/>}
           {tab==="certificates" && hasAccess.includes("certificates") && <AdminCertificates mob={mob} C={C} auth={auth}/>}
+          {tab==="inviteletters" && hasAccess.includes("inviteletters") && <AdminInviteLetters mob={mob} C={C} auth={auth}/>}
+          {tab==="volunteers"&& hasAccess.includes("volunteers") && <Volunteers mob={mob} auth={auth} C={C}/>}
           {tab==="team"      && hasAccess.includes("team") && <AdminTeam mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="gallery"   && hasAccess.includes("gallery") && <AdminGallery mob={mob} C={C} setC={setC} auth={auth}/>}
           {tab==="achievements" && hasAccess.includes("achievements") && <AdminAchievements mob={mob} C={C} setC={setC} auth={auth}/>}
@@ -4380,11 +5240,11 @@ function Donations({ mob, auth, C }) {
   };
 
 
-  const saveVerification = async (r, newStatus, newRemarks) => {
+  const saveVerification = async (r, newStatus, newRemarks, newData = r) => {
     const updatedBy = auth?.email || "Admin";
-    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Status: newStatus, status: newStatus, Remarks: newRemarks, "Updated By": updatedBy } : x));
+    const cleanData = { ...r, ...newData, Status: newStatus, status: newStatus, Remarks: newRemarks, "Updated By": updatedBy };
+    setRegs(prev => prev.map(x => x.id === r.id ? cleanData : x));
     try {
-      const cleanData = { ...r, Status: newStatus, status: newStatus, Remarks: newRemarks, "Updated By": updatedBy };
       delete cleanData.id; delete cleanData._submittedAt;
       await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
       // Removed setViewing(null) here so modal can handle auto-advance
@@ -4642,7 +5502,6 @@ function Donations({ mob, auth, C }) {
 }
 
 function AdminForms({ C, setC, saveToFb, mob, auth }) {
-  const [previewForm, setPreviewForm] = useState(null);
   const defaultFields = [
     { id: "fl_1", label: "Mobile Number", type: "tel" },
     { id: "fl_2", label: "Full Name", type: "fullname" },
@@ -4657,6 +5516,7 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
 
   const [forms, setForms] = useState(C.forms || []);
   const [editingId, setEditingId] = useState(null);
+  const [previewForm, setPreviewForm] = useState(null);
   const [fieldLib, setFieldLib] = useState(C.fieldLibrary || defaultFields);
   const [isAddingLib, setIsAddingLib] = useState(false);
   const [isManagingLib, setIsManagingLib] = useState(false);
@@ -4741,33 +5601,31 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
            <div key={f.id} className="ac" style={{padding: 14}}>
              {editingId === f.id ? (
                <div>
-                 <input value={f.name} onChange={e=>updateForm(f.id, {...f, name: e.target.value})} style={{padding:"6px",border:"1px solid var(--bd)",borderRadius:6,marginBottom:10,fontWeight:600,width:"100%"}} placeholder="Form Name"/>
-                 <div style={{display:"flex", flexDirection:"column", gap:10, marginBottom:15, background:"#F9F9F9", padding:12, borderRadius:8, border:"1px solid var(--bd)"}}>
-                   <div>
-                     <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4}}>Banner/Header Image</label>
-                     <div style={{display:"flex", gap:8, alignItems:"center"}}>
-                       <input value={f.bannerImage||""} onChange={e=>updateForm(f.id, {...f, bannerImage: e.target.value})} style={{flex:1, padding:"8px",border:"1px solid var(--bd)",borderRadius:6,fontSize:".85rem"}} placeholder="Paste image URL or upload ->"/>
-                       <label style={{padding:"8px 14px", background:"var(--dt)", color:"white", borderRadius:6, fontSize:".8rem", fontWeight:600, cursor:"pointer", whiteSpace:"nowrap"}}>
-                         Upload Image
-                         <input type="file" accept="image/*" style={{display:"none"}} onChange={async (e) => {
-                           const file = e.target.files?.[0];
-                           if(!file) return;
-                           try {
-                             const url = await fbUploadPublicFile(file, auth?.idToken);
-                             updateForm(f.id, {...f, bannerImage: url});
-                           } catch(err) {
-                             alert("Upload failed: " + err.message);
-                           }
-                         }}/>
-                       </label>
-                     </div>
-                     {f.bannerImage && <img src={f.bannerImage} alt="Banner Preview" style={{marginTop:8, width:"100%", maxHeight:100, objectFit:"cover", borderRadius:6, border:"1px solid var(--bd)"}}/>}
-                   </div>
-                   <div>
-                     <label style={{display:"block",fontSize:".75rem",fontWeight:700,color:"var(--dt)",marginBottom:4}}>Form Instructions</label>
-                     <textarea value={f.instructions||""} onChange={e=>updateForm(f.id, {...f, instructions: e.target.value})} style={{width:"100%", padding:"8px",border:"1px solid var(--bd)",borderRadius:6,fontSize:".85rem", minHeight:60, fontFamily:"inherit"}} placeholder="Enter guidelines or instructions for users filling out the form..."/>
-                   </div>
-                 </div>
+                  <div style={{display:"flex", flexDirection:"column", gap:10, marginBottom:16}}>
+                    <div>
+                      <label style={{fontSize:".75rem",fontWeight:700,color:"var(--mu)",display:"block",marginBottom:4}}>Form Name</label>
+                      <input value={f.name} onChange={e=>updateForm(f.id, {...f, name: e.target.value})} style={{padding:"8px",border:"1px solid var(--bd)",borderRadius:6,fontWeight:600,width:"100%",boxSizing:"border-box"}} placeholder="Form Name"/>
+                    </div>
+                    <div>
+                      <label style={{fontSize:".75rem",fontWeight:700,color:"var(--mu)",display:"block",marginBottom:4}}>Banner Image URL (Optional - Appears at the top of the form)</label>
+                      <div style={{display:"flex", gap:8}}>
+                        <input value={f.bannerUrl || ""} onChange={e=>updateForm(f.id, {...f, bannerUrl: e.target.value})} style={{flex:1, padding:"8px",border:"1px solid var(--bd)",borderRadius:6,fontSize:".85rem",boxSizing:"border-box"}} placeholder="https://... (Image URL)"/>
+                        <label style={{background:"#F5F5F5",border:"1px solid var(--bd)",borderRadius:6,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:".8rem",fontWeight:600,color:"var(--dt)",whiteSpace:"nowrap"}}>
+                          Upload Image
+                          <input type="file" accept="image/*" style={{display:"none"}} onChange={async (e)=>{
+                            const file = e.target.files[0];
+                            if(!file) return;
+                            const url = await fbUploadPublicFile(file, auth?.idToken).catch(()=>"");
+                            if(url) updateForm(f.id, {...f, bannerUrl: url});
+                          }}/>
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{fontSize:".75rem",fontWeight:700,color:"var(--mu)",display:"block",marginBottom:4}}>Instruction Text (Optional - Appears before fields)</label>
+                      <textarea value={f.instructionText || ""} onChange={e=>updateForm(f.id, {...f, instructionText: e.target.value})} style={{padding:"8px",border:"1px solid var(--bd)",borderRadius:6,width:"100%",fontSize:".85rem",minHeight:60,fontFamily:"inherit",boxSizing:"border-box"}} placeholder="Enter any instructions for the user here..."/>
+                    </div>
+                  </div>
                  <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
                    {f.fields.map((field, idx) => (
                       <div key={idx} style={{display:"flex",flexDirection:"column", transition:"transform 0.2s"}}
@@ -5041,7 +5899,7 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
                    <div style={{fontSize:".75rem",color:"var(--mu)"}}>{f.fields.length} fields</div>
                  </div>
                  <div style={{display:"flex",gap:6}}>
-                   <button onClick={()=>setPreviewForm(f)} style={{padding:"4px 10px",background:"#F0F4F8",border:"none",borderRadius:6,color:"#2B6CB0",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Preview</button>
+                   <button onClick={()=>setPreviewForm(f)} style={{padding:"4px 10px",background:"var(--dt)",border:"none",borderRadius:6,color:"white",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Preview</button>
                    <button onClick={()=>setEditingId(f.id)} style={{padding:"4px 10px",background:"var(--tl)",border:"none",borderRadius:6,color:"var(--dt)",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Edit</button>
                    <button onClick={()=>removeForm(f.id)} style={{padding:"4px 10px",background:"#FEF0EF",border:"none",borderRadius:6,color:"#C0392B",cursor:"pointer",fontSize:".75rem",fontWeight:600}}>Delete</button>
                  </div>
@@ -5051,61 +5909,76 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
          ))}
        </div>
        <hr style={{margin:"30px 0",border:"none",borderTop:"1px dashed var(--bd)"}}/>
-       {previewForm && (
-         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-           <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight:"95vh",overflowY:"auto",position:"relative", boxSizing:"border-box", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
-             <button onClick={()=>setPreviewForm(null)} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)",zIndex:10}}>✕</button>
-             
-             <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:15,fontWeight:700,paddingRight:30}}>
-               Form Preview: {previewForm.name}
-             </h3>
-             
-             <div style={{display:"grid",gridTemplateColumns:"1fr",gap:12,textAlign:"left"}}>
-               {previewForm.bannerImage && (
-                 <div style={{marginBottom: 10, borderRadius: 8, overflow: "hidden", border: "1px solid var(--bd)"}}>
-                   <img src={previewForm.bannerImage} alt="Form Banner" style={{width: "100%", maxHeight: 150, objectFit: "cover"}} />
-                 </div>
-               )}
-               {previewForm.instructions && (
-                 <div style={{marginBottom: 14, background: "#FFFBF4", border: "1px solid var(--bd)", padding: "12px 16px", borderRadius: 8, fontSize: ".85rem", color: "var(--tx)", lineHeight: 1.5, whiteSpace: "pre-wrap"}}>
-                   {previewForm.instructions}
-                 </div>
-               )}
-               
-               {previewForm.fields.length === 0 && <p style={{fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields.</p>}
-               {previewForm.fields.map((field, idx) => (
-                 <div key={idx}>
-                   <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>{field.label} {field.required&&<span style={{color:"red"}}>*</span>}</label>
-                   {field.type === 'address' ? (
-                     <textarea disabled style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",minHeight:60,background:"#F9F9F9"}}/>
-                   ) : field.type === 'dropdown' ? (
-                     <select disabled style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",background:"#F9F9F9"}}>
-                       <option value="">-- Select --</option>
-                       {(field.options||"").split(",").map((opt, oi) => opt.trim() && <option key={oi} value={opt.trim()}>{opt.trim()}</option>)}
-                     </select>
-                   ) : field.type === 'gender' ? (
-                     <select disabled style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",background:"#F9F9F9"}}>
-                       <option value="">-- Select Gender --</option>
-                     </select>
-                   ) : field.type === 'fullname' ? (
-                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                       <input disabled placeholder="First" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",background:"#F9F9F9"}}/>
-                       <input disabled placeholder="Middle" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",background:"#F9F9F9"}}/>
-                       <input disabled placeholder="Last" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",background:"#F9F9F9"}}/>
-                     </div>
-                   ) : field.type === 'image' || field.type === 'file' ? (
-                     <div style={{padding:"12px",borderRadius:8,border:"1px dashed var(--bd)",background:"#F9F9F9",fontSize:".8rem",color:"var(--mu)"}}>
-                       {field.type === 'image' ? '📸 Choose Photo' : '📎 Choose Document'} (File upload preview)
-                     </div>
-                   ) : (
-                     <input disabled type={field.type} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".9rem",background:"#F9F9F9"}}/>
-                   )}
-                 </div>
-               ))}
-             </div>
-           </div>
-         </div>
-       )}
+
+      {previewForm && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems: mob ? "flex-start" : "center",justifyContent:"center",padding: mob ? "60px 16px 20px 16px" : "16px"}}>
+          <div className="ac" style={{background:"linear-gradient(135deg, #ffffff, #f0f7ff)",width:"100%",maxWidth:500,padding:20,borderRadius:12,maxHeight: mob ? "calc(100svh - 80px)" : "95vh",overflowY:"auto",position:"relative", boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+            <button onClick={() => setPreviewForm(null)} style={{position:"absolute",top:16,right:16,background:"#F5F5F5",border:"none",fontSize:"1.2rem",cursor:"pointer",width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--mu)"}}>✕</button>
+            <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.4rem",color:"var(--dt)",marginBottom:4,fontWeight:700,paddingRight:30}}>Preview</h3>
+            <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:20}}>{previewForm.name}</p>
+            
+            <div style={{display:"flex", flexDirection:"column", gap:16}}>
+              {previewForm.bannerUrl && (
+                <div style={{width:"100%", borderRadius:8, overflow:"hidden", marginBottom:0}}>
+                  <img src={previewForm.bannerUrl} alt="Form Banner" style={{width:"100%", height:"auto", display:"block", maxHeight:200, objectFit:"cover"}} />
+                </div>
+              )}
+              {previewForm.instructionText && (
+                <div style={{background:"#F4F9FF", padding:"20px", borderRadius:12, border:"1px solid #D6E8FB", fontSize:".85rem", color:"#1E3A5F", lineHeight:1.6, boxShadow:"0 4px 12px rgba(0,0,0,0.03)"}}>
+                  <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:12, fontWeight:700, fontSize:".95rem", color:"#0D4B5E"}}>
+                    <span style={{fontSize:"1.2rem"}}>📋</span> Instructions
+                  </div>
+                  <ul style={{margin:0, padding:0, listStyle:"none", display:"flex", flexDirection:"column", gap:10}}>
+                    {previewForm.instructionText.split('\n').filter(line => line.trim() !== '').map((line, i) => (
+                      <li key={i} style={{display:"flex", alignItems:"flex-start", gap:10}}>
+                        <span style={{color:"#3498DB", fontSize:"1.2rem", lineHeight:"1"}}>•</span>
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div style={{display:"grid",gridTemplateColumns: mob ? "1fr" : "1fr 1fr",gap:12, rowGap:16}}>
+                 {previewForm.fields.length === 0 && <p style={{gridColumn:"1 / -1",fontSize:".85rem",color:"var(--mu)",fontStyle:"italic"}}>This form has no fields.</p>}
+                 {previewForm.fields.map((f, idx) => {
+                    const fKey = (f.dataKey || f.label)?.trim() || `Field ${idx + 1}`;
+                    const spanFull = f.type === 'address' || f.type === 'file' || f.type === 'image' || f.type === 'fullname';
+                    return (
+                      <div key={idx} style={{gridColumn: (spanFull || mob) ? "1 / -1" : "auto", opacity: f.logicRules?.length ? 0.7 : 1}}>
+                        <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--mu)",marginBottom:4}}>
+                          {f.label || fKey} {f.required&&<span style={{color:"red"}}>*</span>}
+                          {f.logicRules?.length > 0 && <span style={{marginLeft:6,fontSize:".65rem",color:"#1A7A3E",background:"#E8F5E9",padding:"2px 4px",borderRadius:4}}>Conditional</span>}
+                        </label>
+                        {f.type === 'address' ? (
+                          <textarea disabled placeholder="Address input..." style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",minHeight:80,resize:"vertical",background:"white"}}/>
+                        ) : f.type === 'dropdown' || f.type === 'gender' ? (
+                          <select disabled style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",background:"white"}}>
+                            <option>-- Select --</option>
+                          </select>
+                        ) : f.type === 'fullname' ? (
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                            <input disabled placeholder="First" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",background:"white",fontSize:".9rem"}}/>
+                            <input disabled placeholder="Middle" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",background:"white",fontSize:".9rem"}}/>
+                            <input disabled placeholder="Last" style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",background:"white",fontSize:".9rem"}}/>
+                          </div>
+                        ) : f.type === 'image' || f.type === 'file' ? (
+                          <div style={{padding:"10px",background:"#F5F5F5",borderRadius:8,border:"1px dashed var(--bd)",color:"var(--mu)",fontSize:".8rem",textAlign:"center"}}>
+                            File Upload Area
+                          </div>
+                        ) : (
+                          <input type={f.type} disabled placeholder={`${f.type} input...`} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem",background:"white"}}/>
+                        )}
+                      </div>
+                    );
+                 })}
+                 <button disabled type="button" className="bs" style={{padding:"12px",borderRadius:8,fontWeight:700,marginTop:10}}>
+                   Submit Registration
+                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -5113,7 +5986,7 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
 
 
 
-function CertificateTemplateMapper({ imgUrl, mapData, fontSize, fontColor, onChange, availableFields }) {
+function CertificateTemplateMapper({ imgUrl, mapData, fontSize, fontColor, onChange, availableFields, isInvite=false }) {
   const [fields, setFields] = useState(() => {
     const initFields = {};
     if (availableFields) {
@@ -5213,7 +6086,7 @@ function CertificateTemplateMapper({ imgUrl, mapData, fontSize, fontColor, onCha
           <div
             key={key} onPointerDown={(e) => handlePointerDown(e, key)}
             style={{
-              position: "absolute", left: `${safeX}%`, top: `${safeY}%`, transform: "translate(-50%, -50%)",
+              position: "absolute", left: `${safeX}%`, top: `${safeY}%`, transform: isInvite ? "translate(0%, -50%)" : "translate(-50%, -50%)",
               background: dragging === key ? "var(--sf)" : "rgba(13, 75, 94, 0.85)", color: "white", padding: "4px 8px", borderRadius: 4,
               fontSize: "12px", fontWeight: 700, cursor: dragging === key ? "grabbing" : "grab", userSelect: "none", whiteSpace: "nowrap", zIndex: dragging === key ? 10 : 1
             }}
@@ -5238,23 +6111,49 @@ function CertificateTemplateMapper({ imgUrl, mapData, fontSize, fontColor, onCha
   );
 }
 
-function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
-  const [certBgUrl, setCertBgUrl] = useState(ev.certBgUrl || "");
-  const [certMap, setCertMap] = useState(ev.certMap || null);
+function CertificateConfigModal({ ev, onSave, onClose, auth, forms, type = 'cert' }) {
+  const isInvite = type === 'invite';
+  const [certBgUrl, setCertBgUrl] = useState(isInvite ? (ev.inviteBgUrl || "") : (ev.certBgUrl || ""));
+  const [certMap, setCertMap] = useState(isInvite ? (ev.inviteMap || null) : (ev.certMap || null));
+  const [customText, setCustomText] = useState("");
   
-  // Extract form fields dynamically for this event
-  const [availableFields, setAvailableFields] = useState(["Event Name", "Date"]);
+  const [availableFields, setAvailableFields] = useState(["Event Name", "Date", "Group", "Serial Number"]);
   useEffect(() => {
+    let allFields = ["Event Name", "Date", "Group", "Serial Number", "Chest No", "Receipt Number"];
     if (ev.formId && forms) {
       const form = forms.find(f => f.id === ev.formId);
       if (form && form.fields) {
          const labels = form.fields.map(f => f.label || "Field").filter(Boolean);
-         setAvailableFields([...labels, "Event Name", "Date"]);
+         allFields = [...allFields, ...labels];
       }
     }
-  }, [ev.formId, forms]);
-  const [certFontSize, setCertFontSize] = useState(ev.certFontSize || 30);
-  const [certFontColor, setCertFontColor] = useState(ev.certFontColor || "#000000");
+    
+    // Attempt to fetch actual registration keys to include any custom admin-added columns
+    const fetchRegKeys = async () => {
+      try {
+        const d = await fbFetchRegistrations(auth?.idToken);
+        if (d) {
+           const evRegs = d.filter(r => r.eventId === ev.id || r.eventName === ev.title || r.eventTitle === ev.title);
+           evRegs.forEach(r => {
+              Object.keys(r).forEach(k => {
+                 if (!k.startsWith('_') && !['id','eventId','eventName','eventTitle','Transaction ID','Status','Remarks','Updated By'].includes(k)) {
+                    allFields.push(k);
+                 }
+              });
+           });
+        }
+        // Filter out unwanted sub-stream values that might have been added as columns by mistake
+        let cleanedFields = allFields.filter(k => !['Commerce', 'Science', 'Arts', 'Other'].includes(k));
+        setAvailableFields([...new Set(cleanedFields)]);
+      } catch(e) {
+        let cleanedFields = allFields.filter(k => !['Commerce', 'Science', 'Arts', 'Other'].includes(k));
+        setAvailableFields([...new Set(cleanedFields)]);
+      }
+    };
+    fetchRegKeys();
+  }, [ev.formId, forms, ev.id, ev.title, auth?.idToken]);
+  const [certFontSize, setCertFontSize] = useState(isInvite ? (ev.inviteFontSize || 30) : (ev.certFontSize || 30));
+  const [certFontColor, setCertFontColor] = useState(isInvite ? (ev.inviteFontColor || "#000000") : (ev.certFontColor || "#000000"));
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (e) => {
@@ -5286,13 +6185,13 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
   };
 
   const save = () => {
-    onSave({ certBgUrl, certMap, certFontSize, certFontColor });
+    onSave({ bgUrl: certBgUrl, map: certMap, fontSize: certFontSize, fontColor: certFontColor });
   };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
       <div style={{background:"white",width:"100%",maxWidth:900,borderRadius:12,padding:24,maxHeight:"90vh",overflowY:"auto"}}>
-        <h3 style={{marginBottom:16,fontFamily:"'Playfair Display',serif",fontSize:"1.3rem"}}>Configure Certificate for {ev.title}</h3>
+        <h3 style={{marginBottom:16,fontFamily:"'Playfair Display',serif",fontSize:"1.3rem"}}>Configure {isInvite ? 'Invite Letter' : 'Certificate'} for {ev.title}</h3>
         
         <div style={{display:"flex",gap:16,marginBottom:20, flexWrap: "wrap"}}>
           <div style={{flex:1, minWidth: 300}}>
@@ -5312,12 +6211,11 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
           <div style={{flex:1, minWidth: 300}}>
             <label style={{fontSize:".8rem",fontWeight:600,display:"block",marginBottom:6}}>Add Custom Static Text (e.g. Date, Phrase)</label>
             <div style={{display:"flex",gap:8}}>
-              <input type="text" id="customTextInp" placeholder="Enter text to print..." style={{flex:1,padding:8,borderRadius:6,border:"1px solid var(--bd)"}} />
+              <input type="text" value={customText} onChange={e => setCustomText(e.target.value)} placeholder="Enter text to print..." style={{flex:1,padding:8,borderRadius:6,border:"1px solid var(--bd)"}} />
               <button onClick={() => {
-                const inp = document.getElementById('customTextInp');
-                if(inp && inp.value.trim()){
-                  setAvailableFields(prev => [...prev, "[TEXT] " + inp.value.trim()]);
-                  inp.value = "";
+                if(customText.trim()){
+                  setAvailableFields(prev => [...prev, "[TEXT] " + customText.trim()]);
+                  setCustomText("");
                 }
               }} style={{background:"var(--dt)",color:"white",padding:"8px 16px",borderRadius:6,cursor:"pointer",border:"none",fontWeight:600}}>Add Text</button>
             </div>
@@ -5331,6 +6229,7 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
             fontSize={certFontSize}
             fontColor={certFontColor}
             availableFields={availableFields}
+            isInvite={isInvite}
             onChange={(map, size, color) => {
               setCertMap(map);
               setCertFontSize(size);
@@ -5354,7 +6253,6 @@ function CertificateConfigModal({ ev, onSave, onClose, auth, forms }) {
 
 function AdminEvents({ mob, C, setC, auth }) {
   const [items, setItems] = useState(C.events || []);
-  const [previewForm, setPreviewForm] = useState(null);
   const [saving, setSaving] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [configModal, setConfigModal] = useState(null);
@@ -5653,7 +6551,6 @@ function AdminEvents({ mob, C, setC, auth }) {
     </div>
   );
 }
-
 
 function Volunteers({ mob, auth, C }) {
   const [q,setQ]=useState(""); 
@@ -6736,6 +7633,9 @@ function PaymentSettings({ mob, C, setC, auth }) {
 function Settings({ mob, C, setC, auth, setPage, hasAccess, master }) {
   const [theme, setTheme] = useState(C.theme || "classic");
   const [saving, setSaving] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetPass, setResetPass] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleSaveTheme = async () => {
     setSaving(true);
@@ -6771,6 +7671,21 @@ function Settings({ mob, C, setC, auth, setPage, hasAccess, master }) {
     
       {master && (
         <div style={{marginTop: 40}}>
+          
+          <div style={{background:"#FFF5F5",border:"1px solid #FFCDD2",borderRadius:12,padding:"20px",marginBottom:30}}>
+            <h3 style={{fontFamily:"'Playfair Display',serif",color:"#C0392B",margin:0,fontSize:"1.3rem",marginBottom:8}}>DANGER ZONE: Factory Reset</h3>
+            <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:16}}>Resetting the website will erase all your custom configuration and return the site to its default state. This action is irreversible.</p>
+            <button onClick={()=>{
+              const p1 = window.prompt(`Security Check 1/2: Please type the word "RESET" (in all caps) to confirm.`);
+              if (p1 !== "RESET") { alert("Incorrect. You must type the word RESET. Reset cancelled."); return; }
+              const p2 = window.prompt(`Security Check 2/2: Please type "Confirm Reset" to permanently wipe your configuration.`);
+              if (p2 !== "Confirm Reset") { alert("Incorrect phrase. Reset cancelled."); return; }
+              setResetConfirm(true);
+            }} style={{background:"#C0392B",color:"white",padding:"10px 18px",borderRadius:8,border:"none",fontWeight:600,cursor:"pointer",fontSize:".85rem"}}>
+              Reset Entire Website
+            </button>
+          </div>
+
           <h2 style={{fontFamily:"'Playfair Display',serif",color:"#C0392B",margin:0,fontSize:"1.6rem",marginBottom: 20}}>Master Content Editor</h2>
           <ContentEditor C={C} setC={setC} setPage={setPage} auth={auth} hasAccess={hasAccess} master={true} />
         </div>
@@ -7168,56 +8083,65 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
     setSubTab("For Me");
   }, [activeTab]);
 
-  useEffect(() => {
-    const fetchMyRegs = async () => {
-      try {
-        const allRegs = await fbFetchRegistrations(globalAuthToken);
-        const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
-        const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+  const fetchMyRegs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const allRegs = await fbFetchRegistrations(globalAuthToken);
+      const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+      const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+      
+      const mine = [];
+      allRegs.forEach(r => {
+        const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
+        const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
+        const sMob = String(r.submitterMob || "").trim();
         
-        const mine = [];
-        allRegs.forEach(r => {
-          const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
-          const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
-          const sMob = String(r.submitterMob || "").trim();
-          
-          if ((mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch) || sMob === mobileToMatch) {
-            mine.push(r);
-          }
-        });
-        
-        setRegs(mine);
-      } catch(e) { console.error(e); }
-      setLoading(false);
-    };
-    
-    const fetchMyDonations = async () => {
-      try {
-        const allDons = await fbFetchDonations(globalAuthToken);
-        const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
-        const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
-        
-        const mine = [];
-        allDons.forEach(r => {
-          const rMobile = String(r.mobile || r.phone || "").trim();
-          const rName = String(r.name || r.donor || "").trim().toLowerCase();
-          const sMob = String(r.submitterMob || "").trim();
-          
-          if ((mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch) || sMob === mobileToMatch) {
-            mine.push(r);
-          }
-        });
-        
-        setMyDonations(mine);
-      } catch(e) { console.error(e); }
-      setLoading(false);
-    };
+        if ((mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch) || sMob === mobileToMatch) {
+          mine.push(r);
+        }
+      });
+      
+      setRegs(mine);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  }, [globalAuthToken, globalProfile]);
 
+  const fetchMyDonations = useCallback(async () => {
+    setLoading(true);
+    try {
+      const allDons = await fbFetchDonations(globalAuthToken);
+      const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+      const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+      
+      const mine = [];
+      allDons.forEach(r => {
+        const rMobile = String(r.mobile || r.phone || "").trim();
+        const rName = String(r.name || r.donor || "").trim().toLowerCase();
+        const sMob = String(r.submitterMob || "").trim();
+        
+        if ((mobileToMatch && rMobile === mobileToMatch) || (nameToMatch && rName === nameToMatch) || sMob === mobileToMatch) {
+          mine.push(r);
+        }
+      });
+      
+      setMyDonations(mine);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  }, [globalAuthToken, globalProfile]);
+
+  useEffect(() => {
     if (globalAuthToken && globalProfile) {
-      if (activeTab === "Registrations" || activeTab === "Awards") { setLoading(true); fetchMyRegs(); }
-      else if (activeTab === "Receipts") { setLoading(true); fetchMyDonations(); }
+      if (activeTab === "Registrations" || activeTab === "Awards") { fetchMyRegs(); }
+      else if (activeTab === "Receipts") { fetchMyDonations(); }
     }
-  }, [globalAuthToken, globalProfile, activeTab]);
+  }, [globalAuthToken, globalProfile, activeTab, fetchMyRegs, fetchMyDonations]);
+
+  const handleRefresh = () => {
+    if (globalAuthToken && globalProfile) {
+      if (activeTab === "Registrations" || activeTab === "Awards") { fetchMyRegs(); }
+      else if (activeTab === "Receipts") { fetchMyDonations(); }
+    }
+  };
 
   const getStatusColor = (s) => {
     if (!s) return {bg:"#FFF4EC", col:"#E8650A"}; // Pending
@@ -7242,6 +8166,9 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
             <div style={{fontSize:mob?".7rem":".8rem",opacity:.8,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{globalProfile.name || globalProfile['Full Name']} • {globalProfile.mobile || globalProfile['Mobile Number']}</div>
           </div>
           <div style={{display:"flex",gap:6,flexShrink:0}}>
+            <button onClick={handleRefresh} disabled={loading} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,width:mob?32:36,height:mob?32:36,cursor:loading?"wait":"pointer",fontSize:mob?".9rem":"1.1rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title="Refresh"
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
+              onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>{loading ? "..." : "↻"}</button>
             <button onClick={()=>setIsFullScreen(!isFullScreen)} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:8,width:mob?32:36,height:mob?32:36,cursor:"pointer",fontSize:mob?".9rem":"1.1rem",color:"white",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}} title={isFullScreen?"Exit Fullscreen":"Fullscreen"}
               onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.25)"}
               onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.15)"}>{isFullScreen ? "🗗" : "🗖"}</button>
@@ -7288,15 +8215,39 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
             {activeTab === "Registrations" && (
               <>
                 <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Event Registrations</h3>
-                {loading ? (
-                  <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your registrations...</div>
-                ) : regs.length === 0 ? (
-                  <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
-                    <div style={{fontSize:"3rem",marginBottom:12}}>📅</div>
-                    <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Registrations Found</div>
-                    <div style={{color:"var(--mu)",fontSize:".85rem"}}>You haven't registered for any events yet.</div>
-                  </div>
-                ) : (
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <button onClick={() => setSubTab("For Me")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Me"?"var(--dt)":"#E9ECEF",color:subTab==="For Me"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Me</button>
+                  <button onClick={() => setSubTab("For Others")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Others"?"var(--dt)":"#E9ECEF",color:subTab==="For Others"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Others</button>
+                </div>
+                {(() => {
+                  const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+                  const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+                  
+                  const filteredRegs = regs.filter(r => {
+                    const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
+                    const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
+                    const sMob = String(r.submitterMob || "").trim();
+                    
+                    if (subTab === "For Me") {
+                      return rMobile === mobileToMatch || (!rMobile && (sMob === mobileToMatch || rName === nameToMatch));
+                    } else {
+                      if (rMobile && rMobile !== mobileToMatch) {
+                        if (sMob === mobileToMatch) return true;
+                        if (!sMob && rName === nameToMatch) return true;
+                      }
+                      return false;
+                    }
+                  });
+
+                  if (loading) return <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your registrations...</div>;
+                  if (filteredRegs.length === 0) return (
+                    <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
+                      <div style={{fontSize:"3rem",marginBottom:12}}>📅</div>
+                      <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Registrations Found</div>
+                      <div style={{color:"var(--mu)",fontSize:".85rem"}}>You have no registrations {subTab === "For Me" ? "for yourself" : "for others"}.</div>
+                    </div>
+                  );
+                  return (
                   <div style={{background:"white",borderRadius:12,border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)",overflowX:"auto"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:800}}>
                       <thead style={{background:"var(--dt)",color:"white"}}>
@@ -7314,7 +8265,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {regs.map((r, i) => {
+                        {filteredRegs.map((r, i) => {
                           const sc = getStatusColor(r.Status || r.status || "Pending");
                           const rowKeys = Array.from(new Set(regs.flatMap(r => Object.keys(r))))
                             .filter(k => !["id", "_submittedAt", "timestamp", "Status", "status", "Remarks", "remarks", "AdminRemarks", "Event Name", "Event", "eventName", "eventTitle", "eventId"].includes(k));
@@ -7369,22 +8320,47 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                       </tbody>
                     </table>
                   </div>
-                )}
+                  );
+                })()}
               </>
             )}
 
             {activeTab === "Receipts" && (
               <>
                 <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Donations & Receipts</h3>
-                {loading ? (
-                  <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your donations...</div>
-                ) : myDonations.length === 0 ? (
-                  <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
-                    <div style={{fontSize:"3rem",marginBottom:12}}>🧾</div>
-                    <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Donations Found</div>
-                    <div style={{color:"var(--mu)",fontSize:".85rem"}}>We couldn't find any verified donations linked to your profile.</div>
-                  </div>
-                ) : (
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <button onClick={() => setSubTab("For Me")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Me"?"var(--dt)":"#E9ECEF",color:subTab==="For Me"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Me</button>
+                  <button onClick={() => setSubTab("For Others")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Others"?"var(--dt)":"#E9ECEF",color:subTab==="For Others"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Others</button>
+                </div>
+                {(() => {
+                  const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+                  const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+                  
+                  const filteredDonations = myDonations.filter(r => {
+                    const rMobile = String(r.mobile || r.phone || "").trim();
+                    const rName = String(r.name || r.donor || "").trim().toLowerCase();
+                    const sMob = String(r.submitterMob || "").trim();
+                    
+                    if (subTab === "For Me") {
+                      return rMobile === mobileToMatch || (!rMobile && (sMob === mobileToMatch || rName === nameToMatch));
+                    } else {
+                      if (rMobile && rMobile !== mobileToMatch) {
+                        if (sMob === mobileToMatch) return true;
+                        if (!sMob && rName === nameToMatch) return true;
+                      }
+                      return false;
+                    }
+                  });
+
+                  if (loading) return <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading your donations...</div>;
+                  if (filteredDonations.length === 0) return (
+                    <div style={{background:"white",padding:"40px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)"}}>
+                      <div style={{fontSize:"3rem",marginBottom:12}}>🧾</div>
+                      <div style={{fontWeight:600,color:"var(--dt)",fontSize:"1.1rem",marginBottom:6}}>No Donations Found</div>
+                      <div style={{color:"var(--mu)",fontSize:".85rem"}}>We couldn't find any verified donations {subTab === "For Me" ? "for yourself" : "for others"}.</div>
+                    </div>
+                  );
+                  return (
                   <div style={{background:"white",borderRadius:12,border:"1px solid var(--bd)",boxShadow:"0 4px 12px rgba(0,0,0,.02)",overflowX:"auto"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:600}}>
                       <thead style={{background:"var(--dt)",color:"white"}}>
@@ -7397,7 +8373,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {myDonations.map((r, i) => {
+                        {filteredDonations.map((r, i) => {
                           const sc = getStatusColor(r.Status || r.status || "Pending");
                           const isVerified = (r.Status || r.status || "").toLowerCase().includes("verifi") || (r.Status || r.status || "").toLowerCase().includes("approv") || (r.Status || r.status || "").toLowerCase().includes("success") || r.status === "Verified";
                           
@@ -7427,7 +8403,8 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                       </tbody>
                     </table>
                   </div>
-                )}
+                  );
+                })()}
               </>
             )}
 
@@ -7435,18 +8412,30 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
             {activeTab === "Awards" && (
               <>
                 <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"var(--dt)",marginBottom:16,fontWeight:700}}>My Education Awards</h3>
-                {` + subtabs_ui.strip() + `}
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <button onClick={() => setSubTab("For Me")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Me"?"var(--dt)":"#E9ECEF",color:subTab==="For Me"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Me</button>
+                  <button onClick={() => setSubTab("For Others")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Others"?"var(--dt)":"#E9ECEF",color:subTab==="For Others"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Others</button>
+                </div>
                 {(() => {
                   const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+                  const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+                  
                   const approvedRegs = regs.filter(r => {
                     const isVerified = (r.Status || r.status || "").toLowerCase().includes("verifi") || (r.Status || r.status || "").toLowerCase().includes("approv") || (r.Status || r.status || "").toLowerCase().includes("success");
                     if (!isVerified) return false;
                     
                     const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
+                    const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
+                    const sMob = String(r.submitterMob || "").trim();
+                    
                     if (subTab === "For Me") {
-                       return rMobile === mobileToMatch || (!r.submitterMob && rMobile !== mobileToMatch && rMobile !== "");
+                      return rMobile === mobileToMatch || (!rMobile && (sMob === mobileToMatch || rName === nameToMatch));
                     } else {
-                       return rMobile !== mobileToMatch && String(r.submitterMob || "").trim() === mobileToMatch;
+                      if (rMobile && rMobile !== mobileToMatch) {
+                        if (sMob === mobileToMatch) return true;
+                        if (!sMob && rName === nameToMatch) return true;
+                      }
+                      return false;
                     }
                   });
                   
@@ -7457,7 +8446,7 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                       if (r.eventId && e.id === r.eventId) return true;
                       return false;
                     });
-                    if (ev) return { reg: r, ev };
+                    if (ev && (ev.issueCertificates === true || ev.issueCertificates === "true") && r.certificateReleased && !r.certificateHold) return { reg: r, ev };
                     return null;
                   }).filter(Boolean);
                   
@@ -7505,14 +8494,13 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                                 <div style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600,textTransform:"uppercase"}}>Awarded To</div>
                                 <div style={{fontSize:".95rem",fontWeight:700,color:"var(--dt)"}}>{sName}</div>
                               </div>
-                              {!a.ev.issueCertificates && (
-                                <div style={{padding:"8px 12px",background:"#FEF0EF",color:"#C0392B",borderRadius:6,fontSize:".75rem",fontWeight:600,marginTop:4}}>
-                                  ⚠️ Not Issued Yet. Admin has not checked "Enable / Issue Certificates".
-                                </div>
-                              )}
+                              <div style={{marginTop: 4}}>
+                                <div style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600,textTransform:"uppercase"}}>Transaction ID</div>
+                                <div style={{fontSize:".85rem",fontWeight:600,color:"var(--dt)",fontFamily:"monospace"}}>{a.reg['Transaction ID'] || a.reg.id || "N/A"}</div>
+                              </div>
                               <div style={{marginTop:"auto", display:"flex", gap:8, width:"100%"}}>
                                 <button 
-                                  disabled={!a.ev.certBgUrl || !a.ev.issueCertificates}
+                                  disabled={!a.ev.certBgUrl}
                                   onClick={async (e) => {
                                     const btn = e.currentTarget;
                                     const orig = btn.innerHTML;
@@ -7522,19 +8510,24 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                                       const evtName = a.ev.title || "Event";
                                       const evtDate = a.ev.date ? `${a.ev.date} ${a.ev.month}` : "2025";
                                       const fieldsData = { "Event Name": evtName, "Date": evtDate, ...a.reg };
-                                      await generateCertificatePDF(a.ev, fieldsData, sName, true);
+                                      if (globalAuthToken) {
+                                        const cleanData = { ...a.reg, certViewDate: new Date().toISOString() };
+                                        delete cleanData.id; delete cleanData._submittedAt;
+                                        await fbUpdateRegistration(a.reg.id, cleanData, globalAuthToken);
+                                      }
+                                      await generateCertificatePDF(a.ev, fieldsData, sName, 'cert', true);
                                     } catch(err) {
                                       alert(err.message);
                                     }
                                     btn.disabled = false;
                                     btn.innerHTML = orig;
                                   }} 
-                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.certBgUrl || !a.ev.issueCertificates) ? "#ccc" : "#f5f5f5",color:(!a.ev.certBgUrl || !a.ev.issueCertificates) ? "white" : "var(--dt)",border:"1px solid " + ((!a.ev.certBgUrl || !a.ev.issueCertificates) ? "#ccc" : "var(--dt)"),fontWeight:600,cursor:(!a.ev.certBgUrl || !a.ev.issueCertificates) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center"}}
+                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.certBgUrl) ? "#ccc" : "#f5f5f5",color:(!a.ev.certBgUrl) ? "white" : "var(--dt)",border:"1px solid " + ((!a.ev.certBgUrl) ? "#ccc" : "var(--dt)"),fontWeight:600,cursor:(!a.ev.certBgUrl) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center"}}
                                 >
                                   👁 Preview
                                 </button>
                                 <button 
-                                  disabled={!a.ev.certBgUrl || !a.ev.issueCertificates}
+                                  disabled={!a.ev.certBgUrl}
                                   onClick={async (e) => {
                                     const btn = e.currentTarget;
                                     const orig = btn.innerHTML;
@@ -7544,14 +8537,19 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
                                       const evtName = a.ev.title || "Event";
                                       const evtDate = a.ev.date ? `${a.ev.date} ${a.ev.month}` : "2025";
                                       const fieldsData = { "Event Name": evtName, "Date": evtDate, ...a.reg };
-                                      await generateCertificatePDF(a.ev, fieldsData, sName, false);
+                                      if (globalAuthToken && !a.reg.certDownloadDate) {
+                                        const cleanData = { ...a.reg, certDownloadDate: new Date().toISOString() };
+                                        delete cleanData.id; delete cleanData._submittedAt;
+                                        await fbUpdateRegistration(a.reg.id, cleanData, globalAuthToken);
+                                      }
+                                      await generateCertificatePDF(a.ev, fieldsData, sName, 'cert', false);
                                     } catch(err) {
                                       alert(err.message);
                                     }
                                     btn.disabled = false;
                                     btn.innerHTML = orig;
                                   }} 
-                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.certBgUrl || !a.ev.issueCertificates) ? "#ccc" : "var(--dt)",color:"white",border:"none",fontWeight:600,cursor:(!a.ev.certBgUrl || !a.ev.issueCertificates) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}
+                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.certBgUrl) ? "#ccc" : "var(--dt)",color:"white",border:"none",fontWeight:600,cursor:(!a.ev.certBgUrl) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}
                                 >
                                   ⬇ Download
                                 </button>
@@ -7566,7 +8564,157 @@ function UserDashboard({ C, globalProfile, globalAuthToken, onClose }) {
               </>
             )}
 
-            {activeTab !== "Registrations" && activeTab !== "Receipts" && activeTab !== "Awards" && (
+            {activeTab === "Invites" && (
+              <>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"1.3rem",color:"#D2691E",marginBottom:16,fontWeight:700}}>My Special Invites</h3>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
+                  <button onClick={() => setSubTab("For Me")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Me"?"#D2691E":"#E9ECEF",color:subTab==="For Me"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Me</button>
+                  <button onClick={() => setSubTab("For Others")} style={{padding:"8px 16px",borderRadius:20,border:"none",background:subTab==="For Others"?"#D2691E":"#E9ECEF",color:subTab==="For Others"?"white":"var(--tm2)",fontWeight:600,cursor:"pointer",transition:"all 0.2s"}}>For Others</button>
+                </div>
+                {(() => {
+                  const mobileToMatch = String(globalProfile.mobile || globalProfile['Mobile Number'] || "").trim();
+                  const nameToMatch = String(globalProfile.name || globalProfile['Full Name'] || "").trim().toLowerCase();
+                  
+                  const approvedRegs = regs.filter(r => {
+                    const isVerified = (r.Status || r.status || "").toLowerCase().includes("verifi") || (r.Status || r.status || "").toLowerCase().includes("approv") || (r.Status || r.status || "").toLowerCase().includes("success");
+                    if (!isVerified) return false;
+                    
+                    const rMobile = String(r["Mobile Number"] || r.mobile || "").trim();
+                    const rName = String(r["Submitted By"] || r.name || r["Full Name"] || "").trim().toLowerCase();
+                    const sMob = String(r.submitterMob || "").trim();
+                    
+                    if (subTab === "For Me") {
+                      return rMobile === mobileToMatch || (!rMobile && (sMob === mobileToMatch || rName === nameToMatch));
+                    } else {
+                      return sMob === mobileToMatch && rMobile !== mobileToMatch && rName !== nameToMatch;
+                    }
+                  });
+
+                  const invs = approvedRegs.map(r => {
+                    const rEvName = (r.eventName || r.eventTitle || r["Event Name"] || r["Event"] || "").trim().toLowerCase();
+                    const ev = (C.events || []).find(e => {
+                      if (rEvName && e.title && e.title.trim().toLowerCase() === rEvName) return true;
+                      if (r.eventId && e.id === r.eventId) return true;
+                      return false;
+                    });
+                    if (ev && (ev.issueInviteLetters === true || ev.issueInviteLetters === "true") && r.inviteLetterReleased && !r.inviteLetterHold) return { reg: r, ev };
+                    return null;
+                  }).filter(Boolean);
+                  
+                  if (loading) return <div style={{textAlign:"center",padding:40,color:"var(--mu)"}}>Loading invites...</div>;
+                  if (invs.length === 0) return (
+                    <div style={{background:"white",padding:"60px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                      <div style={{fontSize:"3.5rem",marginBottom:16}}>💌</div>
+                      <div style={{fontWeight:700,color:"#D2691E",fontSize:"1.3rem",marginBottom:8,fontFamily:"'Playfair Display',serif"}}>No Invites {subTab}</div>
+                      <div style={{color:"var(--mu)",fontSize:".9rem",maxWidth:300}}>Special invite letters will appear here once your registrations are approved and letters are released.</div>
+                    </div>
+                  );
+                  
+                  return (
+                    <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(auto-fill, minmax(280px, 1fr))",gap:16}}>
+                      {invs.map((a, i) => {
+                        let extractedName = "";
+                        if (a.reg) {
+                          for (const key of Object.keys(a.reg)) {
+                            const kLow = key.toLowerCase().trim();
+                            if (kLow.includes("name") && !kLow.includes("event")) {
+                              extractedName = a.reg[key];
+                              if (extractedName) break;
+                            }
+                          }
+                        }
+                        const sName = extractedName || a.reg["Participant Name"] || a.reg["Full Name"] || a.reg["Name"] || "Student";
+                        return (
+                          <div key={i} style={{background:"white",borderRadius:12,border:"1px solid var(--bd)",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 4px 12px rgba(0,0,0,0.04)",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="translateY(-4px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
+                            {a.ev.inviteBgUrl ? (
+                              <div style={{height:140,backgroundImage:`url(${a.ev.inviteBgUrl})`,backgroundSize:"cover",backgroundPosition:"center",position:"relative",borderBottom:"1px solid var(--bd)"}}>
+                                 <div style={{position:"absolute",inset:0,background:"linear-gradient(to top, rgba(0,0,0,0.8), transparent)"}}/>
+                                 <div style={{position:"absolute",bottom:12,left:16,right:16,color:"white"}}>
+                                   <div style={{fontSize:".7rem",opacity:.9,textTransform:"uppercase",letterSpacing:1,fontWeight:600,marginBottom:4}}>Invite Letter</div>
+                                   <div style={{fontSize:"1rem",fontWeight:700,fontFamily:"'Playfair Display',serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{a.ev.title}</div>
+                                 </div>
+                              </div>
+                            ) : (
+                              <div style={{height:140,background:"#FDF5E6",position:"relative",borderBottom:"1px solid var(--bd)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,textAlign:"center"}}>
+                                <div style={{color:"#8B4513",fontSize:".8rem",fontWeight:600}}>⚠️ Missing Background Image. Admin needs to configure the invite template.</div>
+                              </div>
+                            )}
+                            <div style={{padding:16,display:"flex",flexDirection:"column",gap:12,flex:1}}>
+                              <div>
+                                <div style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600,textTransform:"uppercase"}}>Invited Participant</div>
+                                <div style={{fontSize:".95rem",fontWeight:700,color:"#D2691E"}}>{sName}</div>
+                              </div>
+                              <div style={{marginTop: 4}}>
+                                <div style={{fontSize:".7rem",color:"var(--mu)",fontWeight:600,textTransform:"uppercase"}}>Transaction ID</div>
+                                <div style={{fontSize:".85rem",fontWeight:600,color:"var(--dt)",fontFamily:"monospace"}}>{a.reg['Transaction ID'] || a.reg.id || "N/A"}</div>
+                              </div>
+                              <div style={{marginTop:"auto", display:"flex", gap:8, width:"100%"}}>
+                                <button 
+                                  disabled={!a.ev.inviteBgUrl}
+                                  onClick={async (e) => {
+                                    const btn = e.currentTarget;
+                                    const orig = btn.innerHTML;
+                                    btn.disabled = true;
+                                    btn.innerText = "...";
+                                    try {
+                                      const evtName = a.ev.title || "Event";
+                                      const evtDate = a.ev.date ? `${a.ev.date} ${a.ev.month}` : "2025";
+                                      const fieldsData = { "Event Name": evtName, "Date": evtDate, ...a.reg };
+                                      if (globalAuthToken) {
+                                        const cleanData = { ...a.reg, inviteViewDate: new Date().toISOString() };
+                                        delete cleanData.id; delete cleanData._submittedAt;
+                                        await fbUpdateRegistration(a.reg.id, cleanData, globalAuthToken);
+                                      }
+                                      await generateCertificatePDF(a.ev, fieldsData, sName, "invite", true);
+                                    } catch(err) {
+                                      alert(err.message);
+                                    }
+                                    btn.disabled = false;
+                                    btn.innerHTML = orig;
+                                  }} 
+                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.inviteBgUrl) ? "#ccc" : "#FDF5E6",color:(!a.ev.inviteBgUrl) ? "white" : "#D2691E",border:"1px solid " + ((!a.ev.inviteBgUrl) ? "#ccc" : "#F5DEB3"),fontWeight:600,cursor:(!a.ev.inviteBgUrl) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center"}}
+                                >
+                                  👁 Preview
+                                </button>
+                                <button 
+                                  disabled={!a.ev.inviteBgUrl}
+                                  onClick={async (e) => {
+                                    const btn = e.currentTarget;
+                                    const orig = btn.innerHTML;
+                                    btn.disabled = true;
+                                    btn.innerText = "...";
+                                    try {
+                                      const evtName = a.ev.title || "Event";
+                                      const evtDate = a.ev.date ? `${a.ev.date} ${a.ev.month}` : "2025";
+                                      const fieldsData = { "Event Name": evtName, "Date": evtDate, ...a.reg };
+                                      if (globalAuthToken && !a.reg.inviteDownloadDate) {
+                                        const cleanData = { ...a.reg, inviteDownloadDate: new Date().toISOString() };
+                                        delete cleanData.id; delete cleanData._submittedAt;
+                                        await fbUpdateRegistration(a.reg.id, cleanData, globalAuthToken);
+                                      }
+                                      await generateCertificatePDF(a.ev, fieldsData, sName, "invite", false);
+                                    } catch(err) {
+                                      alert(err.message);
+                                    }
+                                    btn.disabled = false;
+                                    btn.innerHTML = orig;
+                                  }} 
+                                  style={{flex:1, padding:"10px",borderRadius:8,background:(!a.ev.inviteBgUrl) ? "#ccc" : "#D2691E",color:"white",border:"none",fontWeight:600,cursor:(!a.ev.inviteBgUrl) ? "not-allowed" : "pointer",display:"flex",justifyContent:"center",alignItems:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}
+                                >
+                                  ⬇ Download
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+
+            {activeTab !== "Registrations" && activeTab !== "Receipts" && activeTab !== "Awards" && activeTab !== "Invites" && (
               <div style={{background:"white",padding:"60px 20px",borderRadius:16,textAlign:"center",border:"1px solid var(--bd)",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
                 <div style={{fontSize:"3.5rem",marginBottom:16}}>{tabs.find(t=>t.id===activeTab)?.icon}</div>
                 <div style={{fontWeight:700,color:"var(--dt)",fontSize:"1.3rem",marginBottom:8,fontFamily:"'Playfair Display',serif"}}>No New {tabs.find(t=>t.id===activeTab)?.label}</div>
@@ -7926,12 +9074,14 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
   const [status, setStatus] = useState(viewing['Status'] || 'Pending');
   const [remarks, setRemarks] = useState(viewing['Remarks'] || '');
   const [saving, setSaving] = useState(false);
+  const [editedData, setEditedData] = useState(viewing);
 
   useEffect(() => {
     const keys = Object.keys(viewing).filter(k => typeof viewing[k] === 'string' && viewing[k].startsWith('http'));
     setActiveDoc(keys.length > 0 ? viewing[keys[0]] : null);
     setStatus(viewing['Status'] || 'Pending');
     setRemarks(viewing['Remarks'] || '');
+    setEditedData(viewing);
   }, [viewing]);
 
   const handleSave = async () => {
@@ -7946,7 +9096,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
     }
     
     setSaving(true);
-    await saveVerification(viewing, status, remarks);
+    await saveVerification(viewing, status, remarks, editedData);
     setSaving(false);
     
     if (nextItem) {
@@ -7967,7 +9117,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{background:"white",width:"100%",maxWidth:1200,height:"90vh",borderRadius:12,display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 48px rgba(0,0,0,0.2)"}}>
+      <div style={{background:"white",width:"100%",maxWidth:1400,height:"90vh",borderRadius:12,display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 48px rgba(0,0,0,0.2)"}}>
         
         {/* Header */}
         <div style={{padding:"12px 24px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -8020,7 +9170,8 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                       </button>
                     ))}
                   </div>
-                )}
+                  );
+                })()}
                 <div style={{flex:1,padding:16,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
                   {isPdf ? (
                     <iframe src={activeDoc} style={{width:"100%",height:"100%",border:"none",borderRadius:8,background:"white",boxShadow:"0 4px 12px rgba(0,0,0,0.05)"}} title="Document" />
@@ -8039,7 +9190,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
           </div>
 
           {/* Right: Data & Verification Controls */}
-          <div style={{width:400,display:"flex",flexDirection:"column",background:"white"}}>
+          <div style={{width: docKeys.length > 0 ? 380 : 600, borderLeft:"1px solid var(--bd)", display:"flex",flexDirection:"column",background:"white", boxShadow:"-4px 0 24px rgba(0,0,0,0.05)", zIndex:10}}>
             
             {/* Input Data List */}
             <div style={{flex:1,overflowY:"auto",padding:"24px"}}>
@@ -8048,11 +9199,18 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                 {Object.keys(viewing).filter(k => !k.startsWith('_') && !['id','eventId','eventName','Transaction ID','Status','Remarks','Updated By'].includes(k)).map(k => {
                   const val = viewing[k];
                   if (typeof val === 'string' && val.startsWith('http')) return null; // Skip docs
-                  const displayVal = typeof val === 'string' ? val.replace(/\|/g, ' ') : String(val);
+                  const displayVal = typeof editedData[k] === 'string' ? editedData[k].replace(/\|/g, ' ') : String(editedData[k] || "");
                   return (
                     <div key={k}>
                       <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{k}</div>
-                      <div style={{fontSize:".95rem",color:"var(--tx)",wordBreak:"break-word",background:"#FAFAFA",padding:"8px 12px",borderRadius:6,border:"1px solid #EEE"}}>{displayVal || "-"}</div>
+                      <input 
+                        type="text" 
+                        value={displayVal} 
+                        onChange={(e) => setEditedData({...editedData, [k]: e.target.value})} 
+                        style={{width:"100%",fontSize:".95rem",color:"var(--tx)",wordBreak:"break-word",background:"#FAFAFA",padding:"8px 12px",borderRadius:6,border:"1px solid #CCC",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"0.2s"}}
+                        onFocus={e=>e.target.style.borderColor="var(--dt)"}
+                        onBlur={e=>e.target.style.borderColor="#CCC"}
+                      />
                     </div>
                   );
                 })}
@@ -8061,17 +9219,20 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
 
             {/* Verification Controls */}
             <div style={{padding:"20px 24px",background:"#FAFAFA",borderTop:"1px solid var(--bd)"}}>
-              <h4 style={{fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:12}}>Verification Action</h4>
-              
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
-                <button onClick={()=>setStatus('Approved')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Approved'?"2px solid #2E7D32":"1px solid #CCC",background:status==='Approved'?"#E8F5E9":"white",color:status==='Approved'?"#2E7D32":"var(--mu)",transition:"0.2s"}}>✓ Approve</button>
-                <button onClick={()=>setStatus('Needs Info')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Needs Info'?"2px solid #EF6C00":"1px solid #CCC",background:status==='Needs Info'?"#FFF3E0":"white",color:status==='Needs Info'?"#EF6C00":"var(--mu)",transition:"0.2s"}}>⏸ Pause</button>
-                <button onClick={()=>setStatus('Disapproved')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Disapproved'?"2px solid #C62828":"1px solid #CCC",background:status==='Disapproved'?"#FFEBEE":"white",color:status==='Disapproved'?"#C62828":"var(--mu)",transition:"0.2s"}}>✕ Reject</button>
-              </div>
-
-              <div style={{marginBottom:16}}>
-                <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Remarks / Reason (Optional)</label>
-                <textarea value={remarks} onChange={e=>setRemarks(e.target.value)} placeholder="e.g. Marksheet is blurry, please re-upload" style={{width:"100%",padding:"10px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",minHeight:80,resize:"vertical"}} />
+              <div style={{display:"flex", gap: 16, marginBottom: 16}}>
+                {/* Box 1: Action Buttons */}
+                <div style={{flex: "0 0 130px", display: "flex", flexDirection: "column", gap: 8}}>
+                  <h4 style={{fontSize:".85rem",fontWeight:700,color:"var(--dt)",marginBottom:4, whiteSpace:"nowrap"}}>Action</h4>
+                  <button onClick={()=>setStatus('Approved')} style={{padding:"8px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Approved'?"2px solid #2E7D32":"1px solid #CCC",background:status==='Approved'?"#E8F5E9":"white",color:status==='Approved'?"#2E7D32":"var(--mu)",transition:"0.2s"}}>✓ Approve</button>
+                  <button onClick={()=>setStatus('Needs Info')} style={{padding:"8px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Needs Info'?"2px solid #EF6C00":"1px solid #CCC",background:status==='Needs Info'?"#FFF3E0":"white",color:status==='Needs Info'?"#EF6C00":"var(--mu)",transition:"0.2s"}}>⏸ Pause</button>
+                  <button onClick={()=>setStatus('Disapproved')} style={{padding:"8px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Disapproved'?"2px solid #C62828":"1px solid #CCC",background:status==='Disapproved'?"#FFEBEE":"white",color:status==='Disapproved'?"#C62828":"var(--mu)",transition:"0.2s"}}>✕ Reject</button>
+                </div>
+                
+                {/* Box 2: Remarks */}
+                <div style={{flex: 1, display: "flex", flexDirection: "column"}}>
+                  <label style={{display:"block",fontSize:".85rem",fontWeight:700,color:"var(--dt)",marginBottom:12}}>Remarks / Reason (Optional)</label>
+                  <textarea value={remarks} onChange={e=>setRemarks(e.target.value)} placeholder="e.g. Marksheet is blurry, please re-upload" style={{flex: 1, width:"100%",padding:"10px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",resize:"none", boxSizing:"border-box"}} />
+                </div>
               </div>
 
               <button onClick={handleSave} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",fontWeight:700,fontSize:".95rem",cursor:"pointer",opacity:saving?0.7:1,boxShadow:"0 4px 12px rgba(0,0,0,0.15)"}}>
@@ -8086,12 +9247,29 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
   );
 }
 
-function AdminRegistrations({ mob, C, auth }) {
+function AdminRegistrations({ mob, C, setC, auth }) {
 
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewing, setViewing] = useState(null);
+  
+  const [activeSection, setActiveSection] = useState("All");
+  const [newSectionName, setNewSectionName] = useState("");
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [deleteSecConfirm, setDeleteSecConfirm] = useState(null);
+  const [deleteSecPass, setDeleteSecPass] = useState("");
+  const [deleteSecLoading, setDeleteSecLoading] = useState(false);
+  const sections = C.eventSections || [];
+  
+  const saveToFb = async (newC) => {
+    try {
+      await fbSave(newC, auth?.idToken);
+      if(setC) setC(newC);
+    } catch(e) {
+      alert("Error saving: " + e.message);
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -8107,6 +9285,15 @@ function AdminRegistrations({ mob, C, auth }) {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [columnFilters, setColumnFilters] = useState({});
+  const [bulkGroup, setBulkGroup] = useState("");
+  const [applyingBulkGroup, setApplyingBulkGroup] = useState(false);
+  
+  const [showSerialModal, setShowSerialModal] = useState(false);
+  const [serialPrefix, setSerialPrefix] = useState("");
+  const [serialStart, setSerialStart] = useState(1);
+  const [sortLevels, setSortLevels] = useState([{ col: "", val: [], dir: "asc" }]);
+  const [applyingSerial, setApplyingSerial] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState("");
 
   useEffect(() => {
     try {
@@ -8192,16 +9379,249 @@ function AdminRegistrations({ mob, C, auth }) {
     }
   };
 
-  // 1. Gather all unique dynamic field keys
+  const handleApplyBulkGroup = async () => {
+    const gName = bulkGroup.trim();
+    if (!gName) {
+      alert("Please enter a group name to apply.");
+      return;
+    }
+    if (filteredRegs.length === 0) {
+      alert("No registrations are currently filtered.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to apply the group "${gName}" to all ${filteredRegs.length} currently filtered registrations?`)) return;
+    
+    setApplyingBulkGroup(true);
+    let successCount = 0;
+    try {
+      for (const r of filteredRegs) {
+        const cleanData = { ...r, Group: gName };
+        delete cleanData.id; delete cleanData._submittedAt;
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Group: gName } : x));
+        successCount++;
+      }
+      alert(`Successfully grouped ${successCount} registrations under "${gName}"!`);
+      setBulkGroup("");
+    } catch (e) {
+      alert(`Error after grouping ${successCount} registrations: ` + e.message);
+    }
+    setApplyingBulkGroup(false);
+  };
+
+  const handleSavePreset = async (overwriteName = null) => {
+    let pName = overwriteName;
+    if (typeof overwriteName !== "string") pName = null; // in case event is passed
+    if (!pName) {
+      pName = prompt("Enter a name for this Serial Number Preset:");
+      if (!pName) return;
+    }
+    
+    const preset = {
+      name: pName,
+      prefix: serialPrefix,
+      levels: sortLevels
+    };
+    
+    const existing = C.serialPresets || [];
+    const newPresets = [...existing.filter(p => p.name !== pName), preset];
+    
+    await saveToFb({ ...C, serialPresets: newPresets });
+    setSelectedPreset(pName);
+    alert(`Preset "${pName}" saved successfully!`);
+  };
+
+  const handleLoadPreset = (pName) => {
+    setSelectedPreset(pName);
+    if (!pName) {
+      setSerialPrefix("");
+      setSortLevels([{ col: "", val: [], dir: "asc" }]);
+      return;
+    }
+    const preset = (C.serialPresets || []).find(p => p.name === pName);
+    if (preset) {
+      setSerialPrefix(preset.prefix || "");
+      if (preset.levels) setSortLevels(preset.levels);
+      else {
+        // Fallback for old presets
+        const arr = [];
+        if (preset.l1 && preset.l1.col) arr.push(preset.l1);
+        if (preset.l2 && preset.l2.col) arr.push(preset.l2);
+        if (preset.l3 && preset.l3.col) arr.push(preset.l3);
+        if (arr.length === 0) arr.push({ col: "", val: [], dir: "asc" });
+        setSortLevels(arr);
+      }
+    }
+  };
+
+  const handleApplySerialNumbers = async () => {
+    if (filteredRegs.length === 0) return alert("No registrations to assign numbers to.");
+    
+    // 1. Filter by specific values if selected, and strictly by Status == 'Approved'
+    let targetRegs = filteredRegs.filter(r => r.Status === "Approved" || r.status === "Approved");
+    const filterLevels = sortLevels.filter(l => l.col && l.val && l.val.length > 0);
+    if (filterLevels.length > 0) {
+      targetRegs = targetRegs.filter(r => {
+        for (const level of filterLevels) {
+          const rVal = String(r[level.col] || "").trim();
+          if (!level.val.includes(rVal)) return false;
+        }
+        return true;
+      });
+    }
+
+    if (targetRegs.length === 0) {
+      return alert("No registrations match the selected value filters.");
+    }
+    
+    if (!window.confirm(`Are you sure you want to assign serial numbers to ${targetRegs.length} students?`)) return;
+    
+    setApplyingSerial(true);
+    
+    // Sort logic
+    const sorted = targetRegs.sort((a, b) => {
+      const activeLevels = sortLevels.filter(l => l.col);
+      for (const level of activeLevels) {
+        let valA = String(a[level.col] || "").trim();
+        let valB = String(b[level.col] || "").trim();
+        
+        // Custom value ordering logic
+        if (level.val && level.val.length > 0) {
+          const idxA = level.val.indexOf(valA);
+          const idxB = level.val.indexOf(valB);
+          
+          if (idxA !== -1 && idxB !== -1) {
+             if (idxA !== idxB) return level.dir === "asc" ? idxA - idxB : idxB - idxA;
+             continue; // If they have the same custom index, proceed to next level
+          }
+          // If only A is in custom list, A comes first
+          if (idxA !== -1) return level.dir === "asc" ? -1 : 1;
+          // If only B is in custom list, B comes first
+          if (idxB !== -1) return level.dir === "asc" ? 1 : -1;
+        }
+        
+        // Handle numeric sorting if possible
+        const numA = parseFloat(valA);
+        const numB = parseFloat(valB);
+        
+        let cmp = 0;
+        if (!isNaN(numA) && !isNaN(numB)) {
+          cmp = numA - numB;
+        } else {
+          cmp = valA.toLowerCase().localeCompare(valB.toLowerCase());
+        }
+        
+        if (cmp !== 0) {
+          return level.dir === "asc" ? cmp : -cmp;
+        }
+      }
+      return 0; // maintain original order if all sort levels are equal
+    });
+
+    let successCount = 0;
+    try {
+      let currentNum = Number(serialStart) || 1;
+      for (const r of sorted) {
+        const serialStr = serialPrefix ? `${serialPrefix}${currentNum}` : `${currentNum}`;
+        const cleanData = { ...r, "Serial Number": serialStr };
+        delete cleanData.id; delete cleanData._submittedAt;
+        
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, "Serial Number": serialStr } : x));
+        
+        currentNum++;
+        successCount++;
+      }
+      alert(`Successfully assigned serial numbers to ${successCount} registrations!`);
+      setShowSerialModal(false);
+    } catch (e) {
+      alert(`Error after assigning ${successCount} serial numbers: ` + e.message);
+    }
+    setApplyingSerial(false);
+  };
+
+  const handleResetSerialNumbers = async () => {
+    let validRegs = [...filteredRegs];
+    const filterLevels = sortLevels.filter(l => l.col && l.val && l.val.length > 0);
+    if (filterLevels.length > 0) {
+      validRegs = validRegs.filter(r => {
+        for (const level of filterLevels) {
+          const rVal = String(r[level.col] || "").trim();
+          if (!level.val.includes(rVal)) return false;
+        }
+        return true;
+      });
+    }
+
+    if (validRegs.length === 0) return alert("No registrations match the selected value filters.");
+    
+    if (!window.confirm(`Are you sure you want to completely clear the serial numbers from ${validRegs.length} students?`)) return;
+    
+    setApplyingSerial(true);
+    let successCount = 0;
+    try {
+      for (const r of validRegs) {
+        if (!r["Serial Number"]) continue; // Already clear
+        
+        const cleanData = { ...r };
+        delete cleanData["Serial Number"];
+        delete cleanData.id; 
+        delete cleanData._submittedAt;
+        
+        await fbUpdateRegistration(r.id, { "Serial Number": null }, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, "Serial Number": "" } : x));
+        successCount++;
+      }
+      alert(`Successfully cleared serial numbers from ${successCount} registrations.`);
+    } catch (e) {
+      alert(`Error after clearing ${successCount} serial numbers: ` + e.message);
+    }
+    setApplyingSerial(false);
+  };
+
+  // 0. Filter by activeSection first so columns are dynamic to the section
+  const sectionRegs = regs.filter(r => {
+    if (!r) return false;
+    if (activeSection === "All") return true;
+    const evId = r.eventId;
+    const ev = C.events?.find(e => e.id === evId || e.title === r.eventName || e.titleGu === r.eventName);
+    const rSec = ev?.section || "Default";
+    return rSec === activeSection;
+  });
+
+  // 1. Gather all unique dynamic field keys based on the section
   const ignoreKeys = ['id', 'eventId', 'eventTitle', 'eventName', '_submittedAt', 'Transaction ID', 'Status', 'Remarks', 'Updated By'];
   const allKeysSet = new Set();
-  regs.forEach(r => {
-    if(!r) return;
+  
+  // 1. Gather all keys from submitted data
+  sectionRegs.forEach(r => {
     Object.keys(r).forEach(k => {
       if (!ignoreKeys.includes(k) && !k.startsWith('_')) {
-        allKeysSet.add(k);
+        // Exclude specific known bad keys that might have been imported incorrectly as columns
+        if (k !== 'Commerce' && k !== 'Science' && k !== 'Arts' && k !== 'Other' && k !== 'Vibhag') {
+          allKeysSet.add(k);
+        }
       }
     });
+  });
+
+  // 2. Add keys from event definitions so they appear in dropdowns even if data is empty
+  (C.events || []).forEach(ev => {
+    const rSec = ev.section || "Default";
+    if (activeSection === "All" || rSec === activeSection) {
+      if (ev.formId && C.forms) {
+        const form = C.forms.find(f => f.id === ev.formId);
+        if (form && form.fields) {
+          form.fields.forEach(f => {
+            if (f.label && !ignoreKeys.includes(f.label)) {
+              if (f.label !== 'Commerce' && f.label !== 'Science' && f.label !== 'Arts' && f.label !== 'Other' && f.label !== 'Vibhag') {
+                allKeysSet.add(f.label);
+              }
+            }
+          });
+        }
+      }
+    }
   });
   
   let allKeys = Array.from(allKeysSet);
@@ -8217,8 +9637,7 @@ function AdminRegistrations({ mob, C, auth }) {
 
   const getUniqueValues = (colKey) => {
     const vals = new Set();
-    regs.forEach(r => {
-      if(!r) return;
+    sectionRegs.forEach(r => {
       let val = "";
       if(colKey === "Date") { try { if(r._submittedAt) val = new Date(r._submittedAt).toLocaleString().split(',')[0].trim(); } catch(e){} }
       else if(colKey === "Event") val = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
@@ -8237,10 +9656,8 @@ function AdminRegistrations({ mob, C, auth }) {
     return Array.from(vals).sort();
   };
 
-  // 2. Filter registrations based on search query
-  const filteredRegs = regs.filter(r => {
-    if(!r) return false;
-    
+  // 2. Filter registrations based on search query and column filters
+  const filteredRegs = sectionRegs.filter(r => {
     // 1. Global search
     if(searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -8302,25 +9719,73 @@ function AdminRegistrations({ mob, C, auth }) {
   };
 
   return (
-    <div style={{padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box"}}>
-      <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
-        <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Event Registrations</h2>
-        <div style={{display:"flex",gap:12,width:mob?"100%":"auto"}}>
-          <input 
-            type="text" 
-            placeholder="Search registrations..." 
-            value={searchQuery}
-            onChange={e=>setSearchQuery(e.target.value)}
-            style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}}
-          />
-          <button onClick={handleRefresh} disabled={refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:refreshing?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
-            {refreshing ? "..." : "↻"} Refresh
-          </button>
-          <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
-            <span>📥</span> Export to CSV
-          </button>
-        </div>
+    <div style={{display: mob ? "block" : "flex", width:"100%"}}>
+      <div style={{width: mob ? "100%" : "250px", borderRight: mob ? "none" : "1px solid var(--bd)", borderBottom: mob ? "1px solid var(--bd)" : "none", padding: "20px", background: "#f8f9fa", boxSizing:"border-box", minHeight: mob ? "auto" : "100vh"}}>
+         <h3 style={{fontSize:"1rem", fontWeight:700, color:"var(--dt)", marginBottom:16}}>Registration Sections</h3>
+         
+         <div style={{display:"flex", flexDirection:"column", gap:6}}>
+            <button onClick={()=>setActiveSection("All")} style={{textAlign:"left", padding:"8px 12px", borderRadius:6, border:"none", background: activeSection === "All" ? "var(--tl)" : "transparent", color: activeSection === "All" ? "var(--dt)" : "var(--mu)", fontWeight: activeSection === "All" ? 700 : 500, cursor:"pointer"}}>All Registrations</button>
+            <button onClick={()=>setActiveSection("Default")} style={{textAlign:"left", padding:"8px 12px", borderRadius:6, border:"none", background: activeSection === "Default" ? "var(--tl)" : "transparent", color: activeSection === "Default" ? "var(--dt)" : "var(--mu)", fontWeight: activeSection === "Default" ? 700 : 500, cursor:"pointer"}}>Default Section</button>
+            
+            {sections.map(sec => (
+              <div key={sec} style={{display:"flex", alignItems:"center"}}>
+                 <button onClick={()=>setActiveSection(sec)} style={{flex:1, textAlign:"left", padding:"8px 12px", borderRadius:6, border:"none", background: activeSection === sec ? "var(--tl)" : "transparent", color: activeSection === sec ? "var(--dt)" : "var(--mu)", fontWeight: activeSection === sec ? 700 : 500, cursor:"pointer"}}>{sec}</button>
+                 <button onClick={()=>{
+                   const p1 = window.prompt(`Security Check 1/2: Please type the word "DELETE" (in all caps) to confirm.`);
+                   if(p1 !== 'DELETE') {
+                     alert("Incorrect. You must type the word DELETE. Deletion cancelled.");
+                     return;
+                   }
+                   const p2 = window.prompt(`Security Check 2/2: Please type the exact section name "${sec}" to permanently delete it.`);
+                   if(p2 !== sec) {
+                     alert("Incorrect section name. Deletion cancelled.");
+                     return;
+                   }
+                   
+                   setDeleteSecConfirm(sec);
+                 }} style={{background:"none", border:"none", color:"#C0392B", cursor:"pointer", padding:"4px", fontSize:"1.2rem"}}>×</button>
+              </div>
+            ))}
+         </div>
+         
+         {isAddingSection ? (
+            <div style={{marginTop:16, display:"flex", flexDirection:"column", gap:8}}>
+               <input value={newSectionName} onChange={e=>setNewSectionName(e.target.value)} placeholder="Section Name" style={{padding:"6px", borderRadius:4, border:"1px solid var(--bd)", fontSize:".8rem"}} />
+               <div style={{display:"flex", gap:6}}>
+                 <button onClick={()=>{
+                   if(!newSectionName.trim()) return;
+                   if(sections.includes(newSectionName.trim())) return alert("Section already exists");
+                   saveToFb({...C, eventSections: [...sections, newSectionName.trim()]});
+                   setNewSectionName("");
+                   setIsAddingSection(false);
+                 }} style={{flex:1, background:"var(--dt)", color:"white", border:"none", borderRadius:4, padding:"6px", fontSize:".8rem", cursor:"pointer"}}>Save</button>
+                 <button onClick={()=>setIsAddingSection(false)} style={{flex:1, background:"#eee", border:"none", borderRadius:4, padding:"6px", fontSize:".8rem", cursor:"pointer", color:"#333"}}>Cancel</button>
+               </div>
+            </div>
+         ) : (
+            <button onClick={()=>setIsAddingSection(true)} style={{marginTop:16, width:"100%", padding:"8px", background:"white", border:"1px dashed var(--mu)", color:"var(--dt)", borderRadius:6, fontSize:".8rem", fontWeight:600, cursor:"pointer"}}>+ Add Section</button>
+         )}
       </div>
+
+      <div style={{flex:1, padding:mob?"16px":"32px", width:"100%", boxSizing:"border-box", overflowX:"hidden"}}>
+        <div style={{display:"flex",flexDirection:mob?"column":"row",flexWrap:"wrap",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
+          <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Event Registrations</h2>
+          <div style={{display:"flex",flexWrap:"wrap",gap:12,width:mob?"100%":"auto"}}>
+            <input 
+              type="text" 
+              placeholder="Search registrations..." 
+              value={searchQuery}
+              onChange={e=>setSearchQuery(e.target.value)}
+              style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:250,outline:"none",fontFamily:"inherit"}}
+            />
+            <button onClick={handleRefresh} disabled={refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:refreshing?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              {refreshing ? "..." : "↻"} Refresh
+            </button>
+            <button onClick={handleExportCSV} className="bt" style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>
+              <span>📥</span> Export to CSV
+            </button>
+          </div>
+        </div>
 
       {loading ? <p>Loading registrations...</p> : (
         <>
@@ -8480,6 +9945,47 @@ function AdminRegistrations({ mob, C, auth }) {
         <VerificationModal viewing={viewing} setViewing={setViewing} allRegs={regs} saveVerification={saveVerification} />
       )}
 
+      {deleteSecConfirm && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:99999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",width:"100%",maxWidth:400,borderRadius:12,overflow:"hidden"}}>
+            <div style={{padding:"16px 20px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h3 style={{fontSize:"1.1rem",fontWeight:700}}>Final Verification</h3>
+              <button onClick={()=>{setDeleteSecConfirm(null); setDeleteSecPass("");}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+            <div style={{padding:24}}>
+              <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:16}}>As a final security measure, please enter your Admin password to permanently delete the <strong>{deleteSecConfirm}</strong> section.</p>
+              <input type="password" value={deleteSecPass} onChange={e=>setDeleteSecPass(e.target.value)} placeholder="Enter Admin Password" style={{width:"100%",padding:12,borderRadius:8,border:"1px solid var(--bd)",fontSize:"1rem",marginBottom:16,boxSizing:"border-box"}} />
+              
+              <div style={{display:"flex",gap:12}}>
+                <button onClick={async () => {
+                   setDeleteSecLoading(true);
+                   try {
+                     await fbLogin(auth.email, deleteSecPass);
+                     
+                     const newSecs = sections.filter(s => s !== deleteSecConfirm);
+                     await saveToFb({...C, eventSections: newSecs});
+                     if (activeSection === deleteSecConfirm) setActiveSection("All");
+                     
+                     setDeleteSecConfirm(null);
+                     setDeleteSecPass("");
+                     alert("Section deleted successfully.");
+                   } catch(e) {
+                     alert("Incorrect password. Deletion cancelled.");
+                   } finally {
+                     setDeleteSecLoading(false);
+                   }
+                }} disabled={deleteSecLoading || !deleteSecPass} style={{flex:1,padding:"12px",borderRadius:8,background:"#C0392B",color:"white",border:"none",fontWeight:600,cursor:(deleteSecLoading || !deleteSecPass)?"not-allowed":"pointer",opacity:(deleteSecLoading || !deleteSecPass)?0.6:1}}>
+                   {deleteSecLoading ? "Verifying..." : "Confirm Delete"}
+                </button>
+                <button onClick={()=>{setDeleteSecConfirm(null); setDeleteSecPass("");}} disabled={deleteSecLoading} style={{flex:1,padding:"12px",borderRadius:8,background:"#f5f5f5",color:"var(--dt)",border:"none",fontWeight:600,cursor:deleteSecLoading?"not-allowed":"pointer"}}>
+                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       
       {previewFile && (
@@ -8502,6 +10008,556 @@ function AdminRegistrations({ mob, C, auth }) {
                    <iframe src={previewFile.url} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
                  </object>
                )}
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </div>
+  );
+}
+
+// ── ADMIN INVITE LETTERS ────────────────────────────────────────────────────────
+function AdminInviteLetters({ mob, C, auth }) {
+  const [regs, setRegs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  
+  const [showGlobalGuestsModal, setShowGlobalGuestsModal] = useState(false);
+  const [showImportGuestModal, setShowImportGuestModal] = useState(false);
+  const [expandedGuestId, setExpandedGuestId] = useState(null);
+  const [guestForm, setGuestForm] = useState({ fullName: "", mobile: "", email: "", address: "", designation: "" });
+  const [addingGuest, setAddingGuest] = useState(false);
+  const [showMappingModal, setShowMappingModal] = useState(false);
+  const [mappingForm, setMappingForm] = useState({ fullName: "", designation: "", mobile: "", email: "", address: "" });
+  const [savingMapping, setSavingMapping] = useState(false);
+
+  const globalGuests = regs.filter(r => r.isGlobalGuest === true);
+
+  const handleAddGlobalGuest = async (e) => {
+    e.preventDefault();
+    if (!guestForm.fullName) return alert("Full Name is required.");
+    
+    setAddingGuest(true);
+    const newGlobalGuest = {
+      "Full Name": guestForm.fullName,
+      "Participant Name": guestForm.fullName,
+      "Name": guestForm.fullName,
+      "Mobile": guestForm.mobile,
+      "Mobile Number": guestForm.mobile,
+      "Email": guestForm.email,
+      "Address": guestForm.address,
+      "Designation": guestForm.designation,
+      "Organization": guestForm.designation,
+      isGlobalGuest: true,
+      _submittedAt: Date.now(),
+      formId: "global_guest_directory"
+    };
+
+    try {
+      await fbSubmitRegistration(newGlobalGuest, auth?.idToken);
+      alert("Global guest added to directory!");
+      setGuestForm({ fullName: "", mobile: "", email: "", address: "", designation: "" });
+      fetchRegs();
+    } catch (err) {
+      alert("Error adding global guest: " + err.message);
+    }
+    setAddingGuest(false);
+  };
+
+  const fileInputRef = useRef(null);
+  const [uploadingExcel, setUploadingExcel] = useState(false);
+
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingExcel(true);
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: "array" });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+      
+      let successCount = 0;
+      for (const row of rows) {
+        const fullName = row["Full Name"] || row["Name"] || row["Participant Name"] || "";
+        if (!fullName) continue;
+
+        const mobile = row["Mobile"] || row["Mobile Number"] || row["Phone"] || "";
+        const email = row["Email"] || row["Email Address"] || "";
+        const designation = row["Designation"] || row["Organization"] || row["Company"] || "";
+        const address = row["Address"] || row["Location"] || "";
+
+        const newGlobalGuest = {
+          "Full Name": fullName,
+          "Participant Name": fullName,
+          "Name": fullName,
+          "Mobile": mobile,
+          "Mobile Number": mobile,
+          "Email": email,
+          "Address": address,
+          "Designation": designation,
+          "Organization": designation,
+          isGlobalGuest: true,
+          _submittedAt: Date.now(),
+          formId: "global_guest_directory_import"
+        };
+        await fbSubmitRegistration(newGlobalGuest, auth?.idToken);
+        successCount++;
+      }
+      alert(`Successfully imported ${successCount} global guests from Excel!`);
+      fetchRegs();
+    } catch (err) {
+      alert("Error reading Excel file: " + err.message);
+    }
+    setUploadingExcel(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleImportGlobalGuest = async (globalGuest) => {
+    const ev = inviteEvents.find(ev => ev.id === selectedEventId);
+    if (!ev) return alert("Please select a valid event workspace.");
+
+    // Check if already imported
+    const alreadyImported = regs.find(r => r.globalGuestId === globalGuest.id && r.eventId === ev.id);
+    if (alreadyImported) return alert("Guest already imported to this event!");
+
+    const newEventGuest = {
+      ...globalGuest,
+      eventId: ev.id,
+      eventName: ev.title || "Unknown Event",
+      eventTitle: ev.title || "Unknown Event",
+      Status: "Approved",
+      isSpecialGuest: true,
+      globalGuestId: globalGuest.id, // link to original
+      _submittedAt: Date.now()
+    };
+    
+    // Apply field mappings if they exist
+    if (ev.guestMapping) {
+      if (ev.guestMapping.fullName) newEventGuest[ev.guestMapping.fullName] = globalGuest["Full Name"];
+      if (ev.guestMapping.designation) newEventGuest[ev.guestMapping.designation] = globalGuest.Designation;
+      if (ev.guestMapping.mobile) newEventGuest[ev.guestMapping.mobile] = globalGuest.Mobile;
+      if (ev.guestMapping.email) newEventGuest[ev.guestMapping.email] = globalGuest.Email;
+      if (ev.guestMapping.address) newEventGuest[ev.guestMapping.address] = globalGuest.Address;
+    }
+
+    // Remove global flags
+    delete newEventGuest.isGlobalGuest;
+    delete newEventGuest.id;
+
+    try {
+      await fbSubmitRegistration(newEventGuest, auth?.idToken);
+      alert("Guest imported successfully!");
+      fetchRegs();
+    } catch (err) {
+      alert("Error importing guest: " + err.message);
+    }
+  };
+
+  const handleDeleteGlobalGuest = async (g) => {
+    if(!window.confirm(`Delete ${g["Full Name"]} from the global directory? This won't remove them from events they were already imported to.`)) return;
+    try {
+       await fbUpdateRegistration(g.id, { isGlobalGuest: false, deletedGuest: true }, auth?.idToken);
+       alert("Guest removed from directory.");
+       fetchRegs();
+    } catch(err) {
+       alert("Error removing guest: " + err.message);
+    }
+  };
+
+  const handleSaveMapping = async (e) => {
+    e.preventDefault();
+    if (!selectedEventId) return;
+    
+    setSavingMapping(true);
+    try {
+      const newC = JSON.parse(JSON.stringify(C));
+      if(!newC.events) newC.events = [];
+      const evIndex = newC.events.findIndex(e => e.id === selectedEventId);
+      if (evIndex === -1) throw new Error("Event not found in C.events");
+      
+      newC.events[evIndex].guestMapping = { ...mappingForm };
+      await fbSave(newC, auth?.idToken);
+      
+      // Mutate local C so the change takes effect immediately without a reload
+      const localEv = C.events?.find(e => e.id === selectedEventId);
+      if (localEv) localEv.guestMapping = { ...mappingForm };
+      
+      alert("Field mapping saved! Any future imports to this event will use these field names.");
+      setShowMappingModal(false);
+    } catch (err) {
+      alert("Error saving mapping: " + err.message);
+    }
+    setSavingMapping(false);
+  };
+
+  const fetchRegs = async () => {
+    try {
+      const d = await fbFetchRegistrations(auth?.idToken);
+      setRegs(d || []);
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegs().finally(() => setLoading(false));
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchRegs();
+    setRefreshing(false);
+  };
+
+  const toggleRelease = async (r) => {
+    const newVal = !r.inviteLetterReleased;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, inviteLetterReleased: newVal } : x));
+    try {
+      const cleanData = { ...r, inviteLetterReleased: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const toggleHold = async (r) => {
+    const newVal = !r.inviteLetterHold;
+    setRegs(prev => prev.map(x => x.id === r.id ? { ...x, inviteLetterHold: newVal } : x));
+    try {
+      const cleanData = { ...r, inviteLetterHold: newVal };
+      delete cleanData.id; delete cleanData._submittedAt;
+      await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+    } catch (e) {
+      alert("Failed to update hold status: " + e.message);
+      fetchRegs();
+    }
+  };
+
+  const [releasingAll, setReleasingAll] = useState(false);
+
+  const handleReleaseAll = async () => {
+    const unreleased = filteredRegs.filter(r => !r.inviteLetterReleased && !r.inviteLetterHold);
+    if (unreleased.length === 0) {
+      alert("All visible invite letters are already released!");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to release ${unreleased.length} invite letters?`)) return;
+    
+    setReleasingAll(true);
+    let successCount = 0;
+    try {
+      for (const r of unreleased) {
+        const cleanData = { ...r, inviteLetterReleased: true };
+        delete cleanData.id; delete cleanData._submittedAt;
+        await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+        setRegs(prev => prev.map(x => x.id === r.id ? { ...x, inviteLetterReleased: true } : x));
+        successCount++;
+      }
+      alert(`Successfully released ${successCount} invite letters!`);
+    } catch (e) {
+      alert(`Error after releasing ${successCount} invite letters: ` + e.message);
+    }
+    setReleasingAll(false);
+  };
+
+  const [previewCertUrl, setPreviewCertUrl] = useState(null);
+  const [previewCertRegId, setPreviewCertRegId] = useState(null);
+  const [downloadingBulk, setDownloadingBulk] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+
+  const handleBulkDownload = async () => {
+    if (filteredRegs.length === 0) return alert("No invite letters available to download.");
+    if (!window.confirm(`Generate and download a ZIP file containing ${filteredRegs.length} invite letters?`)) return;
+    
+    setDownloadingBulk(true);
+    setDownloadProgress(0);
+    const zip = new JSZip();
+    let count = 0;
+    
+    try {
+      for (const r of filteredRegs) {
+        let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+        let ev = inviteEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+        if (!ev) continue;
+        
+        const fieldsData = {...r};
+        const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+        
+        // Use 'blob' mode
+        const pdfBlob = await generateCertificatePDF(ev, fieldsData, sName, "invite", "blob");
+        if (pdfBlob) {
+          const safeName = sName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          zip.file(`Invite_${safeName}_${r.id.substring(0,5)}.pdf`, pdfBlob);
+        }
+        count++;
+        setDownloadProgress(count);
+      }
+      
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `Invite_Letters_${new Date().getTime()}.zip`;
+      link.click();
+    } catch (e) {
+      alert("Error during bulk download: " + e.message);
+    }
+    setDownloadingBulk(false);
+  };
+
+  const handlePreview = async (r, ev) => {
+    const fieldsData = {...r};
+    const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
+    try {
+      const url = await generateCertificatePDF(ev, fieldsData, sName, "invite", "url");
+      setPreviewCertUrl(url);
+      setPreviewCertRegId(r.id);
+    } catch (e) {
+      alert("Error generating invite letter: " + e.message);
+    }
+  };
+
+  const inviteEvents = (C.events || []).filter(e => e.issueInviteLetters === true || e.issueInviteLetters === "true");
+
+  const inviteRegs = regs.filter(r => {
+    if (r.Status !== "Approved") return false;
+    if (!selectedEventId) return false;
+    let evName = r.eventName || r.eventTitle || r.eventId;
+    const ev = inviteEvents.find(e => e.id === selectedEventId);
+    if (!ev) return false;
+    return r.eventId === ev.id || evName === ev.title || evName === ev.titleGu;
+  });
+
+  const filteredRegs = inviteRegs.filter(r => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return Object.values(r).some(v => String(v).toLowerCase().includes(q));
+  });
+
+  if (!selectedEventId) {
+    return (
+      <div style={{padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box"}}>
+         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexDirection:mob?"column":"row",gap:16}}>
+           <div>
+             <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",margin:0}}>Invite Letters Workspaces</h2>
+             <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Select an event below to manage its invite letters.</p>
+           </div>
+           <button onClick={() => setShowGlobalGuestsModal(true)} style={{padding:"10px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:8,background:"white",border:"1px solid #D2691E",color:"#D2691E",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+             <span style={{fontSize:"1.2rem"}}>👥</span> Manage Special Guests Directory ({globalGuests.length})
+           </button>
+         </div>
+         
+         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:20,marginTop:24}}>
+             {inviteEvents.map(ev => {
+                 const count = regs.filter(r => {
+                     if(r.Status !== "Approved") return false;
+                     let evName = r.eventName || r.eventTitle || r.eventId;
+                     return r.eventId === ev.id || evName === ev.title || evName === ev.titleGu;
+                 }).length;
+                 return (
+                     <div key={ev.id} onClick={() => setSelectedEventId(ev.id)} style={{background:"white",border:"1px solid var(--bd)",borderRadius:12,padding:24,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,0,0,0.04)",transition:"transform 0.2s, box-shadow 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.08)"}} onMouseLeave={e=>{e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.04)"}}>
+                         <div style={{fontSize:"2.5rem",marginBottom:12}}>💌</div>
+                         <h3 style={{margin:"0 0 8px 0",color:"#333"}}>{ev.title || "Unnamed Event"}</h3>
+                         <p style={{margin:0,fontSize:".85rem",color:"var(--mu)"}}>{count} approved students</p>
+                     </div>
+                 );
+             })}
+             {inviteEvents.length === 0 && (
+                 <p style={{color:"var(--mu)"}}>No events have Invite Letters enabled yet. Enable them in Content Editor {">"} Events.</p>
+             )}
+         </div>
+      </div>
+    );
+  }
+
+  let availableFields = [];
+  if (selectedEventId) {
+    const ev = inviteEvents.find(e => e.id === selectedEventId);
+    const keys = new Set(Object.keys(ev?.inviteMap || {}));
+    const evRegs = regs.filter(r => r && r.eventId === selectedEventId);
+    evRegs.forEach(r => {
+      if (r) Object.keys(r).forEach(k => keys.add(k));
+    });
+    availableFields = Array.from(keys).filter(k => !['id', 'eventId', 'Status', 'isGlobalGuest', '_submittedAt', 'eventName', 'eventTitle', 'globalGuestId', 'deletedGuest', 'inviteLetterReleased', 'inviteLetterHold', 'inviteLetterViewed', 'inviteLetterDownloaded', 'viewedOn', 'downloadedOn'].includes(k));
+    availableFields.sort();
+  }
+
+  return (
+    <div style={{display:"flex",width:"100%"}}>
+      <div style={{flex: previewCertUrl ? 2 : 1, padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
+        <div style={{marginBottom: 16}}>
+           <button onClick={() => {setSelectedEventId(null); setPreviewCertUrl(null);}} style={{background:"transparent",border:"none",color:"#D2691E",cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:6,padding:0}}>
+               ← Back to Workspaces
+           </button>
+        </div>
+        <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:24,gap:16}}>
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",margin:0}}>Invite Letters Console</h2>
+            <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Manage and release invite letters for approved registrations.</p>
+          </div>
+          <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
+            <button onClick={() => setShowImportGuestModal(true)} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"#333",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              + Import Special Guest
+            </button>
+            <button onClick={() => {
+              const ev = inviteEvents.find(e => e.id === selectedEventId);
+              setMappingForm({
+                fullName: ev?.guestMapping?.fullName || "Full Name",
+                designation: ev?.guestMapping?.designation || "Designation",
+                mobile: ev?.guestMapping?.mobile || "Mobile",
+                email: ev?.guestMapping?.email || "Email",
+                address: ev?.guestMapping?.address || "Address"
+              });
+              setShowMappingModal(true);
+            }} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"#333",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              ⚙️ Field Mapping
+            </button>
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"#D2691E",cursor:(refreshing||releasingAll||downloadingBulk||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+              {refreshing ? "..." : "↻"} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:"center",marginBottom:16,gap:12,background:"#F9F9F9",padding:"12px 16px",borderRadius:12,border:"1px solid #eee"}}>
+           <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"10px 14px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",width:mob?"100%":280,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}} />
+           
+           <div style={{display:"flex",gap:10,flexWrap:"wrap",width:mob?"100%":"auto"}}>
+             <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"#D2691E",color:"white",border:"none",cursor:(releasingAll||refreshing||downloadingBulk||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {releasingAll ? "Releasing..." : "Release All"}
+             </button>
+             <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk||releasingAll||refreshing||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {downloadingBulk ? `Zipping (${downloadProgress}/${filteredRegs.length})...` : "Bulk Download PDFs"}
+             </button>
+             <button onClick={handleBulkDownloadEnvelopes} disabled={downloadingBulk || releasingAll || refreshing || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk||releasingAll||refreshing||downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap",flex:mob?1:"auto",justifyContent:"center"}}>
+               {downloadingEnvelopes ? `Generating...` : "✉️ Download Envelopes"}
+             </button>
+           </div>
+        </div>
+
+        {loading ? <div style={{padding:40,textAlign:"center",color:"var(--mu)"}}>Loading invite letters...</div> : (
+          <div style={{borderRadius:12,boxShadow:"0 10px 30px rgba(0,0,0,0.06)",overflow:"hidden",border:"1px solid #E0E0E0",background:"white",overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:".85rem",minWidth:900}}>
+              <thead>
+                <tr>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"15%"}}>Date Approved</th>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"20%"}}>Event</th>
+                  <th style={{padding:"14px 12px",textAlign:"left",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"20%"}}>Participant Name</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"12%"}}>Release Status</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"10%"}}>Viewed On</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"10%"}}>Downloaded On</th>
+                  <th style={{padding:"14px 12px",textAlign:"center",background:"#FDF5E6",color:"#8B4513",fontWeight:600,width:"13%"}}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRegs.map((r, i) => {
+                  let date = "-";
+                  try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString().split(',')[0]; } catch(e){}
+                  let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+                  let pName = r["Full Name"] || r["Name"] || r["Participant Name"] || r.Email || "-";
+                  let ev = inviteEvents.find(e => e.id === r.eventId || e.title === evName || e.titleGu === evName);
+                  
+                  let vDate = r.inviteViewDate ? new Date(r.inviteViewDate).toLocaleString() : "-";
+                  let dDate = r.inviteDownloadDate ? new Date(r.inviteDownloadDate).toLocaleString() : "-";
+
+                  return (
+                    <tr key={i} style={{borderBottom:"1px solid #eee", background: previewCertRegId === r.id ? "#FEF9EC" : "transparent"}}>
+                      <td style={{padding:"12px",textAlign:"center"}}>
+                        <div style={{display:"flex",justifyContent:"center",gap:8}}>
+                          <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
+                          <button onClick={()=>toggleRelease(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterReleased?"#f5f5f5":"#D2691E",color:r.inviteLetterReleased?"#333":"white",border:r.inviteLetterReleased?"1px solid #ccc":"none",cursor:"pointer",fontWeight:600}}>
+                            {r.inviteLetterReleased ? "Revoke" : "Release"}
+                          </button>
+                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                            {r.inviteLetterHold ? "Unhold" : "Hold"}
+                          </button>
+                        </div>
+                      </td>
+                      <td style={{padding:"12px"}}>{date}</td>
+                      <td style={{padding:"12px"}}>{evName}</td>
+                      <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
+                      <td style={{padding:"12px",textAlign:"center"}}>
+                        {r.inviteLetterHold ? (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:"#FEE2E2",color:"#991B1B"}}>
+                            On Hold
+                          </span>
+                        ) : (
+                          <span style={{padding:"4px 8px",borderRadius:6,fontSize:".75rem",fontWeight:700,background:r.inviteLetterReleased?"#EDFAF1":"#FEF9EC",color:r.inviteLetterReleased?"#1A7A3E":"#C8860A"}}>
+                            {r.inviteLetterReleased ? "Released" : "Not Released"}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{vDate}</td>
+                      <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
+                    </tr>
+                  );
+                })}
+                {filteredRegs.length === 0 && <tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"var(--mu)"}}>No invite letters found to manage.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {previewCertUrl && (
+        <div style={{flex:1, borderLeft:"1px solid var(--bd)", background:"#F5F5F5", display:"flex", flexDirection:"column", minWidth: 400}}>
+          <div style={{padding:"12px 16px",background:"#D2691E",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{fontSize:"1rem",fontWeight:600}}>Invite Letter Preview</h3>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <a href={previewCertUrl} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+              <button onClick={()=>{setPreviewCertUrl(null); setPreviewCertRegId(null);}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+          </div>
+          <div style={{flex:1, overflow:"auto", padding:20, display:"flex", alignItems:"center", justifyContent:"center"}}>
+             <object data={previewCertUrl} type="application/pdf" style={{width:"100%",height:"100%",minHeight:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+               <iframe src={previewCertUrl} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+             </object>
+          </div>
+        </div>
+      )}
+
+      {showImportGuestModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",borderRadius:12,padding:32,width:"100%",maxWidth:600,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+               <div>
+                 <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",marginTop:0,marginBottom:4}}>Import Special Guest</h2>
+                 <p style={{fontSize:".85rem",color:"var(--mu)",margin:0}}>Select a guest from the Global Directory to add to this event.</p>
+               </div>
+               <button onClick={()=>setShowImportGuestModal(false)} style={{background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer"}}>×</button>
+            </div>
+
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {globalGuests.map(g => {
+                const alreadyImported = regs.find(r => r.globalGuestId === g.id && r.eventId === selectedEventId);
+                return (
+                  <div key={g.id} style={{padding:16,border:"1px solid var(--bd)",borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center",background:alreadyImported?"#f9f9f9":"white"}}>
+                     <div>
+                       <div style={{fontWeight:600,color:"#333",opacity:alreadyImported?0.6:1}}>{g["Full Name"]}</div>
+                       <div style={{fontSize:".8rem",color:"var(--mu)",opacity:alreadyImported?0.6:1}}>{g.Designation || "No Designation"} {g.Mobile ? `• ${g.Mobile}` : ""}</div>
+                     </div>
+                     <button 
+                       disabled={alreadyImported}
+                       onClick={()=>handleImportGlobalGuest(g)} 
+                       style={{padding:"6px 16px",borderRadius:6,border:"none",background:alreadyImported?"#ddd":"#D2691E",color:alreadyImported?"#888":"white",fontWeight:600,cursor:alreadyImported?"default":"pointer"}}>
+                       {alreadyImported ? "Imported ✓" : "Import"}
+                     </button>
+                  </div>
+                );
+              })}
+              {globalGuests.length === 0 && (
+                <div style={{padding:32,textAlign:"center",background:"#f9f9f9",borderRadius:8,border:"1px dashed var(--bd)"}}>
+                  <p style={{color:"var(--mu)"}}>No guests found in the Global Directory.</p>
+                  <button onClick={()=>{setShowImportGuestModal(false); setSelectedEventId(null); setTimeout(()=>setShowGlobalGuestsModal(true), 100);}} style={{padding:"8px 16px",background:"white",border:"1px solid var(--bd)",borderRadius:6,cursor:"pointer",fontWeight:600,marginTop:12}}>
+                     Go to Directory
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -8821,6 +10877,45 @@ function AdminCertificates({ mob, C, auth }) {
           </div>
         )}
       </div>
+      
+      {showAddGuestModal && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"white",borderRadius:12,padding:32,width:"100%",maxWidth:500,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 40px rgba(0,0,0,0.2)"}}>
+            <h2 style={{fontFamily:"'Playfair Display',serif",color:"#D2691E",marginTop:0}}>Add Special Guest</h2>
+            <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:24}}>Add a guest manually to issue them an invite letter. They will instantly appear in the invite table.</p>
+            <form onSubmit={handleAddGuest} style={{display:"flex",flexDirection:"column",gap:16}}>
+              <div>
+                <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Full Name (Required)</label>
+                <input required type="text" value={guestForm.fullName} onChange={e=>setGuestForm({...guestForm, fullName: e.target.value})} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+              </div>
+              <div>
+                <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Designation / Organization</label>
+                <input type="text" value={guestForm.designation} onChange={e=>setGuestForm({...guestForm, designation: e.target.value})} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+              </div>
+              <div style={{display:"flex",gap:16}}>
+                <div style={{flex:1}}>
+                  <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Mobile Number</label>
+                  <input type="text" value={guestForm.mobile} onChange={e=>setGuestForm({...guestForm, mobile: e.target.value})} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                </div>
+                <div style={{flex:1}}>
+                  <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Email Address</label>
+                  <input type="email" value={guestForm.email} onChange={e=>setGuestForm({...guestForm, email: e.target.value})} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}} />
+                </div>
+              </div>
+              <div>
+                <label style={{display:"block",fontSize:".85rem",fontWeight:600,marginBottom:6}}>Address</label>
+                <textarea rows="3" value={guestForm.address} onChange={e=>setGuestForm({...guestForm, address: e.target.value})} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid var(--bd)",boxSizing:"border-box",fontFamily:"inherit"}}></textarea>
+              </div>
+              <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}>
+                <button type="button" onClick={()=>setShowAddGuestModal(false)} style={{padding:"10px 20px",borderRadius:8,border:"none",background:"#f5f5f5",cursor:"pointer",fontWeight:600}}>Cancel</button>
+                <button type="submit" disabled={addingGuest} style={{padding:"10px 20px",borderRadius:8,border:"none",background:"#D2691E",color:"white",cursor:addingGuest?"wait":"pointer",fontWeight:600}}>
+                  {addingGuest ? "Saving..." : "Add Guest"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -8991,20 +11086,28 @@ function AdminMeritList({ mob, C, auth }) {
 
   const events = C.events || [];
   
+  const [onlyApproved, setOnlyApproved] = useState(true);
+  
   // When event or grouping field changes, auto-extract groups
   useEffect(() => {
     if (!selectedEventId || !groupField) {
       setGroupsOrder([]);
       return;
     }
-    const evRegs = regs.filter(r => r.eventId === selectedEventId && r.Status === "Approved");
+    const evRegs = regs.filter(r => r.eventId === selectedEventId && (!onlyApproved || (r.Status === "Approved" || r.status === "Approved")));
     const uniqueGroups = new Set();
     evRegs.forEach(r => {
-      let gVal = r[groupField];
+      let gVal = null;
+      for (const key of Object.keys(r)) {
+        if (key.trim().toLowerCase() === (groupField || "").trim().toLowerCase()) {
+          gVal = r[key];
+          break;
+        }
+      }
       if (gVal) uniqueGroups.add(String(gVal).trim());
     });
     setGroupsOrder(Array.from(uniqueGroups).sort());
-  }, [selectedEventId, groupField, regs]);
+  }, [selectedEventId, groupField, regs, onlyApproved]);
 
   const moveGroup = (index, direction) => {
     const newOrder = [...groupsOrder];
@@ -9028,7 +11131,7 @@ function AdminMeritList({ mob, C, auth }) {
 
   const handleGeneratePDF = () => {
     if (!selectedEventId) return alert("Select an event first.");
-    if (groupsOrder.length === 0) return alert("No groups found for this field.");
+    if (groupsOrder.length === 0) return alert("No groups found! Please click the 'Grouping Field' dropdown and select the exact field name that your form uses to classify students (e.g., 'Class', 'Standard', 'Category').");
     setGenerating(true);
 
     try {
@@ -9036,7 +11139,7 @@ function AdminMeritList({ mob, C, auth }) {
       const ev = events.find(e => e.id === selectedEventId);
       const evTitle = ev ? (ev.title || "Event") : "Merit List";
       
-      const evRegs = regs.filter(r => r.eventId === selectedEventId && r.Status === "Approved");
+      const evRegs = regs.filter(r => r.eventId === selectedEventId && (!onlyApproved || (r.Status === "Approved" || r.status === "Approved")));
 
       let yPos = 20;
       doc.setFontSize(18);
@@ -9052,7 +11155,10 @@ function AdminMeritList({ mob, C, auth }) {
 
       groupsOrder.forEach((g, gIdx) => {
         // Find students for this group
-        const groupRegs = evRegs.filter(r => String(r[groupField] || "").trim() === g);
+        const groupRegs = evRegs.filter(r => {
+          let gVal = r[groupField] || r[groupField.toLowerCase()] || r[groupField.toUpperCase()];
+          return String(gVal || "").trim() === g;
+        });
         if (groupRegs.length === 0) return;
 
         // Sort students: primary % (desc), secondary Name (asc)
@@ -9194,8 +11300,15 @@ function AdminMeritList({ mob, C, auth }) {
               </label>
             </div>
           </div>
+
+          <div style={{marginBottom:16}}>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:".85rem",fontWeight:600,cursor:"pointer"}}>
+              <input type="checkbox" checked={onlyApproved} onChange={(e) => setOnlyApproved(e.target.checked)} />
+              Only include "Approved" registrations
+            </label>
+          </div>
           
-          <button onClick={handleGeneratePDF} disabled={generating || groupsOrder.length===0} style={{width:"100%",padding:"12px",background:"var(--dt)",color:"white",border:"none",borderRadius:8,fontWeight:600,cursor:(generating||groupsOrder.length===0)?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+          <button onClick={handleGeneratePDF} disabled={generating} style={{width:"100%",padding:"12px",background:"var(--dt)",color:"white",border:"none",borderRadius:8,fontWeight:600,cursor:generating?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,0,0,0.1)", opacity: groupsOrder.length===0 ? 0.7 : 1}}>
             {generating ? "Generating PDF..." : "📄 Generate Merit List PDF"}
           </button>
         </div>
@@ -9206,7 +11319,14 @@ function AdminMeritList({ mob, C, auth }) {
            <p style={{fontSize:".85rem",color:"var(--mu)",marginBottom:16}}>Set the order in which groups will appear on the PDF. (Drag up/down)</p>
            
            {!selectedEventId && <div style={{color:"var(--mu)",fontSize:".9rem"}}>Please select an event first.</div>}
-           {selectedEventId && groupsOrder.length === 0 && <div style={{color:"var(--mu)",fontSize:".9rem"}}>No groups found for the selected field.</div>}
+           {selectedEventId && (
+             <div style={{marginBottom:16, padding:10, background:"white", border:"1px solid #ddd", borderRadius:6, fontSize:".85rem", color:"var(--dt)"}}>
+               <strong>Event Stats:</strong><br/>
+               Total Registrations: {regs.filter(r => r.eventId === selectedEventId).length} <br/>
+               Approved Registrations: {regs.filter(r => r.eventId === selectedEventId && (r.Status === "Approved" || r.status === "Approved")).length}
+             </div>
+           )}
+           {selectedEventId && groupsOrder.length === 0 && <div style={{color:"var(--mu)",fontSize:".9rem"}}>No groups found for the selected field among Approved registrations. (Try checking if your students are Approved, or if they have the '{groupField}' field filled.)</div>}
 
            <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:450,overflowY:"auto"}}>
              {groupsOrder.map((g, idx) => (
