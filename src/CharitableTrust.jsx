@@ -2422,7 +2422,10 @@ export const generateCertificatePDF = async (certConfig, fieldsData, fallbackNam
         const blob = doc.output('blob');
         const url = URL.createObjectURL(blob);
         
-        if (previewMode) {
+        if (previewMode === 'url') {
+            resolve(url);
+            return;
+        } else if (previewMode === true) {
             window.open(url, '_blank');
         } else {
             const link = document.createElement("a");
@@ -9037,6 +9040,8 @@ function AdminCertificates({ mob, C, auth }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewCertUrl, setPreviewCertUrl] = useState(null);
+  const [previewCertRegId, setPreviewCertRegId] = useState(null);
 
   const fetchRegs = async () => {
     try {
@@ -9114,7 +9119,9 @@ function AdminCertificates({ mob, C, auth }) {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
     try {
-      await generateCertificatePDF(ev, fieldsData, sName, true);
+      const url = await generateCertificatePDF(ev, fieldsData, sName, 'url');
+      setPreviewCertUrl(url);
+      setPreviewCertRegId(r.id);
     } catch (e) {
       alert("Error generating certificate: " + e.message);
     }
@@ -9139,7 +9146,7 @@ function AdminCertificates({ mob, C, auth }) {
 
   return (
     <div style={{display:"flex",width:"100%"}}>
-      <div style={{flex:1,padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
+      <div style={{flex: previewCertUrl ? 2 : 1, padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
         <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
           <div>
             <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Certificate Console</h2>
@@ -9182,7 +9189,16 @@ function AdminCertificates({ mob, C, auth }) {
                   let dDate = r.certDownloadDate ? new Date(r.certDownloadDate).toLocaleString() : "-";
 
                   return (
-                    <tr key={i} style={{borderBottom:"1px solid #eee"}}>
+                    <tr 
+                      key={i} 
+                      onClick={() => handlePreview(r, ev)}
+                      style={{
+                        borderBottom:"1px solid #eee",
+                        cursor: "pointer",
+                        background: previewCertRegId === r.id ? "#E8F4F8" : "transparent",
+                        transition: "background-color 0.2s"
+                      }}
+                    >
                       <td style={{padding:"12px"}}>{date}</td>
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
@@ -9201,11 +9217,11 @@ function AdminCertificates({ mob, C, auth }) {
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
                         <div style={{display:"flex",justifyContent:"center",gap:8}}>
-                          <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={()=>toggleRelease(r)} disabled={r.certificateHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#eaeaea":r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateHold?"#aaa":r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:r.certificateHold?"not-allowed":"pointer",fontWeight:600}}>
+                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.certificateHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#eaeaea":r.certificateReleased?"#f5f5f5":"var(--dt)",color:r.certificateHold?"#aaa":r.certificateReleased?"#333":"white",border:r.certificateReleased?"1px solid #ccc":"none",cursor:r.certificateHold?"not-allowed":"pointer",fontWeight:600}}>
                             {r.certificateReleased ? "Revoke" : "Release"}
                           </button>
-                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.certificateHold?"#FEE2E2":"#f5f5f5",color:r.certificateHold?"#991B1B":"#666",border:r.certificateHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
                             {r.certificateHold ? "Unhold" : "Hold"}
                           </button>
                         </div>
@@ -9219,6 +9235,23 @@ function AdminCertificates({ mob, C, auth }) {
           </div>
         )}
       </div>
+
+      {previewCertUrl && (
+        <div style={{flex:1, borderLeft:"1px solid var(--bd)", background:"#F5F5F5", display:"flex", flexDirection:"column", minWidth: 400}}>
+          <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{fontSize:"1rem",fontWeight:600}}>Certificate Preview</h3>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <a href={previewCertUrl} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+              <button onClick={()=>{setPreviewCertUrl(null); setPreviewCertRegId(null);}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+          </div>
+          <div style={{flex:1, overflow:"auto", padding:20, display:"flex", alignItems:"center", justifyContent:"center"}}>
+             <object data={previewCertUrl} type="application/pdf" style={{width:"100%",height:"100%",minHeight:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+               <iframe src={previewCertUrl} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+             </object>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -9229,6 +9262,8 @@ function AdminInviteLetters({ mob, C, auth }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [previewCertUrl, setPreviewCertUrl] = useState(null);
+  const [previewCertRegId, setPreviewCertRegId] = useState(null);
 
   const fetchRegs = async () => {
     try {
@@ -9306,7 +9341,9 @@ function AdminInviteLetters({ mob, C, auth }) {
     const fieldsData = {...r};
     const sName = fieldsData["Full Name"] || fieldsData["Name"] || fieldsData["Participant Name"] || "Student";
     try {
-      await generateCertificatePDF(ev, fieldsData, sName, true);
+      const url = await generateCertificatePDF(ev, fieldsData, sName, 'url');
+      setPreviewCertUrl(url);
+      setPreviewCertRegId(r.id);
     } catch (e) {
       alert("Error generating inviteificate: " + e.message);
     }
@@ -9331,10 +9368,10 @@ function AdminInviteLetters({ mob, C, auth }) {
 
   return (
     <div style={{display:"flex",width:"100%"}}>
-      <div style={{flex:1,padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
+      <div style={{flex: previewCertUrl ? 2 : 1, padding:mob?"16px":"32px",width:"100%",boxSizing:"border-box",overflowX:"hidden"}}>
         <div style={{display:"flex",flexDirection:mob?"column":"row",justifyContent:"space-between",alignItems:mob?"flex-start":"center",marginBottom:20,gap:16}}>
           <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Certificate Console</h2>
+            <h2 style={{fontFamily:"'Playfair Display',serif",color:"var(--dt)",margin:0}}>Invite Letters Console</h2>
             <p style={{fontSize:".85rem",color:"var(--mu)",marginTop:4}}>Manage and release inviteLetters for approved registrations.</p>
           </div>
           <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
@@ -9374,7 +9411,16 @@ function AdminInviteLetters({ mob, C, auth }) {
                   let dDate = r.inviteDownloadDate ? new Date(r.inviteDownloadDate).toLocaleString() : "-";
 
                   return (
-                    <tr key={i} style={{borderBottom:"1px solid #eee"}}>
+                    <tr 
+                      key={i} 
+                      onClick={() => handlePreview(r, ev)}
+                      style={{
+                        borderBottom:"1px solid #eee",
+                        cursor: "pointer",
+                        background: previewCertRegId === r.id ? "#E8F4F8" : "transparent",
+                        transition: "background-color 0.2s"
+                      }}
+                    >
                       <td style={{padding:"12px"}}>{date}</td>
                       <td style={{padding:"12px"}}>{evName}</td>
                       <td style={{padding:"12px",fontWeight:600}}>{pName}</td>
@@ -9393,11 +9439,11 @@ function AdminInviteLetters({ mob, C, auth }) {
                       <td style={{padding:"12px",textAlign:"center",color:"var(--mu)",fontSize:".75rem"}}>{dDate}</td>
                       <td style={{padding:"12px",textAlign:"center"}}>
                         <div style={{display:"flex",justifyContent:"center",gap:8}}>
-                          <button onClick={()=>handlePreview(r, ev)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
-                          <button onClick={()=>toggleRelease(r)} disabled={r.inviteLetterHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#eaeaea":r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteLetterHold?"#aaa":r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:r.inviteLetterHold?"not-allowed":"pointer",fontWeight:600}}>
+                          <button onClick={(e)=>{e.stopPropagation(); handlePreview(r, ev);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:"white",border:"1px solid var(--bd)",cursor:"pointer",fontWeight:600}}>Preview</button>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleRelease(r);}} disabled={r.inviteLetterHold} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#eaeaea":r.inviteificateReleased?"#f5f5f5":"var(--dt)",color:r.inviteLetterHold?"#aaa":r.inviteificateReleased?"#333":"white",border:r.inviteificateReleased?"1px solid #ccc":"none",cursor:r.inviteLetterHold?"not-allowed":"pointer",fontWeight:600}}>
                             {r.inviteificateReleased ? "Revoke" : "Release"}
                           </button>
-                          <button onClick={()=>toggleHold(r)} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
+                          <button onClick={(e)=>{e.stopPropagation(); toggleHold(r);}} style={{padding:"6px 12px",borderRadius:6,fontSize:".75rem",background:r.inviteLetterHold?"#FEE2E2":"#f5f5f5",color:r.inviteLetterHold?"#991B1B":"#666",border:r.inviteLetterHold?"1px solid #FCA5A5":"1px solid #ccc",cursor:"pointer",fontWeight:600}}>
                             {r.inviteLetterHold ? "Unhold" : "Hold"}
                           </button>
                         </div>
@@ -9411,6 +9457,23 @@ function AdminInviteLetters({ mob, C, auth }) {
           </div>
         )}
       </div>
+
+      {previewCertUrl && (
+        <div style={{flex:1, borderLeft:"1px solid var(--bd)", background:"#F5F5F5", display:"flex", flexDirection:"column", minWidth: 400}}>
+          <div style={{padding:"12px 16px",background:"var(--dt)",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{fontSize:"1rem",fontWeight:600}}>Invite Letter Preview</h3>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <a href={previewCertUrl} target="_blank" rel="noreferrer" style={{color:"white",fontSize:".8rem",textDecoration:"underline"}}>Open externally</a>
+              <button onClick={()=>{setPreviewCertUrl(null); setPreviewCertRegId(null);}} style={{background:"none",border:"none",color:"white",fontSize:"1.5rem",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+          </div>
+          <div style={{flex:1, overflow:"auto", padding:20, display:"flex", alignItems:"center", justifyContent:"center"}}>
+             <object data={previewCertUrl} type="application/pdf" style={{width:"100%",height:"100%",minHeight:"70vh",border:"none",borderRadius:8,boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+               <iframe src={previewCertUrl} style={{width:"100%",height:"100%",border:"none"}} title="Document Preview" />
+             </object>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
