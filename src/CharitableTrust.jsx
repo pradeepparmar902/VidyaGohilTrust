@@ -8158,21 +8158,91 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
             </div>
 
             {/* Verification Controls */}
-            <div style={{padding:"20px 24px",background:"#FAFAFA",borderTop:"1px solid var(--bd)"}}>
+            <div style={{padding:"16px 20px",background:"#FAFAFA",borderTop:"1px solid var(--bd)"}}>
               <h4 style={{fontSize:".95rem",fontWeight:700,color:"var(--dt)",marginBottom:12}}>Verification Action</h4>
               
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
-                <button onClick={()=>setStatus('Approved')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Approved'?"2px solid #2E7D32":"1px solid #CCC",background:status==='Approved'?"#E8F5E9":"white",color:status==='Approved'?"#2E7D32":"var(--mu)",transition:"0.2s"}}>✓ Approve</button>
-                <button onClick={()=>setStatus('Needs Info')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Needs Info'?"2px solid #EF6C00":"1px solid #CCC",background:status==='Needs Info'?"#FFF3E0":"white",color:status==='Needs Info'?"#EF6C00":"var(--mu)",transition:"0.2s"}}>⏸ Pause</button>
-                <button onClick={()=>setStatus('Disapproved')} style={{padding:"10px",borderRadius:6,fontWeight:600,fontSize:".85rem",cursor:"pointer",border:status==='Disapproved'?"2px solid #C62828":"1px solid #CCC",background:status==='Disapproved'?"#FFEBEE":"white",color:status==='Disapproved'?"#C62828":"var(--mu)",transition:"0.2s"}}>✕ Reject</button>
+              <div style={{display:"grid",gridTemplateColumns:"120px 1fr",gap:12,marginBottom:12}}>
+                {/* Column 1: Vertical Buttons */}
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <button 
+                    onClick={()=>setStatus('Approved')} 
+                    style={{
+                      padding:"8px",
+                      borderRadius:6,
+                      fontWeight:600,
+                      fontSize:".8rem",
+                      cursor:"pointer",
+                      border:status==='Approved'?"2px solid #2E7D32":"1px solid #CCC",
+                      background:status==='Approved'?"#E8F5E9":"white",
+                      color:status==='Approved'?"#2E7D32":"var(--mu)",
+                      transition:"0.2s",
+                      textAlign:"left",
+                      paddingLeft:"10px"
+                    }}
+                  >
+                    ✓ Approve
+                  </button>
+                  <button 
+                    onClick={()=>setStatus('Needs Info')} 
+                    style={{
+                      padding:"8px",
+                      borderRadius:6,
+                      fontWeight:600,
+                      fontSize:".8rem",
+                      cursor:"pointer",
+                      border:status==='Needs Info'?"2px solid #EF6C00":"1px solid #CCC",
+                      background:status==='Needs Info'?"#FFF3E0":"white",
+                      color:status==='Needs Info'?"#EF6C00":"var(--mu)",
+                      transition:"0.2s",
+                      textAlign:"left",
+                      paddingLeft:"10px"
+                    }}
+                  >
+                    ⏸ Pause
+                  </button>
+                  <button 
+                    onClick={()=>setStatus('Disapproved')} 
+                    style={{
+                      padding:"8px",
+                      borderRadius:6,
+                      fontWeight:600,
+                      fontSize:".8rem",
+                      cursor:"pointer",
+                      border:status==='Disapproved'?"2px solid #C62828":"1px solid #CCC",
+                      background:status==='Disapproved'?"#FFEBEE":"white",
+                      color:status==='Disapproved'?"#C62828":"var(--mu)",
+                      transition:"0.2s",
+                      textAlign:"left",
+                      paddingLeft:"10px"
+                    }}
+                  >
+                    ✕ Reject
+                  </button>
+                </div>
+
+                {/* Column 2: Remarks TextArea */}
+                <div style={{display:"flex",flexDirection:"column"}}>
+                  <textarea 
+                    value={remarks} 
+                    onChange={e=>setRemarks(e.target.value)} 
+                    placeholder="Remarks / Reason (Optional)" 
+                    style={{
+                      width:"100%",
+                      height:"100%",
+                      minHeight:"92px",
+                      padding:"8px 10px",
+                      borderRadius:6,
+                      border:"1px solid var(--bd)",
+                      fontSize:".8rem",
+                      fontFamily:"inherit",
+                      resize:"none",
+                      boxSizing:"border-box"
+                    }} 
+                  />
+                </div>
               </div>
 
-              <div style={{marginBottom:16}}>
-                <label style={{display:"block",fontSize:".75rem",fontWeight:600,color:"var(--dt)",marginBottom:6}}>Remarks / Reason (Optional)</label>
-                <textarea value={remarks} onChange={e=>setRemarks(e.target.value)} placeholder="e.g. Marksheet is blurry, please re-upload" style={{width:"100%",padding:"10px",borderRadius:6,border:"1px solid var(--bd)",fontSize:".85rem",fontFamily:"inherit",minHeight:80,resize:"vertical"}} />
-              </div>
-
-              <button onClick={handleSave} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",fontWeight:700,fontSize:".95rem",cursor:"pointer",opacity:saving?0.7:1,boxShadow:"0 4px 12px rgba(0,0,0,0.15)"}}>
+              <button onClick={handleSave} disabled={saving} style={{width:"100%",padding:"12px",borderRadius:8,background:"var(--dt)",color:"white",border:"none",fontWeight:700,fontSize:".9rem",cursor:"pointer",opacity:saving?0.7:1,boxShadow:"0 4px 12px rgba(0,0,0,0.15)"}}>
                 {saving ? "Saving..." : "Save Verification"}
               </button>
             </div>
