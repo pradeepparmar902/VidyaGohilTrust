@@ -7883,7 +7883,7 @@ function AdminAccess({ C, setC, master, auth }) {
 }
 
 
-function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
+function VerificationModal({ viewing, setViewing, allRegs, saveVerification, C }) {
   const [eventFilter, setEventFilter] = useState(viewing.eventName || viewing.eventTitle || viewing.eventId || "");
   const [statusFilter, setStatusFilter] = useState(viewing['Status'] || "Pending");
 
@@ -7966,6 +7966,58 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
   const goPrev = () => {
     if (currentIndex > 0) setViewing(filteredList[currentIndex - 1]);
   };
+
+  const ev = C?.events?.find(e => e.title === (editedReg || viewing).eventTitle || e.title === (editedReg || viewing).eventName || e.title === (editedReg || viewing).eventId || e.id === (editedReg || viewing).eventId);
+  const formObj = C?.forms?.find(f => f.id === ev?.formId);
+
+  const renderedKeys = new Set();
+  const fieldsToRender = [];
+
+  if (formObj && formObj.fields) {
+    formObj.fields.forEach((f, idx) => {
+      let shouldShow = true;
+      let logicRules = [];
+      if (f.logicRules && f.logicRules.length > 0) {
+        logicRules = f.logicRules.filter(r => r.dependsOn && r.dependsValue);
+      } else if (f.dependsOn && f.dependsValue) {
+        logicRules = [{ dependsOn: f.dependsOn, dependsValue: f.dependsValue }];
+      }
+      
+      if (logicRules.length > 0) {
+        shouldShow = logicRules.some(rule => {
+          const parentField = formObj.fields.find(ff => ff.label === rule.dependsOn);
+          const parentKey = parentField ? (parentField.dataKey || parentField.label)?.trim() : rule.dependsOn;
+          const parentVal = (editedReg || viewing)[parentKey];
+          return parentVal === rule.dependsValue;
+        });
+      }
+
+      const fKey = (f.dataKey || f.label)?.trim();
+      if (fKey) {
+        renderedKeys.add(fKey);
+        if (shouldShow) {
+          fieldsToRender.push({
+            key: fKey,
+            label: f.label || fKey,
+            type: f.type,
+            options: f.options,
+            fieldObj: f
+          });
+        }
+      }
+    });
+  }
+
+  const allRegKeys = Object.keys(editedReg || viewing).filter(k => !k.startsWith('_') && !['id','eventId','eventName','Status','Remarks','Updated By'].includes(k));
+  allRegKeys.forEach(k => {
+    if (!renderedKeys.has(k)) {
+      fieldsToRender.push({
+        key: k,
+        label: k,
+        type: 'text'
+      });
+    }
+  });
 
   const isPdf = activeDoc && activeDoc.toLowerCase().includes('.pdf');
 
@@ -8067,20 +8119,110 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                 </button>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:16}}>
-                {Object.keys(editedReg || viewing).filter(k => !k.startsWith('_') && !['id','eventId','eventName','Status','Remarks','Updated By'].includes(k)).map(k => {
-                  const val = (editedReg || viewing)[k];
+                {fieldsToRender.map(f => {
+                  const val = (editedReg || viewing)[f.key];
                   if (typeof val === 'string' && val.startsWith('http')) return null; // Skip docs
                   const displayVal = typeof val === 'string' ? val.replace(/\|/g, ' ') : String(val);
 
                   if (isEditing) {
-                    const isLong = String(val).length > 50 || k.toLowerCase().includes("address") || k.toLowerCase().includes("remark");
+                    if (f.type === 'dropdown') {
+                      return (
+                        <div key={f.key}>
+                          <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{f.label}</div>
+                          <select 
+                            value={editedReg[f.key] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [f.key]: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px",
+                              borderRadius: 6,
+                              border: "1px solid var(--bd)",
+                              fontFamily: "inherit",
+                              fontSize: ".9rem",
+                              background: "#fff",
+                              outline: "none"
+                            }}
+                          >
+                            <option value="">-- Select --</option>
+                            {(f.options || "").split(",").map((opt, oi) => opt.trim() && <option key={oi} value={opt.trim()}>{opt.trim()}</option>)}
+                          </select>
+                        </div>
+                      );
+                    }
+                    
+                    if (f.type === 'gender') {
+                      return (
+                        <div key={f.key}>
+                          <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{f.label}</div>
+                          <select 
+                            value={editedReg[f.key] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [f.key]: e.target.value }))}
+                            style={{
+                              width: "100%",
+                              padding: "10px",
+                              borderRadius: 6,
+                              border: "1px solid var(--bd)",
+                              fontFamily: "inherit",
+                              fontSize: ".9rem",
+                              background: "#fff",
+                              outline: "none"
+                            }}
+                          >
+                            <option value="">-- Select Gender --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                      );
+                    }
+
+                    if (f.type === 'fullname') {
+                      const parts = (editedReg[f.key] || "||").split("|");
+                      return (
+                        <div key={f.key}>
+                          <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{f.label}</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                            <input 
+                              placeholder="First" 
+                              value={parts[0] || ""} 
+                              onChange={e => {
+                                const newParts = [...parts]; newParts[0] = e.target.value;
+                                setEditedReg(prev => ({ ...prev, [f.key]: newParts.join("|") }));
+                              }} 
+                              style={{width:"100%",padding:"10px",borderRadius:6,border: "1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}
+                            />
+                            <input 
+                              placeholder="Middle" 
+                              value={parts[1] || ""} 
+                              onChange={e => {
+                                const newParts = [...parts]; newParts[1] = e.target.value;
+                                setEditedReg(prev => ({ ...prev, [f.key]: newParts.join("|") }));
+                              }} 
+                              style={{width:"100%",padding:"10px",borderRadius:6,border: "1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}
+                            />
+                            <input 
+                              placeholder="Last" 
+                              value={parts[2] || ""} 
+                              onChange={e => {
+                                const newParts = [...parts]; newParts[2] = e.target.value;
+                                setEditedReg(prev => ({ ...prev, [f.key]: newParts.join("|") }));
+                              }} 
+                              style={{width:"100%",padding:"10px",borderRadius:6,border: "1px solid var(--bd)",fontFamily:"inherit",fontSize:".9rem"}}
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const isLong = f.type === 'address' || String(val).length > 50 || f.key.toLowerCase().includes("address") || f.key.toLowerCase().includes("remark");
                     return (
-                      <div key={k}>
-                        <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{k}</div>
+                      <div key={f.key}>
+                        <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{f.label}</div>
                         {isLong ? (
                           <textarea 
-                            value={editedReg[k] || ""} 
-                            onChange={(e) => setEditedReg(prev => ({ ...prev, [k]: e.target.value }))}
+                            value={editedReg[f.key] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [f.key]: e.target.value }))}
                             rows={3}
                             style={{
                               width: "100%",
@@ -8100,8 +8242,8 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                         ) : (
                           <input 
                             type="text" 
-                            value={editedReg[k] || ""} 
-                            onChange={(e) => setEditedReg(prev => ({ ...prev, [k]: e.target.value }))}
+                            value={editedReg[f.key] || ""} 
+                            onChange={(e) => setEditedReg(prev => ({ ...prev, [f.key]: e.target.value }))}
                             style={{
                               width: "100%",
                               fontSize: ".95rem",
@@ -8121,8 +8263,8 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification }) {
                   }
 
                   return (
-                    <div key={k}>
-                      <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{k}</div>
+                    <div key={f.key}>
+                      <div style={{fontSize:".75rem",color:"var(--mu)",fontWeight:600,marginBottom:4}}>{f.label}</div>
                       <div style={{fontSize:".95rem",color:"var(--tx)",wordBreak:"break-word",background:"#FAFAFA",padding:"8px 12px",borderRadius:6,border:"1px solid #EEE"}}>{displayVal || "-"}</div>
                     </div>
                   );
@@ -8681,7 +8823,7 @@ function AdminRegistrations({ mob, C, auth }) {
       )}
 
       {viewing && (
-        <VerificationModal viewing={viewing} setViewing={setViewing} allRegs={regs} saveVerification={saveVerification} />
+        <VerificationModal viewing={viewing} setViewing={setViewing} allRegs={regs} saveVerification={saveVerification} C={C} />
       )}
 
 
