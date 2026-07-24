@@ -9328,6 +9328,51 @@ function AdminInviteLetters({ mob, C, auth }) {
   const [previewCertRegId, setPreviewCertRegId] = useState(null);
   const [downloadingBulk, setDownloadingBulk] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadingEnvelopes, setDownloadingEnvelopes] = useState(false);
+
+  const handleBulkDownloadEnvelopes = () => {
+    if (filteredRegs.length === 0) return alert("No registrations available for envelopes.");
+    if (!window.confirm(`Generate and download envelopes for ${filteredRegs.length} registrants?`)) return;
+    
+    setDownloadingEnvelopes(true);
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'dl' });
+      filteredRegs.forEach((r, index) => {
+        if (index > 0) doc.addPage();
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("TO,", 20, 25);
+        
+        doc.setFontSize(14);
+        const nameVal = r["Full Name"] || r["Name"] || r["Participant Name"] || "Student";
+        doc.text(String(nameVal).toUpperCase(), 25, 33);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        
+        let addressVal = r["Address"] || r["Residential Address"] || r["Full Address"] || "";
+        const mobileVal = r["Mobile Number"] || r["Mobile"] || r["WhatsApp Number"] || "";
+        
+        const splitAddress = doc.splitTextToSize(addressVal, 160);
+        let currentY = 41;
+        splitAddress.forEach(line => {
+          doc.text(line, 25, currentY);
+          currentY += 6;
+        });
+        
+        if (mobileVal) {
+          doc.setFont("helvetica", "bold");
+          doc.text(`Mobile: ${mobileVal}`, 25, currentY + 4);
+        }
+      });
+      
+      doc.save(`Envelopes_${new Date().getTime()}.pdf`);
+    } catch (e) {
+      alert("Error generating envelopes: " + e.message);
+    }
+    setDownloadingEnvelopes(false);
+  };
 
   const handleBulkDownload = async () => {
     if (filteredRegs.length === 0) return alert("No invite letters available to download.");
@@ -9478,14 +9523,17 @@ function AdminInviteLetters({ mob, C, auth }) {
           </div>
           <div style={{display:"flex",gap:12,width:mob?"100%":"auto",flexWrap:"wrap"}}>
             <input type="text" placeholder="Search students..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid var(--bd)",fontSize:".85rem",flex:1,minWidth:200,outline:"none",fontFamily:"inherit"}} />
-            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
+            <button onClick={handleRefresh} disabled={refreshing || releasingAll || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"white",border:"1px solid var(--bd)",color:"var(--dt)",cursor:(refreshing || releasingAll || downloadingBulk || downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.05)",whiteSpace:"nowrap"}}>
               {refreshing ? "..." : "↻"} Refresh
             </button>
-            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing || downloadingBulk)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+            <button onClick={handleReleaseAll} disabled={releasingAll || refreshing || downloadingBulk || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--dt)",color:"white",border:"none",cursor:(releasingAll || refreshing || downloadingBulk || downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
               {releasingAll ? "Releasing..." : "📢 Release All"}
             </button>
-            <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk || releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+            <button onClick={handleBulkDownload} disabled={downloadingBulk || releasingAll || refreshing || downloadingEnvelopes} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"var(--sf)",color:"white",border:"none",cursor:(downloadingBulk || releasingAll || refreshing || downloadingEnvelopes)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
               {downloadingBulk ? `Generating ZIP (${downloadProgress}/${filteredRegs.length})...` : "📦 Bulk Download ZIP"}
+            </button>
+            <button onClick={handleBulkDownloadEnvelopes} disabled={downloadingEnvelopes || downloadingBulk || releasingAll || refreshing} style={{padding:"8px 16px",borderRadius:8,fontSize:".85rem",fontWeight:600,display:"flex",alignItems:"center",gap:6,background:"#2E7D32",color:"white",border:"none",cursor:(downloadingEnvelopes || downloadingBulk || releasingAll || refreshing)?"wait":"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.1)",whiteSpace:"nowrap"}}>
+              {downloadingEnvelopes ? "Generating Envelopes..." : "✉️ Print Envelopes"}
             </button>
           </div>
         </div>
