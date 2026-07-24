@@ -8412,6 +8412,7 @@ function AdminRegistrations({ mob, C, auth }) {
                 let date = "-";
                 try { if(r._submittedAt) date = new Date(r._submittedAt).toLocaleString(); } catch(e){}
                 let evName = r.eventName || r.eventTitle || r.eventId || "Unknown Event";
+                const ev = C.events?.find(e => e.title === r.eventTitle || e.title === r.eventName || e.title === r.eventId || e.id === r.eventId);
 
                 return (
                   <tr key={i}>
