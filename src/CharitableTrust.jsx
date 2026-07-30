@@ -1687,7 +1687,7 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin, forceS
                       logicRules = [{ dependsOn: f.dependsOn, dependsValue: f.dependsValue }];
                   }
                   if (logicRules.length > 0) {
-                      shouldShow = logicRules.some(rule => {
+                      shouldShow = (f.logicCondition === "AND" ? logicRules.every : logicRules.some).call(logicRules, rule => {
                           const allF = getForm(selectedEvent.event.formId).fields;
                           const parentIdx = allF.findIndex(ff => ff.label === rule.dependsOn || ff.dataKey === rule.dependsOn);
                           const parentField = parentIdx !== -1 ? allF[parentIdx] : null;
@@ -2045,7 +2045,7 @@ function Events({ C, lang, globalAuthToken, globalProfile, onPublicLogin, forceS
                       }
                       
                       if (logicRules.length > 0) {
-                          shouldShow = logicRules.some(rule => {
+                          shouldShow = (f.logicCondition === "AND" ? logicRules.every : logicRules.some).call(logicRules, rule => {
                               const allF = getForm(selectedEvent.event.formId).fields;
                               const parentIdx = allF.findIndex(ff => ff.label === rule.dependsOn || ff.dataKey === rule.dependsOn);
                               const parentField = parentIdx !== -1 ? allF[parentIdx] : null;
@@ -6164,6 +6164,69 @@ function AdminForms({ C, setC, saveToFb, mob, auth }) {
                               <input value={field.label} onChange={e => { const newF=[...editingForm.fields]; newF[fieldIdx].label=e.target.value; updateCurrentForm({...editingForm, fields:newF}); }} style={{padding:4, border:"1px solid var(--bd)", borderRadius:4, fontSize:".85rem", fontWeight:700, width: "100%"}}/>
                               <input value={field.dataKey||""} onChange={e => { const newF=[...editingForm.fields]; newF[fieldIdx].dataKey=e.target.value; updateCurrentForm({...editingForm, fields:newF}); }} placeholder="Data Header / Key (Optional)" style={{padding:4, border:"1px solid var(--bd)", borderRadius:4, fontSize:".75rem", width: "100%", marginTop: 4}} title="If provided, multiple fields with the same Data Header will be merged into one column when exporting data."/>
                               {field.type === 'dropdown' && <input value={field.options||""} onChange={e => { const newF=[...editingForm.fields]; newF[fieldIdx].options=e.target.value; updateCurrentForm({...editingForm, fields:newF}); }} placeholder="Options (comma separated)" style={{padding:4, border:"1px solid var(--bd)", borderRadius:4, fontSize:".75rem"}}/>}
+                              { (() => {
+                                  const parentFields = editingForm.fields.slice(0, fieldIdx).filter(f => ['dropdown','radio','checkbox'].includes(f.type));
+                                  if(parentFields.length === 0) return null;
+                                  const rules = field.logicRules || (field.dependsOn ? [{dependsOn: field.dependsOn, dependsValue: field.dependsValue}] : []);
+                                  return (
+                                    <div style={{display:"flex", flexDirection:"column", gap:6, background:"#FDFDFD", padding:8, borderRadius:4, border:"1px dashed var(--bd)"}}>
+                                      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                                        <div style={{fontSize:".75rem", fontWeight:700, color:"var(--mu)"}}>Conditional Display Rules</div>
+                                        {rules.length > 1 && (
+                                            <select value={field.logicCondition||"OR"} onChange={e => {
+                                                const newF=[...editingForm.fields]; newF[fieldIdx].logicCondition = e.target.value; updateCurrentForm({...editingForm, fields:newF});
+                                            }} style={{padding:2, fontSize:".7rem", borderRadius:4, border:"1px solid #ccc"}}>
+                                                <option value="OR">Match ANY rule (OR)</option>
+                                                <option value="AND">Match ALL rules (AND)</option>
+                                            </select>
+                                        )}
+                                      </div>
+                                      {rules.map((rule, rIdx) => (
+                                        <div key={rIdx} style={{display:"flex", gap:4, alignItems:"center"}}>
+                                          <select value={rule.dependsOn||""} onChange={e => {
+                                            const newF=[...editingForm.fields];
+                                            let newRules = [...rules];
+                                            newRules[rIdx] = {...newRules[rIdx], dependsOn: e.target.value, dependsValue: ""};
+                                            newF[fieldIdx].logicRules = newRules;
+                                            delete newF[fieldIdx].dependsOn; delete newF[fieldIdx].dependsValue;
+                                            updateCurrentForm({...editingForm, fields:newF});
+                                          }} style={{flex:1, padding:4, border:"1px solid var(--bd)", borderRadius:4, fontSize:".75rem"}}>
+                                            <option value="">-- Select Parent Field --</option>
+                                            {parentFields.map((pf, pIdx) => <option key={pIdx} value={pf.label}>{pf.label}</option>)}
+                                          </select>
+                                          
+                                          <select value={rule.dependsValue||""} onChange={e => {
+                                            const newF=[...editingForm.fields];
+                                            let newRules = [...rules];
+                                            newRules[rIdx] = {...newRules[rIdx], dependsValue: e.target.value};
+                                            newF[fieldIdx].logicRules = newRules;
+                                            delete newF[fieldIdx].dependsOn; delete newF[fieldIdx].dependsValue;
+                                            updateCurrentForm({...editingForm, fields:newF});
+                                          }} style={{flex:1, padding:4, border:"1px solid var(--bd)", borderRadius:4, fontSize:".75rem"}} disabled={!rule.dependsOn}>
+                                            <option value="">-- Select Value --</option>
+                                            {(() => {
+                                                const pf = parentFields.find(f => f.label === rule.dependsOn);
+                                                if(!pf || !pf.options) return null;
+                                                return pf.options.split(",").map(o=>o.trim()).filter(Boolean).map((o,oIdx)=><option key={oIdx} value={o}>{o}</option>);
+                                            })()}
+                                          </select>
+                                          <button onClick={() => {
+                                            const newF=[...editingForm.fields];
+                                            let newRules = [...rules];
+                                            newRules.splice(rIdx, 1);
+                                            newF[fieldIdx].logicRules = newRules;
+                                            updateCurrentForm({...editingForm, fields:newF});
+                                          }} style={{background:"none",border:"none",color:"#C0392B",cursor:"pointer",fontSize:".9rem"}}>×</button>
+                                        </div>
+                                      ))}
+                                      <button onClick={() => {
+                                          const newF=[...editingForm.fields];
+                                          newF[fieldIdx].logicRules = [...rules, {dependsOn:"", dependsValue:""}];
+                                          updateCurrentForm({...editingForm, fields:newF});
+                                      }} style={{alignSelf:"flex-start", background:"#E8F5E9", border:"1px solid #C8E6C9", color:"#1A7A3E", cursor:"pointer", fontSize:".7rem", fontWeight:600, padding:"4px 8px", borderRadius:4}}>+ Add Rule</button>
+                                    </div>
+                                  );
+                              })() }
                               <button onClick={() => setEditingFieldId(null)} style={{alignSelf:"flex-start", padding:"4px 12px", background:"var(--dt)", color:"white", border:"none", borderRadius:4, fontSize:".75rem", cursor:"pointer", fontWeight:600}}>Done</button>
                             </div>
                          ) : (
@@ -8163,7 +8226,7 @@ function UserEditRegistrationModal({ reg, onClose, onSave, authToken, C }) {
       }
       
       if (logicRules.length > 0) {
-        shouldShow = logicRules.some(rule => {
+        shouldShow = (f.logicCondition === "AND" ? logicRules.every : logicRules.some).call(logicRules, rule => {
           const parentField = formObj.fields.find(ff => ff.label === rule.dependsOn);
           const parentKey = parentField ? (parentField.dataKey || parentField.label)?.trim() : rule.dependsOn;
           const parentVal = formData[parentKey];
@@ -9528,7 +9591,7 @@ function VerificationModal({ viewing, setViewing, allRegs, saveVerification, C }
       }
       
       if (logicRules.length > 0) {
-        shouldShow = logicRules.some(rule => {
+        shouldShow = (f.logicCondition === "AND" ? logicRules.every : logicRules.some).call(logicRules, rule => {
           const parentField = formObj.fields.find(ff => ff.label === rule.dependsOn);
           const parentKey = parentField ? (parentField.dataKey || parentField.label)?.trim() : rule.dependsOn;
           const parentVal = (editedReg || viewing)[parentKey];
