@@ -1,0 +1,99 @@
+Created At: 2026-07-23T22:05:45+05:30
+Completed At: 2026-07-23T22:05:45+05:30
+File Path: `file:///c:/Users/Pradeep.Parmar/OneDrive%20-%20insidemedia.net/personal/My%20Website/community/trust-frontend/src/CharitableTrust.jsx`
+Total Lines: 10777
+Total Bytes: 684639
+Showing lines 8410 to 8500
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+8410: function AdminRegistrations({ mob, C, setC, auth }) {
+8411: 
+8412:   const [regs, setRegs] = useState([]);
+8413:   const [loading, setLoading] = useState(true);
+8414:   const [refreshing, setRefreshing] = useState(false);
+8415:   const [viewing, setViewing] = useState(null);
+8416:   
+8417:   const [activeSection, setActiveSection] = useState("All");
+8418:   const [newSectionName, setNewSectionName] = useState("");
+8419:   const [isAddingSection, setIsAddingSection] = useState(false);
+8420:   const [deleteSecConfirm, setDeleteSecConfirm] = useState(null);
+8421:   const [deleteSecPass, setDeleteSecPass] = useState("");
+8422:   const [deleteSecLoading, setDeleteSecLoading] = useState(false);
+8423:   const sections = C.eventSections || [];
+8424:   
+8425:   const saveToFb = async (newC) => {
+8426:     try {
+8427:       await fbSave(newC, auth?.idToken);
+8428:       if(setC) setC(newC);
+8429:     } catch(e) {
+8430:       alert("Error saving: " + e.message);
+8431:     }
+8432:   };
+8433: 
+8434:   const handleRefresh = async () => {
+8435:     setRefreshing(true);
+8436:     try {
+8437:       const d = await fbFetchRegistrations(auth?.idToken);
+8438:       setRegs(d || []);
+8439:     } catch(e) {
+8440:       console.error("Refresh error:", e);
+8441:     }
+8442:     setRefreshing(false);
+8443:   };
+8444:   const [previewFile, setPreviewFile] = useState(null);
+8445:   const [error, setError] = useState(null);
+8446:   const [searchQuery, setSearchQuery] = useState("");
+8447:   const [columnFilters, setColumnFilters] = useState({});
+8448:   const [bulkGroup, setBulkGroup] = useState("");
+8449:   const [applyingBulkGroup, setApplyingBulkGroup] = useState(false);
+8450:   
+8451:   const [showSerialModal, setShowSerialModal] = useState(false);
+8452:   const [serialPrefix, setSerialPrefix] = useState("");
+8453:   const [serialStart, setSerialStart] = useState(1);
+8454:   const [sortLevels, setSortLevels] = useState([{ col: "", val: [], dir: "asc" }]);
+8455:   const [applyingSerial, setApplyingSerial] = useState(false);
+8456:   const [selectedPreset, setSelectedPreset] = useState("");
+8457: 
+8458:   useEffect(() => {
+8459:     try {
+8460:       fbFetchRegistrations(auth?.idToken).then(d => {
+8461:         setRegs(d || []); setLoading(false);
+8462:       }).catch(e => {
+8463:         console.error(e); setError(e.message); setLoading(false);
+8464:       });
+8465:     } catch (e) {
+8466:       setError(e.message); setLoading(false);
+8467:     }
+8468:   }, [auth]);
+8469: 
+8470:   if (error) return <div style={{padding:30}}>Error loading registrations: {error}</div>;
+8471: 
+8472: 
+8473:   const saveVerification = async (r, newStatus, newRemarks, newData = r) => {
+8474:     const updatedBy = auth?.email || "Admin";
+8475:     const cleanData = { ...r, ...newData, Status: newStatus, status: newStatus, Remarks: newRemarks, "Updated By": updatedBy };
+8476:     setRegs(prev => prev.map(x => x.id === r.id ? cleanData : x));
+8477:     try {
+8478:       delete cleanData.id; delete cleanData._submittedAt;
+8479:       await fbUpdateRegistration(r.id, cleanData, auth?.idToken);
+8480:       // Removed setViewing(null) here so modal can handle auto-advance
+8481:     } catch (e) {
+8482:       alert("Failed to save verification: " + e.message);
+8483:       const d = await fbFetchRegistrations(auth?.idToken);
+8484:       setRegs(d || []);
+8485:     }
+8486:   };
+8487: 
+8488:   const handleStatusChange = async (r, newStatus) => {
+8489:     let newRemarks = r['Remarks'] || "";
+8490:     if (newStatus === "Disapproved" || newStatus === "Needs Info") {
+8491:       const reason = prompt(`Please enter the reason/remarks for '${newStatus}':`, newRemarks);
+8492:       if (reason === null) return; // User cancelled
+8493:       newRemarks = reason;
+8494:     }
+8495:     
+8496:     const updatedBy = auth?.email || "Admin";
+8497:     
+8498:     // Optimistic UI update
+8499:     setRegs(prev => prev.map(x => x.id === r.id ? { ...x, Status: newStatus, status: newStatus, Remarks: newRemarks, "Updated By": updatedBy } : x));
+8500:     
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
